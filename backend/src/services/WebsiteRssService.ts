@@ -160,6 +160,27 @@ export class WebsiteRssService {
   }
 
   /**
+   * 获取RSS Feed内容（JSON格式）
+   */
+  async getRssFeedJson(key: string): Promise<any> {
+    // 查找配置
+    const config = await WebsiteRssConfig.findOne({ where: { key } });
+    if (!config) throw new Error(`未找到key为${key}的网站RSS配置`);
+    // 检查是否需要更新内容
+    const now = new Date();
+    const lastFetchTime = config.lastFetchTime || new Date(0);
+    const minutesSinceLastFetch = (now.getTime() - lastFetchTime.getTime()) / (60 * 1000);
+    if (minutesSinceLastFetch >= config.fetchInterval) {
+      await this.fetchAndUpdateContent(config.id);
+      // 重新获取更新后的配置
+      const updatedConfig = await WebsiteRssConfig.findByPk(config.id);
+      if (updatedConfig) config.lastContent = updatedConfig.lastContent;
+    }
+    // 生成RSS JSON
+    return this.generateRssJson(config);
+  }
+
+  /**
    * 抓取并更新内容
    */
   private async fetchAndUpdateContent(id: number): Promise<void> {
@@ -222,7 +243,7 @@ export class WebsiteRssService {
       feed_url: `${process.env.API_BASE_URL || ''}/api/website-rss/${config.key}`,
       site_url: config.url,
       image_url: config.favicon,
-      generator: 'CloudSaver WebsiteRSS',
+      generator: 'FeedHub WebsiteRSS',
       pubDate: new Date(),
     });
     // 添加项目
@@ -251,6 +272,47 @@ export class WebsiteRssService {
       });
     }
     return feed.xml({ indent: true });
+  }
+
+  /**
+   * 生成RSS JSON数据
+   */
+  private generateRssJson(config: WebsiteRssConfigAttributes): any {
+    // 构建RSS Feed JSON结构
+    const feedJson: any = {
+      title: config.title,
+      description: config.rssDescription || config.title,
+      feed_url: `${process.env.API_BASE_URL || ''}/api/json/${config.key}`,
+      site_url: config.url,
+      image_url: config.favicon,
+      generator: 'FeedHub WebsiteRSS',
+      pubDate: new Date().toISOString(),
+      items: []
+    };
+    
+    // 添加项目
+    if (config.lastContent) {
+      const items = JSON.parse(config.lastContent);
+      feedJson.items = items.map((item: any) => {
+        const jsonItem: any = {
+          title: item.title,
+          description: item.content || item.contentSnippet || '',
+          url: item.link,
+          guid: item.guid,
+          date: item.pubDate,
+          author: item.author,
+        };
+        
+        // 添加封面图片（如果存在）
+        if (item.image || item.coverImage || item.thumbnail) {
+          jsonItem.image = item.image || item.coverImage || item.thumbnail;
+        }
+        
+        return jsonItem;
+      });
+    }
+    
+    return feedJson;
   }
 
   /**

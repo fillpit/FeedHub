@@ -4,8 +4,8 @@ import { TYPES } from "./core/types";
 // Services
 import { DatabaseService } from "./services/DatabaseService";
 import { UserService } from "./services/UserService";
-import { SettingService } from "./services/SettingService";
 import { WebsiteRssService } from "./services/WebsiteRssService";
+import { SettingService } from "./services/SettingService";
 // Controllers
 import { SettingController } from "./controllers/setting";
 import { UserController } from "./controllers/user";
@@ -17,10 +17,10 @@ const container = new Container();
 
 // Services
 container.bind<DatabaseService>(TYPES.DatabaseService).to(DatabaseService).inSingletonScope();
-container.bind<SettingService>(TYPES.SettingService).to(SettingService).inSingletonScope();
 container.bind<UserService>(TYPES.UserService).to(UserService).inSingletonScope();
 container.bind<WebsiteRssService>(TYPES.WebsiteRssService).to(WebsiteRssService).inSingletonScope();
 container.bind<RssTemplateService>(TYPES.RssTemplateService).to(RssTemplateService).inSingletonScope();
+container.bind<SettingService>(TYPES.SettingService).to(SettingService).inSingletonScope();
 // Controllers
 container.bind<SettingController>(TYPES.SettingController).to(SettingController);
 container.bind<UserController>(TYPES.UserController).to(UserController);

@@ -32,6 +32,9 @@ router.use("/rss-template", rssTemplateRoutes);
 // 网站RSS订阅地址（公开访问）
 router.get("/rss/:key", (req, res) => websiteRssController.getRssFeed(req, res));
 
+// 网站RSS JSON订阅地址（公开访问）
+router.get("/json/:key", (req, res) => websiteRssController.getRssFeedJson(req, res));
+
 // 授权信息管理
 router.get('/auth-credential', AuthCredentialController.getAll.bind(AuthCredentialController));
 router.get('/auth-credential/:id', AuthCredentialController.getById.bind(AuthCredentialController));

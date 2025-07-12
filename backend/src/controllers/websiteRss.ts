@@ -69,4 +69,17 @@ export class WebsiteRssController extends BaseController {
       res.status(404).send(`获取RSS Feed失败: ${errorMessage}`);
     }
   }
+
+  async getRssFeedJson(req: Request, res: Response): Promise<void> {
+    try {
+      const key = req.params.key;
+      const rssFeedJson = await this.websiteRssService.getRssFeedJson(key);
+      res.setHeader('Content-Type', 'application/json');
+      // 使用JSON.stringify的第三个参数来美化输出，设置缩进为2个空格
+      res.send(JSON.stringify(rssFeedJson, null, 2));
+    } catch (error) {
+      console.error('获取JSON Feed失败:', error);
+      res.status(500).json({ error: `获取JSON Feed失败: ${error instanceof Error ? error.message : "未知错误"}` });
+    }
+  }
 }

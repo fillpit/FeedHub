@@ -3,9 +3,8 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Vue](https://img.shields.io/badge/vue-3.x-brightgreen.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)
-[![GitHub Stars](https://img.shields.io/github/stars/jiangrui1994/CloudSaver.svg?style=flat&logo=github)](https://github.com/jiangrui1994/CloudSaver/stargazers)
-![Docker](https://img.shields.io/docker/pulls/jiangrui1994/cloudsaver.svg)
-<a href="https://hellogithub.com/repository/d13663fb959345e7923ecaccc3387571" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=d13663fb959345e7923ecaccc3387571&claim_uid=xP1MT4mSvN6wn5K&theme=small" alt="Featured｜HelloGitHub" /></a>
+[![GitHub Stars](https://img.shields.io/github/stars/fillpit/FeedHub.svg?style=flat&logo=github)](https://github.com/fillpit/FeedHub)
+![Docker](https://img.shields.io/docker/pulls/fillpit/feedhub.svg)
 
 ## 项目介绍
 
@@ -90,8 +89,8 @@ FeedHub 是一个功能强大的 RSS 订阅管理系统，专注于解决网站�
 1. 克隆项目
 
 ```bash
-git clone https://github.com/jiangrui1994/CloudSaver.git
-cd CloudSaver
+git clone https://github.com/fillpit/FeedHub.git
+cd FeedHub
 ```
 
 2. 安装依赖

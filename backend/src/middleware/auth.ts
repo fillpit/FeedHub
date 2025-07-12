@@ -21,7 +21,8 @@ export const authMiddleware = async (
     req.path === "/user/login" || 
     req.path === "/user/register" || 
     req.path === "/tele-images/" ||
-    req.path.startsWith("/rss/")
+    req.path.startsWith("/rss/") ||
+    req.path.startsWith("/json/")
   ) {
     return next();
   }

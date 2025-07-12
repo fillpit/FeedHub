@@ -70,7 +70,7 @@
 import { computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Search, Film, Setting, Link, Document, Collection, Key } from "@element-plus/icons-vue";
-import logo from "@/assets/images/logo.svg";
+import logo from "/logo.svg";
 import { PROJECT_GITHUB } from "@/constants/project";
 import pkg from "../../package.json";
 

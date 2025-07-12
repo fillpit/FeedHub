@@ -7,7 +7,7 @@
         <el-button type="primary" @click="addConfig">添加配置</el-button>
       </div>
       <ul class="feed-list">
-        <li v-for="config in configs" :key="config.id" @click="config.key && copyToClipboard(config.key)">
+        <li v-for="config in configs" :key="config.id" @click="config.key && copyToClipboard(config.key, 'rss')">
           <div class="feed-item">
             <div class="feed-icon-wrapper">
               <img v-if="config.favicon" :src="config.favicon" class="feed-icon" alt="favicon" />
@@ -29,7 +29,11 @@
               <div class="feed-url">{{ config.url }}</div>
               <div v-if="config.key" class="feed-rss-url">
                 <span>RSS链接: {{ getRssUrl(config.key) }}</span>
-                <el-icon style="cursor:pointer" @click.stop="copyToClipboard(config.key)"><CopyDocument /></el-icon>
+                <el-icon style="cursor:pointer" @click.stop="copyToClipboard(config.key, 'rss')"><CopyDocument /></el-icon>
+              </div>
+              <div v-if="config.key" class="feed-json-url">
+                <span>JSON链接: {{ getJsonUrl(config.key) }}</span>
+                <el-icon style="cursor:pointer" @click.stop="copyToClipboard(config.key, 'json')"><CopyDocument /></el-icon>
               </div>
             </div>
             <div class="feed-actions">
@@ -188,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import {
@@ -199,6 +203,7 @@ import {
   refreshWebsiteRss,
   debugScript,
   getRssUrl,
+  getJsonUrl,
   getConfigById
 } from '@/api/websiteRss';
 import type { WebsiteRssConfig } from '@/types/websiteRss';
@@ -278,27 +283,6 @@ const debugResult = reactive({
   executionTime: 0,
 });
 
-const logLevel = ref<'debug'|'info'|'warn'|'error'|'fatal'>('info');
-const logLevelOrder = ['debug', 'info', 'warn', 'error', 'fatal'];
-const logLevelMap = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-  fatal: 4
-};
-const filteredLogs = computed(() => {
-  if (!debugResult.logs) return [];
-  const minLevel = logLevelMap[logLevel.value];
-  return debugResult.logs.filter((log: string) => {
-    if (log.includes('[FATAL]') || log.includes('[FATAL')) return logLevel.value === 'fatal' ? true : minLevel <= 4;
-    if (log.includes('[ERROR]') || log.includes('[ERROR')) return minLevel <= 3;
-    if (log.includes('[WARN]') || log.includes('[WARN')) return minLevel <= 2;
-    if (log.includes('[INFO]') || log.includes('[INFO')) return minLevel <= 1;
-    if (log.includes('[DEBUG]') || log.includes('[DEBUG')) return minLevel <= 0;
-    return true;
-  });
-});
 
 const fetchConfigs = async () => {
   try {
@@ -428,9 +412,10 @@ const handleDebugScript = async () => {
   }
 };
 
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(getRssUrl(text)).then(() => {
-    ElMessage.success('RSS链接已复制到剪贴板');
+const copyToClipboard = (text: string, type: 'rss' | 'json' = 'rss') => {
+  const url = type === 'rss' ? getRssUrl(text) : getJsonUrl(text);
+  navigator.clipboard.writeText(url).then(() => {
+    ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
   });
 };
 
@@ -520,7 +505,7 @@ const saveFavicon = async () => {
   color: #888;
   font-size: 0.9em;
 }
-.feed-rss-url {
+.feed-rss-url, .feed-json-url {
   font-size: 0.9em;
   color: #409eff;
   cursor: pointer;
