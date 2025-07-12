@@ -1,0 +1,62 @@
+// 颜色系统
+:root {
+  // 主题色
+  --theme-primary: #0066cc;
+  --theme-primary-hover: #0256ac;
+  --theme-success: #28cd41;
+  --theme-warning: #ff9f0a;
+  --theme-error: #ff3b30;
+
+  // 中性色
+  --theme-bg: #f5f7fa;
+  --theme-card-bg: rgba(255, 255, 255, 0.8);
+  --theme-text-primary: #000000;
+  --theme-text-regular: #424242;
+  --theme-text-secondary: #6e6e6e;
+
+  // 特效
+  --theme-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --theme-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --theme-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  // 圆角
+  --theme-radius-sm: 8px;
+  --theme-radius: 12px;
+  --theme-radius-lg: 16px;
+
+  // 模糊效果
+  --theme-blur: blur(12px);
+
+  // 动画
+  --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Mixins
+@mixin glass-effect {
+  background: var(--theme-card-bg);
+  backdrop-filter: var(--theme-blur);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin text-overflow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 通用动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

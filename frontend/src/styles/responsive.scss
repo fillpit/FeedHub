@@ -1,0 +1,77 @@
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 响应式布局工具类
+@mixin mobile {
+  @media screen and (max-width: 768px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media screen and (min-width: 769px) and (max-width: 1024px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media screen and (min-width: 1025px) {
+    @content;
+  }
+}
+
+// 通用样式变量
+:root {
+  // 字体大小 - 整体缩小约25%
+  --font-size-xs: 20px; // 原24px
+  --font-size-sm: 22px; // 原26px
+  --font-size-base: 24px; // 原28px
+  --font-size-lg: 28px; // 原32px
+  --font-size-xl: 32px; // 原36px
+
+  // 间距 - 也相应缩小
+  --spacing-xs: 6px; // 原8px
+  --spacing-sm: 10px; // 原12px
+  --spacing-base: 14px; // 原16px
+  --spacing-lg: 20px; // 原24px
+  --spacing-xl: 28px; // 原32px
+
+  // 圆角 - 适当调整
+  --border-radius-sm: 6px; // 原8px
+  --border-radius-base: 10px; // 原12px
+  --border-radius-lg: 14px; // 原16px
+  --border-radius-xl: 20px; // 原24px
+
+  // 移动端特殊变量
+  @include mobile {
+    --font-size-base: 14px;
+    --spacing-base: 12px;
+  }
+}
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  :root {
+    // 间距
+    --spacing-xs: 3px;
+    --spacing-sm: 5px;
+    --spacing-base: 7px;
+    --spacing-lg: 10px;
+    --spacing-xl: 14px;
+
+    // 字体大小
+    --font-size-xs: 10px;
+    --font-size-sm: 11px;
+    --font-size-base: 12px;
+    --font-size-lg: 14px;
+    --font-size-xl: 16px;
+
+    // 圆角
+    --border-radius-sm: 3px;
+    --border-radius-base: 5px;
+    --border-radius-lg: 7px;
+  }
+}

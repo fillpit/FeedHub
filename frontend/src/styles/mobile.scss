@@ -1,0 +1,46 @@
+/* 移动端通用样式类 */
+.mobile-page {
+    padding: var(--spacing-base);
+    min-height: 100vh;
+    background-color: var(--theme-background);
+}
+
+.mobile-card {
+    background: var(--theme-other_background);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-base);
+    margin-bottom: var(--spacing-base);
+}
+
+.mobile-title {
+    font-size: var(--font-size-xl);
+    font-weight: bold;
+    margin-bottom: var(--spacing-base);
+}
+
+.mobile-text {
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    color: var(--theme-color);
+}
+
+.mobile-button {
+    width: 100%;
+    height: 40px;
+    font-size: var(--font-size-lg);
+    border-radius: 20px;
+}
+
+.mobile-form {
+    .van-field {
+        padding: var(--spacing-base);
+
+        &__label {
+            font-size: var(--font-size-base);
+        }
+
+        &__control {
+            font-size: var(--font-size-base);
+        }
+    }
+}

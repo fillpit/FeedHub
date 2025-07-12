@@ -1,0 +1,24 @@
+node_modules/
+logs/
+dist/
+.env
+.env.local
+.env.*.local
+
+*.tar
+
+# 数据库数据
+*.sqlite
+
+# 保留模板
+!.env.example
+
+!frontend/.env
+
+# 其他敏感文件
+config.private.ts
+*.pem
+*.key
+
+.DS_Store
+*.log 

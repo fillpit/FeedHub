@@ -1,0 +1,30 @@
+# 构建产物
+dist
+build
+coverage
+
+# 依赖目录
+node_modules
+
+# 日志文件
+*.log
+
+# 环境配置
+.env*
+!.env.example
+
+# 编辑器配置
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 版本控制
+.git 

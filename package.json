@@ -1,0 +1,57 @@
+{
+  "name": "feed-hub",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "ins": "npm-run-all --parallel install:*",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "dev": "npm-run-all --parallel dev:*",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm-run-all --parallel build:*",
+    "build:frontend": "cd frontend && pnpm run build",
+    "build:backend": "cd backend && pnpm run build",
+    "clean": "rimraf **/node_modules **/dist",
+    "version:patch": "npm version patch -w frontend && npm version patch",
+    "version:minor": "npm version minor -w frontend && npm version minor",
+    "version:major": "npm version major -w frontend && npm version major",
+    "format": "prettier --write \"**/*.{js,ts,vue,json,css,scss}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,vue,json,css,scss}\"",
+    "format:all": "npm run format && npm run lint:fix",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-vue": "^9.32.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.4.2",
+    "rimraf": "^5.0.5",
+    "vue-eslint-parser": "^9.4.3"
+  },
+  "engines": {
+    "pnpm": ">=6.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "bcrypt",
+      "esbuild",
+      "sqlite3",
+      "vue-demi"
+    ]
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "vue-json-pretty": "^2.4.0"
+  }
+}
