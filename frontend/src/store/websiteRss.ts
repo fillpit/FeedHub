@@ -32,7 +32,7 @@ export const useWebsiteRssStore = defineStore('websiteRss', {
       this.error = null;
       try {
         const response = await websiteRssApi.getConfigById(id);
-        this.currentConfig = response.data || null;
+        this.currentConfig = response.data ? response.data : null;
         return response.data;
       } catch (error) {
         this.error = error instanceof Error ? error.message : '获取网站RSS配置详情失败';
@@ -69,11 +69,11 @@ export const useWebsiteRssStore = defineStore('websiteRss', {
       try {
         const response = await websiteRssApi.updateConfig(id, config);
         const index = this.configs.findIndex(item => item.id === id);
-        if (index !== -1) {
+        if (index !== -1 && response.data) {
           this.configs[index] = response.data;
         }
         if (this.currentConfig?.id === id) {
-          this.currentConfig = response.data;
+          this.currentConfig = response.data ? response.data : null;
         }
         return response.data;
       } catch (error) {
@@ -118,7 +118,7 @@ export const useWebsiteRssStore = defineStore('websiteRss', {
           }
         }
         if (this.currentConfig?.id === id) {
-          this.currentConfig = response.data || null;
+          this.currentConfig = response.data ? response.data : null;
         }
         return response.data;
       } catch (error) {

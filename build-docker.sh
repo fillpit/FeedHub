@@ -10,7 +10,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # 镜像名称和标签
-IMAGE_NAME="rss-bot"
+IMAGE_NAME="FeedHub"
 TAG=${1:-latest}
 
 echo -e "${YELLOW}开始构建 RSS Bot Docker 镜像...${NC}"
@@ -34,7 +34,7 @@ if [ $? -eq 0 ]; then
     docker images ${IMAGE_NAME}:${TAG}
     
     echo -e "${YELLOW}运行容器:${NC}"
-    echo "docker run -d -p 8008:8008 --name rss-bot ${IMAGE_NAME}:${TAG}"
+    echo "docker run -d -p 8008:8008 --name feed-hub ${IMAGE_NAME}:${TAG}"
     echo ""
     echo -e "${YELLOW}或使用 docker-compose:${NC}"
     echo "docker-compose up -d"

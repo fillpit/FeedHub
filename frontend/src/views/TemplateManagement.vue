@@ -16,7 +16,7 @@
             <div class="template-header">
               <div class="template-icon">
                 <el-icon :size="24">
-                  <component :is="getIcon(template.icon)" />
+                  <component :is="getIcon" />
                 </el-icon>
               </div>
               <div class="template-info">
@@ -319,7 +319,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Loading } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { authCredentialApi } from '@/api/authCredential'
 import type { AuthCredential } from '@/types'
@@ -426,7 +426,7 @@ const fetchAuthCredentials = async () => {
 }
 
 // 获取图标组件
-const getIcon = (iconName: string) => {
+const getIcon = () => {
   // 这里可以根据图标名称返回对应的图标组件
   return 'Platform'
 }
@@ -618,22 +618,6 @@ const openDebugDialog = (template: any) => {
   delete debugForm.parameters['customHeaders'];
   debugResult.value = null
   showDebugDialog.value = true
-}
-
-// 新增：选择授权后自动填充参数
-const handleSelectAuth = (authId: number) => {
-  debugForm.authCredentialId = authId;
-  // 选中授权后，清空parameters中的授权相关字段，避免和ID混用
-  delete debugForm.parameters['authType'];
-  delete debugForm.parameters['cookie'];
-  delete debugForm.parameters['bearerToken'];
-  delete debugForm.parameters['username'];
-  delete debugForm.parameters['password'];
-  delete debugForm.parameters['customHeaders'];
-  // 如果选择自定义（即未选中ID），允许填写自定义授权
-  if (!authId) {
-    // 用户可手动填写parameters中的授权内容
-  }
 }
 
 // 关闭调试弹窗
