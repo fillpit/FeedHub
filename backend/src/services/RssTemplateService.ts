@@ -323,37 +323,33 @@ export class RssTemplateService {
           description: "抓取B站UP主的视频更新",
           platform: "bilibili",
           icon: "bilibili",
-          urlTemplate: "https://space.bilibili.com/{{userId}}/video",
+          urlTemplate: "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?type=video&host_mid={{userId}}&platform=web",
           scriptTemplate: `
-// B站UP主视频抓取脚本
-const items = [];
+            let items = []
 
-// 获取视频列表
-const videoList = document.querySelectorAll('.bili-video-card');
+            try {
+              // 使用utils.fetchApi会自动应用配置的授权信息
+              const result = await utils.fetchApi(url);
 
-videoList.forEach(card => {
-  const titleElement = card.querySelector('.bili-video-card__info--tit');
-  const linkElement = card.querySelector('a');
-  const timeElement = card.querySelector('.bili-video-card__info--date');
-  const coverElement = card.querySelector('img');
-  
-  if (titleElement && linkElement) {
-    const title = titleElement.textContent.trim();
-    const link = 'https:' + linkElement.getAttribute('href');
-    const time = timeElement ? timeElement.textContent.trim() : '';
-    const cover = coverElement ? coverElement.getAttribute('src') : '';
-    
-    items.push({
-      title,
-      link,
-      time,
-      cover,
-      description: title
-    });
-  }
-});
+              // 处理返回的数据
+              result.data. data.items.forEach((post, index)=> {
+                // 文章和视频取的不一样
+                let article = utils.safeGet(post.modules.module_dynamic.major, 'article', post.modules.module_dynamic.major.archive)
+                items.push({
+                  image: utils.safeGet(article, 'cover', ''),
+                  title: utils.safeGet(article, 'title', ''),
+                  link: utils.safeGet(article, 'jump_url', ''),
+                  content: utils.safeGet(article, 'desc', ''),
+                  author: utils.safeGet(post.modules.module_author, 'name', ''),
+                  pubDate: utils.parseDate(post.modules.module_author.pub_time)
+                });
+              });
+              
+            } catch (error) {
+              console.error('API请求失败:', error.message);
+            }
 
-return items;
+            return items;
           `,
                      parameters: [
              {
@@ -365,102 +361,7 @@ return items;
              },
            ],
           enabled: true,
-        },
-        {
-          name: "抖音博主",
-          description: "抓取抖音博主的视频更新",
-          platform: "douyin",
-          icon: "douyin",
-          urlTemplate: "https://www.douyin.com/user/{{userId}}",
-          scriptTemplate: `
-// 抖音博主视频抓取脚本
-const items = [];
-
-// 获取视频列表
-const videoList = document.querySelectorAll('[data-e2e="user-post-item"]');
-
-videoList.forEach(item => {
-  const titleElement = item.querySelector('a[title]');
-  const linkElement = item.querySelector('a');
-  const timeElement = item.querySelector('[data-e2e="video-create-time"]');
-  const coverElement = item.querySelector('img');
-  
-  if (titleElement && linkElement) {
-    const title = titleElement.getAttribute('title') || titleElement.textContent.trim();
-    const link = 'https://www.douyin.com' + linkElement.getAttribute('href');
-    const time = timeElement ? timeElement.textContent.trim() : '';
-    const cover = coverElement ? coverElement.getAttribute('src') : '';
-    
-    items.push({
-      title,
-      link,
-      time,
-      cover,
-      description: title
-    });
-  }
-});
-
-return items;
-          `,
-                     parameters: [
-             {
-               name: "userId",
-               label: "博主ID",
-               type: "string" as const,
-               required: true,
-               description: "抖音博主的用户ID",
-             },
-           ],
-          enabled: true,
-        },
-        {
-          name: "YouTube频道",
-          description: "抓取YouTube频道的视频更新",
-          platform: "youtube",
-          icon: "youtube",
-          urlTemplate: "https://www.youtube.com/{{channelId}}/videos",
-          scriptTemplate: `
-// YouTube频道视频抓取脚本
-const items = [];
-
-// 获取视频列表
-const videoList = document.querySelectorAll('#video-title');
-
-videoList.forEach(titleElement => {
-  const linkElement = titleElement.closest('a');
-  const timeElement = titleElement.closest('ytd-grid-video-renderer')?.querySelector('#metadata-line');
-  const coverElement = titleElement.closest('ytd-grid-video-renderer')?.querySelector('#img');
-  
-  if (titleElement && linkElement) {
-    const title = titleElement.textContent.trim();
-    const link = 'https://www.youtube.com' + linkElement.getAttribute('href');
-    const time = timeElement ? timeElement.textContent.trim() : '';
-    const cover = coverElement ? coverElement.getAttribute('src') : '';
-    
-    items.push({
-      title,
-      link,
-      time,
-      cover,
-      description: title
-    });
-  }
-});
-
-return items;
-          `,
-                     parameters: [
-             {
-               name: "channelId",
-               label: "频道ID",
-               type: "string" as const,
-               required: true,
-               description: "YouTube频道的ID",
-             },
-           ],
-          enabled: true,
-        },
+        }
       ];
 
       for (const template of defaultTemplates) {
