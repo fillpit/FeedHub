@@ -31,7 +31,7 @@ import { ref, computed, onMounted } from 'vue';
 import { Search } from '@element-plus/icons-vue';
 import * as SimpleIcons from 'simple-icons';
 
-const props = defineProps({
+defineProps({
   modelValue: {
     type: String,
     default: ''

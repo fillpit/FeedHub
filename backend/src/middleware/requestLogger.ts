@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 
-const excludePaths = ["/tele-images/"];
+const excludePaths = [""];
 
 export const requestLogger = () => {
   return (req: Request, res: Response, next: NextFunction) => {

@@ -350,7 +350,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Document } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { authCredentialApi } from '@/api/authCredential'
 import type { AuthCredential } from '@/types'
@@ -359,7 +359,6 @@ import { createWebsiteRss } from '@/api/websiteRss'
 import IconSelector from '@/components/IconSelector.vue'
 import ScriptHelpGuide from '@/components/ScriptHelpGuide.vue'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import * as SimpleIcons from 'simple-icons'
 
 // 类型定义
 interface TemplateParameter {
@@ -473,11 +472,6 @@ const isElementIcon = (iconName: string) => {
   return Object.keys(ElementPlusIconsVue).includes(iconName)
 }
 
-// 判断是否为社交媒体图标
-const isSocialIcon = (iconName: string) => {
-  // 所有非 Element Plus 图标都视为社交媒体图标
-  return !isElementIcon(iconName)
-}
 
 // 添加参数
 const addParameter = () => {

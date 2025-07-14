@@ -13,15 +13,16 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["logo-1.png", "logo.svg"],
+      includeAssets: ["logo.png", "logo.svg"],
       injectRegister: "auto",
       workbox: {
         globPatterns: ["**/*.{js,css,html,png,svg}"],
+        maximumFileSizeToCacheInBytes: 7000000, // 设置为大于 6.29 MB
       },
       manifest: {
-        name: "CloudSaver",
-        short_name: "CloudSaver",
-        description: "网盘资源搜索工具",
+        name: "FeedHub",
+        short_name: "FeedHub",
+        description: "FeedHub 是一个聚合 RSS 订阅的工具，支持自定义 RSS 订阅源，自动聚合订阅源的内容，支持搜索、分类、标记已读等功能。",
         theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
@@ -29,7 +30,7 @@ export default defineConfig({
         start_url: "/",
         icons: [
           {
-            src: "logo-1.png",
+            src: "logo.png",
             sizes: "192x192",
             type: "image/png",
           },
@@ -79,11 +80,7 @@ export default defineConfig({
             console.log("Received Response:", proxyRes.statusCode, req.url);
           });
         },
-      },
-      "/tele-images": {
-        target: process.env.VITE_API_BASE_URL_PROXY || "http://127.0.0.1:8009",
-        changeOrigin: true,
-      },
+      }
     },
   },
   build: {
