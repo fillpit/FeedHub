@@ -15,9 +15,10 @@
           <el-card class="template-card" shadow="hover">
             <div class="template-header">
               <div class="template-icon">
-                <el-icon :size="24">
-                  <component :is="getIcon" />
-                </el-icon>
+                <el-icon v-if="isElementIcon(template.icon)" :size="24">
+              <component :is="getIcon(template)" />
+            </el-icon>
+            <simple-icon v-else :name="template.icon" :size="24" />
               </div>
               <div class="template-info">
                 <h3>{{ template.name }}</h3>
@@ -71,7 +72,17 @@
         </el-row>
 
         <el-form-item label="平台图标" prop="icon">
-          <el-input v-model="templateForm.icon" placeholder="图标名称，如：bilibili、youtube等" />
+          <div class="icon-selector-container">
+            <el-input v-model="templateForm.icon" placeholder="图标名称，如：bilibili、youtube等" />
+            <el-button type="primary" @click="showIconSelector = true">选择图标</el-button>
+          </div>
+          <div v-if="templateForm.icon" class="selected-icon-preview">
+            <span>预览：</span>
+            <el-icon v-if="isElementIcon(templateForm.icon)">
+              <component :is="templateForm.icon" />
+            </el-icon>
+            <simple-icon v-else :name="templateForm.icon" />
+          </div>
         </el-form-item>
 
         <el-form-item label="模板描述" prop="description">
@@ -93,12 +104,17 @@
         </el-form-item>
 
         <el-form-item label="脚本模板" prop="scriptTemplate">
-          <el-input
-            v-model="templateForm.scriptTemplate"
-            type="textarea"
-            :rows="10"
-            placeholder="请输入JavaScript脚本模板，使用{{参数名}}表示参数"
-          />
+          <div class="script-input-container">
+            <el-input
+              v-model="templateForm.scriptTemplate"
+              type="textarea"
+              :rows="10"
+              placeholder="请输入JavaScript脚本模板，使用{{参数名}}表示参数"
+            />
+            <div class="script-help-container">
+              <ScriptHelpGuide />
+            </div>
+          </div>
         </el-form-item>
 
         <!-- 参数配置 -->
@@ -313,18 +329,37 @@
 
     <!-- 调试结果弹窗 -->
     <DebugResultDialog :visible="!!debugResult" :result="debugResult" @close="debugResult=null" />
+
+    <!-- 图标选择器对话框 -->
+    <el-dialog
+      v-model="showIconSelector"
+      title="选择图标"
+      width="60%"
+    >
+      <icon-selector v-model="templateForm.icon" />
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showIconSelector = false">取消</el-button>
+          <el-button type="primary" @click="showIconSelector = false">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Document } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { authCredentialApi } from '@/api/authCredential'
 import type { AuthCredential } from '@/types'
-import DebugResultDialog from '@/components/DebugResultDialog.vue';
+import DebugResultDialog from '@/components/DebugResultDialog.vue'
 import { createWebsiteRss } from '@/api/websiteRss'
+import IconSelector from '@/components/IconSelector.vue'
+import ScriptHelpGuide from '@/components/ScriptHelpGuide.vue'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import * as SimpleIcons from 'simple-icons'
 
 // 类型定义
 interface TemplateParameter {
@@ -355,6 +390,7 @@ interface RssTemplate {
 const templates = ref<RssTemplate[]>([])
 const showCreateDialog = ref(false)
 const showUseDialog = ref(false)
+const showIconSelector = ref(false)
 const editingTemplate = ref<RssTemplate | null>(null)
 const selectedTemplate = ref<RssTemplate | null>(null)
 
@@ -425,10 +461,22 @@ const fetchAuthCredentials = async () => {
   } catch {}
 }
 
-// 获取图标组件
-const getIcon = () => {
-  // 这里可以根据图标名称返回对应的图标组件
-  return 'Platform'
+// 获取图标组件名称
+const getIcon = (template: RssTemplate | undefined) => {
+  // 返回模板中指定的图标名称，如果没有则使用默认图标
+  const iconName = template?.icon || 'Document'
+  return iconName
+}
+
+// 判断是否为Element Plus图标
+const isElementIcon = (iconName: string) => {
+  return Object.keys(ElementPlusIconsVue).includes(iconName)
+}
+
+// 判断是否为社交媒体图标
+const isSocialIcon = (iconName: string) => {
+  // 所有非 Element Plus 图标都视为社交媒体图标
+  return !isElementIcon(iconName)
 }
 
 // 添加参数
@@ -702,6 +750,31 @@ onMounted(() => {
   color: #409eff;
 }
 
+/* 为不同平台图标添加特定颜色 */
+.icon-bilibili {
+  color: #fb7299;
+}
+
+.icon-youtube {
+  color: #ff0000;
+}
+
+.icon-twitter {
+  color: #1da1f2;
+}
+
+.icon-weibo {
+  color: #e6162d;
+}
+
+.icon-zhihu {
+  color: #0084ff;
+}
+
+.icon-document {
+  color: #409eff;
+}
+
 .template-info h3 {
   margin: 0 0 5px 0;
   color: #333;
@@ -749,4 +822,37 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 10px;
 }
-</style> 
+
+.icon-selector-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.selected-icon-preview {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.selected-icon-preview .el-icon,
+.selected-icon-preview simple-icon,
+.selected-icon-preview iconify-icon {
+  font-size: 24px;
+}
+
+.script-input-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.script-help-container {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 10;
+}
+</style>

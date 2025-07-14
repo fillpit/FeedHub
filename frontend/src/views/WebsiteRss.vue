@@ -121,8 +121,12 @@
             <el-input-number v-model="form.script.timeout" :min="5000" :max="120000" :step="1000" placeholder="默认30000毫秒" />
           </el-form-item>
           <el-form-item label="JavaScript脚本" prop="script.script">
-            <el-input v-model="form.script.script" type="textarea" :rows="15" placeholder="请输入JavaScript脚本代码" />
-            <!-- Script Help Content -->
+            <div class="script-input-container">
+              <el-input v-model="form.script.script" type="textarea" :rows="15" placeholder="请输入JavaScript脚本代码" />
+              <div class="script-help-container">
+                <ScriptHelpGuide />
+              </div>
+            </div>
           </el-form-item>
         </template>
         
@@ -211,6 +215,7 @@ import { Document, Refresh, Edit, Delete, CopyDocument } from '@element-plus/ico
 import { authCredentialApi } from '@/api/authCredential';
 import type { AuthCredential } from '@/types';
 import DebugResultDialog from '@/components/DebugResultDialog.vue';
+import ScriptHelpGuide from '@/components/ScriptHelpGuide.vue';
 
 const configs = ref<WebsiteRssConfig[]>([]);
 const dialogVisible = ref(false);
@@ -414,9 +419,44 @@ const handleDebugScript = async () => {
 
 const copyToClipboard = (text: string, type: 'rss' | 'json' = 'rss') => {
   const url = type === 'rss' ? getRssUrl(text) : getJsonUrl(text);
-  navigator.clipboard.writeText(url).then(() => {
-    ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
-  });
+  
+  // 检查navigator.clipboard是否可用
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
+    }).catch(err => {
+      console.error('复制失败:', err);
+      fallbackCopyToClipboard(url, type);
+    });
+  } else {
+    // 使用备用方法
+    fallbackCopyToClipboard(url, type);
+  }
+};
+
+// 备用复制方法
+const fallbackCopyToClipboard = (text: string, type: 'rss' | 'json') => {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    
+    if (successful) {
+      ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
+    } else {
+      ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
+    }
+  } catch (err) {
+    console.error('备用复制方法失败:', err);
+    ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
+  }
 };
 
 const handleSelectAuth = (authId: number|null) => {
@@ -516,6 +556,18 @@ const saveFavicon = async () => {
 }
 .dialog-footer {
   text-align: right;
+}
+.script-input-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.script-help-container {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 10;
 }
 .debug-result-container .info {
   margin-bottom: 20px;

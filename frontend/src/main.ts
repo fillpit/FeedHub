@@ -7,14 +7,19 @@ import zhCn from "element-plus/es/locale/lang/zh-cn";
 import App from "./App.vue";
 import "@/styles/responsive.scss";
 import "@/styles/common.scss";
+import SimpleIcon from "./components/SimpleIcon.vue";
 
 import router from "./router/index";
 
 const app = createApp(App);
 
+// 注册Element Plus图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);
 }
+
+// 注册自定义图标组件
+app.component('SimpleIcon', SimpleIcon);
 
 app.use(createPinia());
 app.use(router);
