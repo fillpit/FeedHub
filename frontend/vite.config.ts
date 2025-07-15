@@ -18,6 +18,15 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,png,svg}"],
         maximumFileSizeToCacheInBytes: 7000000, // 设置为大于 6.29 MB
+        // 排除API请求，防止Service Worker拦截RSS订阅链接
+        navigateFallbackDenylist: [/^\/api\//],
+        // 为API请求设置NetworkOnly策略，确保从网络获取
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\//,
+            handler: 'NetworkOnly',
+          },
+        ],
       },
       manifest: {
         name: "FeedHub",
