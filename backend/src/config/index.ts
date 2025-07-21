@@ -40,6 +40,23 @@ const getTeleChannels = (): Channel[] => {
   return [];
 };
 
+// 验证JWT密钥强度
+const validateJwtSecret = (secret: string): void => {
+  if (config.app.env === "production" && (secret === "your-secret-key" || secret === "your-jwt-secret" || secret.length < 32)) {
+    throw new Error("生产环境必须设置强JWT密钥（至少32位字符）");
+  }
+};
+
+// 生成默认强密钥（仅用于开发环境）
+const getDefaultJwtSecret = (): string => {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("生产环境必须设置JWT_SECRET环境变量");
+  }
+  return "dev-jwt-secret-key-for-development-only-32chars";
+};
+
+const jwtSecret = process.env.JWT_SECRET || getDefaultJwtSecret();
+
 export const config: Config = {
   app: {
     port: parseInt(process.env.PORT || "8009"),
@@ -50,8 +67,11 @@ export const config: Config = {
     path: "./data/database.sqlite",
   },
   jwt: {
-    secret: process.env.JWT_SECRET || "your-secret-key",
-    expiresIn: "6h",
+    secret: jwtSecret,
+    expiresIn: "2h", // 缩短token有效期
   },
-  jwtSecret: process.env.JWT_SECRET || "your-jwt-secret",
+  jwtSecret: jwtSecret,
 };
+
+// 验证配置
+validateJwtSecret(jwtSecret);

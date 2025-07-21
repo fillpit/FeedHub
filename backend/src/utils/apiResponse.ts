@@ -1,7 +1,9 @@
 // 定义API响应数据接口
 export interface ApiResponseData<T> {
+  success: boolean;
   data?: T;
   message?: string;
+  error?: string;
 }
 
 // API响应类

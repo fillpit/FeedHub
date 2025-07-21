@@ -1,19 +1,22 @@
-// filepath: /d:/code/CloudDiskDown/backend/src/app.ts
+
 import "./types/express";
 import express from "express";
 import { container } from "./inversify.config";
 import { TYPES } from "./core/types";
 import { DatabaseService } from "./services/DatabaseService";
-import { setupMiddlewares } from "./middleware";
-import routes from "./routes/api";
+import routes from "./routes/index";
+import { setupMiddlewares, setupErrorHandling } from "./middleware";
+import { setupGlobalErrorHandlers } from "./middleware/errorHandler";
 import { logger } from "./utils/logger";
-import { errorHandler } from "./middleware/errorHandler";
+
 class App {
   private app = express();
   private databaseService = container.get<DatabaseService>(TYPES.DatabaseService);
 
   constructor() {
     this.setupExpress();
+    // 设置全局错误处理
+    setupGlobalErrorHandlers();
   }
 
   private setupExpress(): void {
@@ -23,8 +26,17 @@ class App {
     // 设置路由
     this.app.use("/", routes);
     
+    // 404处理
+    this.app.use('*', (req, res) => {
+      logger.warn(`404 - 未找到路由: ${req.method} ${req.originalUrl}`);
+      res.status(404).json({
+        success: false,
+        message: '请求的资源不存在'
+      });
+    });
+    
     // 错误处理中间件必须在最后注册
-    this.app.use(errorHandler);
+    setupErrorHandling(this.app);
   }
 
   public async start(): Promise<void> {

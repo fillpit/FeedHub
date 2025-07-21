@@ -1,4 +1,4 @@
-import { injectable } from "inversify";
+import { injectable, inject } from "inversify";
 import RssTemplate, { RssTemplateAttributes, TemplateParameter } from "../models/RssTemplate";
 import { ApiResponse } from "../core/ApiResponse";
 import { logger } from "../utils/logger";
@@ -8,6 +8,11 @@ import { formatDate } from "../utils/dateUtils";
 import axios from "axios";
 import { AxiosInstance } from "axios";
 import AuthCredential from "../models/AuthCredential";
+import { WebsiteRssService } from "./WebsiteRssService";
+import WebsiteRssConfig, { WebsiteRssConfigAttributes } from "../models/WebsiteRssConfig";
+import { v4 as uuidv4 } from "uuid";
+import { TYPES } from "../core/types";
+import * as he from 'he';
 
 // 定义API响应数据类型
 type ApiResponseData<T> = {
@@ -20,14 +25,16 @@ type ApiResponseData<T> = {
 @injectable()
 export class RssTemplateService {
   private axiosInstance: AxiosInstance;
+  private websiteRssService: WebsiteRssService;
 
-  constructor() {
+  constructor(@inject(TYPES.WebsiteRssService) websiteRssService: WebsiteRssService) {
     this.axiosInstance = axios.create({
       timeout: 30000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
+    this.websiteRssService = websiteRssService;
   }
 
   /**
@@ -262,6 +269,239 @@ export class RssTemplateService {
   }
 
   /**
+   * 根据模板和参数直接创建RSS配置
+   */
+  async createRssConfigFromTemplate(templateId: number, parameters: Record<string, any>): Promise<ApiResponseData<WebsiteRssConfigAttributes>> {
+    try {
+      const template = await RssTemplate.findByPk(templateId);
+      
+      if (!template) {
+        return {
+          success: false,
+          message: "模板不存在",
+        };
+      }
+
+      // 验证参数
+      const validationResult = this.validateParameters(template.parameters, parameters);
+      if (!validationResult.success) {
+        return {
+          success: false,
+          message: validationResult.message,
+        };
+      }
+
+      // 替换URL模板中的参数
+      let url = template.urlTemplate;
+      for (const param of template.parameters) {
+        const value = parameters[param.name];
+        if (value !== undefined) {
+          url = url.replace(new RegExp(`\\{\\{${param.name}\\}\\}`, "g"), String(value));
+        }
+      }
+
+      // 替换脚本模板中的参数
+      let script = template.scriptTemplate;
+      for (const param of template.parameters) {
+        const value = parameters[param.name];
+        if (value !== undefined) {
+          script = script.replace(new RegExp(`\\{\\{${param.name}\\}\\}`, "g"), String(value));
+        }
+      }
+
+      // 生成名称
+      let title = template.name;
+      for (const param of template.parameters) {
+        const value = parameters[param.name];
+        if (value !== undefined) {
+          title = title.replace(new RegExp(`\\{\\{${param.name}\\}\\}`, "g"), String(value));
+        }
+      }
+
+      // 构建配置数据
+      const configData: Omit<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime"> = {
+        key: uuidv4().replace(/-/g, '').slice(0, 8),
+        title,
+        url,
+        fetchMode: "script",
+        selector: {
+          selectorType: "css",
+          container: "",
+          title: "",
+          link: "",
+        },
+        script: {
+          enabled: true,
+          script,
+          timeout: 30000,
+        },
+        auth: {
+          enabled: false,
+          authType: "none",
+        },
+        templateId: templateId,
+        templateParameters: parameters,
+        fetchInterval: 60,
+        rssDescription: template.description || title,
+        favicon: template.icon || "",
+      };
+
+      // 调用WebsiteRssService创建配置
+      const result = await this.websiteRssService.addConfig(configData);
+      
+      if (!result.success || !result.data) {
+        return {
+          success: false,
+          message: result.message || "创建配置失败",
+          error: result.error,
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+        message: "从模板创建RSS配置成功",
+      };
+    } catch (error) {
+      logger.error("从模板创建RSS配置失败:", error);
+      return {
+        success: false,
+        message: "从模板创建RSS配置失败",
+        error: error instanceof Error ? error.message : "未知错误",
+      };
+    }
+  }
+
+  /**
+   * 批量更新使用指定模板的所有配置
+   */
+  async updateConfigsByTemplate(templateId: number): Promise<ApiResponseData<{ updatedCount: number; failedConfigs: string[] }>> {
+    try {
+      const template = await RssTemplate.findByPk(templateId);
+      
+      if (!template) {
+        return {
+          success: false,
+          message: "模板不存在",
+        };
+      }
+
+      // 查找所有使用该模板的配置
+      const configs = await WebsiteRssConfig.findAll({
+        where: { templateId: templateId }
+      });
+
+      if (configs.length === 0) {
+        return {
+          success: true,
+          data: { updatedCount: 0, failedConfigs: [] },
+          message: "没有找到使用该模板的配置",
+        };
+      }
+
+      let updatedCount = 0;
+      const failedConfigs: string[] = [];
+
+      // 逐个更新配置
+      for (const config of configs) {
+        try {
+          if (!config.templateParameters) {
+            failedConfigs.push(`${config.title} (ID: ${config.id}) - 缺少模板参数`);
+            continue;
+          }
+
+          // 验证参数是否仍然有效
+          const validationResult = this.validateParameters(template.parameters, config.templateParameters);
+          if (!validationResult.success) {
+            failedConfigs.push(`${config.title} (ID: ${config.id}) - 参数验证失败: ${validationResult.message}`);
+            continue;
+          }
+
+          // 重新生成URL
+          let url = template.urlTemplate;
+          for (const param of template.parameters) {
+            const value = config.templateParameters[param.name];
+            if (value !== undefined) {
+              url = url.replace(new RegExp(`\\{\\{${param.name}\\}\\}`, "g"), String(value));
+            }
+          }
+
+          // 重新生成脚本
+          let script = template.scriptTemplate;
+          for (const param of template.parameters) {
+            const value = config.templateParameters[param.name];
+            if (value !== undefined) {
+              script = script.replace(new RegExp(`\\{\\{${param.name}\\}\\}`, "g"), String(value));
+            }
+          }
+
+          // 重新生成标题
+          let title = template.name;
+          for (const param of template.parameters) {
+            const value = config.templateParameters[param.name];
+            if (value !== undefined) {
+              title = title.replace(new RegExp(`\\{\\{${param.name}\\}\\}`, "g"), String(value));
+            }
+          }
+
+          // 更新配置
+          await config.update({
+            url,
+            title,
+            script: {
+              ...config.script,
+              script,
+            },
+            rssDescription: template.description || title,
+            favicon: template.icon || config.favicon,
+          });
+
+          updatedCount++;
+        } catch (error) {
+          failedConfigs.push(`${config.title} (ID: ${config.id}) - 更新失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        }
+      }
+
+      return {
+        success: true,
+        data: { updatedCount, failedConfigs },
+        message: `批量更新完成，成功更新 ${updatedCount} 个配置${failedConfigs.length > 0 ? `，${failedConfigs.length} 个配置更新失败` : ''}`,
+      };
+    } catch (error) {
+      logger.error("批量更新配置失败:", error);
+      return {
+        success: false,
+        message: "批量更新配置失败",
+        error: error instanceof Error ? error.message : "未知错误",
+      };
+    }
+  }
+
+  /**
+   * 获取使用指定模板的配置列表
+   */
+  async getConfigsByTemplate(templateId: number): Promise<ApiResponseData<WebsiteRssConfigAttributes[]>> {
+    try {
+      const configs = await WebsiteRssConfig.findAll({
+        where: { templateId: templateId }
+      });
+
+      return {
+        success: true,
+        data: configs,
+        message: "获取模板相关配置成功",
+      };
+    } catch (error) {
+      logger.error("获取模板相关配置失败:", error);
+      return {
+        success: false,
+        message: "获取模板相关配置失败",
+        error: error instanceof Error ? error.message : "未知错误",
+      };
+    }
+  }
+
+  /**
    * 验证参数
    */
   private validateParameters(templateParams: TemplateParameter[], providedParams: Record<string, any>): ApiResponseData<null> {
@@ -325,14 +565,14 @@ export class RssTemplateService {
           icon: "bilibili",
           urlTemplate: "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?type=video&host_mid={{userId}}&platform=web",
           scriptTemplate: `
-            let items = []
+            let items = [];
 
             try {
               // 使用utils.fetchApi会自动应用配置的授权信息
               const result = await utils.fetchApi(url);
 
               // 处理返回的数据
-              result.data. data.items.forEach((post, index)=> {
+              result.data.data.items.forEach((post, index)=> {
                 // 文章和视频取的不一样
                 let article = utils.safeGet(post.modules.module_dynamic.major, 'article', post.modules.module_dynamic.major.archive)
                 items.push({
@@ -439,6 +679,7 @@ export class RssTemplateService {
       const axiosInstance = axios.create({ timeout: 30000 });
       const context = createScriptContext(config, axiosInstance, requestConfig, logs);
       const result = await executeScript(config, context, axiosInstance, logs);
+
       // 5. 校验结果
       const validated = validateScriptResult(result);
       // 6. 格式化日期

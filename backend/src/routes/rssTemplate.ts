@@ -34,4 +34,13 @@ router.post("/init", (req, res) => rssTemplateController.initializeDefaultTempla
 // 模板调试
 router.post("/debug", (req, res) => rssTemplateController.debugTemplate(req, res));
 
-export default router; 
+// 从模板直接创建RSS配置
+router.post("/create-config", (req, res) => rssTemplateController.createRssConfigFromTemplate(req, res));
+
+// 批量更新使用指定模板的所有配置
+router.post("/:id/update-configs", (req, res) => rssTemplateController.updateConfigsByTemplate(req, res));
+
+// 获取使用指定模板的配置列表
+router.get("/:id/configs", (req, res) => rssTemplateController.getConfigsByTemplate(req, res));
+
+export default router;

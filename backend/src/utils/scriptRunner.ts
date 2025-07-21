@@ -227,7 +227,8 @@ export function createScriptContext(config: any, axiosInstance: any, requestConf
           result[key] = obj[key];
         }
       });
-      return result;
+      // The validation is now part of the validateScriptResult function, which will be called outside.
+  return result;
     },
     safeGet: (obj: any, path: string, defaultValue: any = null) => {
       try {
@@ -320,7 +321,7 @@ export async function executeScript(config: any, context: any, axiosInstance: an
     script.runInContext(vmContext, { timeout }),
     new Promise((_, reject) => setTimeout(() => reject(new Error(`脚本执行超时 (${timeout}ms)`)), timeout))
   ]);
-  return result;
+    return result;
 }
 
 export function validateScriptResult(result: any): any[] {

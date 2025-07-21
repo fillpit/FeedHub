@@ -43,15 +43,15 @@ export const getWebsiteRssList = () => {
 }
 
 export const createWebsiteRss = (data: Partial<WebsiteRssConfig>) => {
-  return request.post('/api/website-rss', data)
+  return request.post('/api/website-rss', data, { showSuccessMessage: true, successMessage: '网站 RSS 创建成功！' })
 }
 
 export const updateWebsiteRss = (id: number, data: Partial<WebsiteRssConfig>) => {
-  return request.put(`/api/website-rss/${id}`, data)
+  return request.put(`/api/website-rss/${id}`, data, { showSuccessMessage: true, successMessage: '网站 RSS 更新成功！' })
 }
 
 export const deleteWebsiteRss = (id: number) => {
-  return request.delete(`/api/website-rss/${id}`)
+  return request.delete(`/api/website-rss/${id}`, { showSuccessMessage: true, successMessage: '网站 RSS 删除成功！' })
 }
 
 export const refreshWebsiteRss = (id: number) => {

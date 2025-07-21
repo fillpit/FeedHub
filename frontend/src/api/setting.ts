@@ -12,6 +12,6 @@ export const settingApi = {
     userSettings: UserSettingAttributes;
     globalSetting?: GlobalSettingAttributes | null;
   }) => {
-    return request.post("/api/setting/save", data);
+    return request.post("/api/setting/save", data, { showSuccessMessage: true, successMessage: '设置更新成功！' });
   },
 };

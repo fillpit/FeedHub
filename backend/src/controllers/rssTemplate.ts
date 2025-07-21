@@ -61,6 +61,7 @@ export class RssTemplateController extends BaseController {
       const { id } = req.params;
       const templateId = parseInt(id);
       const templateData = req.body;
+      console.log('templateData', templateData)
       if (isNaN(templateId)) {
         throw new Error("无效的模板ID");
       }
@@ -116,6 +117,47 @@ export class RssTemplateController extends BaseController {
       }
       // 只在未传authCredentialId时，允许用parameters里的自定义授权
       return await this.rssTemplateService.debugTemplate({ template, parameters, authCredentialId });
+    });
+  }
+
+  /**
+   * 从模板直接创建RSS配置
+   */
+  async createRssConfigFromTemplate(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const { templateId, parameters } = req.body;
+      if (!templateId || !parameters) {
+        throw new Error("模板ID和参数是必需的");
+      }
+      return await this.rssTemplateService.createRssConfigFromTemplate(templateId, parameters);
+    });
+  }
+
+  /**
+   * 批量更新使用指定模板的所有配置
+   */
+  async updateConfigsByTemplate(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const { id } = req.params;
+      const templateId = parseInt(id);
+      if (isNaN(templateId)) {
+        throw new Error("无效的模板ID");
+      }
+      return await this.rssTemplateService.updateConfigsByTemplate(templateId);
+    });
+  }
+
+  /**
+   * 获取使用指定模板的配置列表
+   */
+  async getConfigsByTemplate(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const { id } = req.params;
+      const templateId = parseInt(id);
+      if (isNaN(templateId)) {
+        throw new Error("无效的模板ID");
+      }
+      return await this.rssTemplateService.getConfigsByTemplate(templateId);
     });
   }
 }

@@ -4,9 +4,19 @@
     <div class="main-content">
       <div class="header">
         <h1>网站RSS源配置</h1>
-        <el-button type="primary" @click="addConfig">添加配置</el-button>
+        <div class="header-actions">
+          <el-button type="primary" @click="addConfig">添加配置</el-button>
+          <el-button type="success" @click="exportConfigs">
+            <el-icon><Download /></el-icon>
+            导出配置
+          </el-button>
+          <el-button type="warning" @click="showImportDialog = true">
+            <el-icon><Upload /></el-icon>
+            导入配置
+          </el-button>
+        </div>
       </div>
-      <ul class="feed-list">
+      <ul class="feed-list" v-loading="configsLoading">
         <li v-for="config in configs" :key="config.id" @click="config.key && copyToClipboard(config.key, 'rss')">
           <div class="feed-item">
             <div class="feed-icon-wrapper">
@@ -176,7 +186,7 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
           <el-button v-if="form.script.enabled" type="warning" @click="handleDebugScript" :loading="debugging">调 试</el-button>
         </div>
       </template>
@@ -184,6 +194,77 @@
 
     <!-- Debug Result Dialog -->
     <DebugResultDialog :visible="debugDialogVisible" :result="debugResult" @close="debugDialogVisible=false" />
+
+    <!-- Import Config Dialog -->
+    <el-dialog v-model="showImportDialog" title="导入配置" width="600px">
+      <div class="import-section">
+        <el-tabs v-model="importMethod">
+          <el-tab-pane label="文件上传" name="file">
+            <el-upload
+              ref="uploadRef"
+              :auto-upload="false"
+              :show-file-list="false"
+              accept=".json"
+              @change="handleFileChange"
+            >
+              <el-button type="primary">
+                <el-icon><UploadFilled /></el-icon>
+                选择JSON文件
+              </el-button>
+              <template #tip>
+                <div class="el-upload__tip">
+                  只能上传 <em>JSON</em> 文件
+                </div>
+              </template>
+            </el-upload>
+          </el-tab-pane>
+          <el-tab-pane label="JSON内容" name="text">
+            <el-input
+              v-model="importJsonText"
+              type="textarea"
+              :rows="10"
+              placeholder="请粘贴配置JSON内容..."
+              @input="watchImportText"
+            />
+          </el-tab-pane>
+        </el-tabs>
+
+        <div v-if="importPreview.length > 0" class="import-preview">
+          <h4>导入预览 ({{ importPreview.length }} 个配置)</h4>
+          <el-table :data="importPreview" size="small" max-height="200">
+            <el-table-column prop="title" label="配置名称" width="200" />
+            <el-table-column prop="url" label="URL" show-overflow-tooltip />
+            <el-table-column label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag :type="row.exists ? 'warning' : 'success'" size="small">
+                  {{ row.exists ? '已存在' : '新配置' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+          
+          <div class="import-options">
+            <el-checkbox v-model="importOptions.overwrite">
+              覆盖已存在的配置
+            </el-checkbox>
+          </div>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="closeImportDialog">取消</el-button>
+          <el-button 
+            type="primary" 
+            @click="importConfigs" 
+            :loading="importLoading"
+            :disabled="importPreview.length === 0"
+          >
+            导入配置
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="faviconEditVisible" title="编辑图标" width="400px">
       <el-input v-model="faviconEditUrl" placeholder="请输入图标URL" />
@@ -211,14 +292,16 @@ import {
   getConfigById
 } from '@/api/websiteRss';
 import type { WebsiteRssConfig } from '@/types/websiteRss';
-import { Document, Refresh, Edit, Delete, CopyDocument } from '@element-plus/icons-vue';
+import { Document, Refresh, Edit, Delete, CopyDocument, Download, Upload, UploadFilled } from '@element-plus/icons-vue';
 import { authCredentialApi } from '@/api/authCredential';
 import type { AuthCredential } from '@/types';
 import DebugResultDialog from '@/components/DebugResultDialog.vue';
 import ScriptHelpGuide from '@/components/ScriptHelpGuide.vue';
 
 const configs = ref<WebsiteRssConfig[]>([]);
+const configsLoading = ref(false);
 const dialogVisible = ref(false);
+const submitLoading = ref(false);
 const dialogTitle = ref('');
 const formRef = ref<FormInstance>();
 const isEdit = ref(false);
@@ -290,11 +373,15 @@ const debugResult = reactive({
 
 
 const fetchConfigs = async () => {
+  configsLoading.value = true;
   try {
     const res = await getWebsiteRssList();
     configs.value = res.data || [];
-  } catch (error) {
-    ElMessage.error('获取配置列表失败');
+  } catch (error: any) {
+    console.error('获取配置列表失败:', error);
+    ElMessage.error(`获取配置列表失败: ${error.message || '网络错误'}`);
+  } finally {
+    configsLoading.value = false;
   }
 };
 
@@ -302,7 +389,10 @@ const fetchAuthCredentials = async () => {
   try {
     const res = await authCredentialApi.getAll();
     authCredentials.value = res.data || [];
-  } catch {}
+  } catch (error: any) {
+    console.error('获取授权凭据失败:', error);
+    ElMessage.error(`获取授权凭据失败: ${error.message || '网络错误'}`);
+  }
 };
 
 onMounted(() => {
@@ -333,6 +423,7 @@ const submitForm = async () => {
   if (!formRef.value) return;
   await formRef.value.validate(async (valid) => {
     if (valid) {
+      submitLoading.value = true;
       try {
         // 结构转换：前端 selector 转为后端 selector
         let selector = form.value.selector;
@@ -363,12 +454,15 @@ const submitForm = async () => {
         }
         dialogVisible.value = false;
         fetchConfigs();
-      } catch (error) {
-        ElMessage.error('操作失败');
-      }
-    }
-  });
-};
+      } catch (error: any) {
+         console.error('操作失败:', error);
+         ElMessage.error(`操作失败: ${error.message || '网络错误'}`);
+       } finally {
+         submitLoading.value = false;
+       }
+     }
+   });
+ };
 
 const deleteConfig = async (id: number) => {
   try {
@@ -393,8 +487,9 @@ const refreshConfig = async (id: number) => {
   try {
     await refreshWebsiteRss(id);
     ElMessage.success('刷新任务已启动');
-  } catch (error) {
-    ElMessage.error('刷新失败');
+  } catch (error: any) {
+    console.error('刷新失败:', error);
+    ElMessage.error(`刷新失败: ${error.message || '网络错误'}`);
   }
 };
 
@@ -410,8 +505,10 @@ const handleDebugScript = async () => {
     Object.assign(debugResult, res.data);
     debugDialogVisible.value = true;
     activeTab.value = res.data.success ? 'result' : 'error';
-  } catch (error) {
-    ElMessage.error('调试请求失败');
+    ElMessage.success('调试执行完成');
+  } catch (error: any) {
+    console.error('调试请求失败:', error);
+    ElMessage.error(`调试请求失败: ${error.message || '网络错误'}`);
   } finally {
     debugging.value = false;
   }
@@ -470,6 +567,17 @@ const faviconEditVisible = ref(false);
 const faviconEditUrl = ref('');
 const faviconEditId = ref<number | null>(null);
 
+// 导入导出相关
+const showImportDialog = ref(false);
+const importMethod = ref('file');
+const importJsonText = ref('');
+const importPreview = ref<any[]>([]);
+const importLoading = ref(false);
+const importOptions = reactive({
+  overwrite: false
+});
+const uploadRef = ref();
+
 const openFaviconEdit = (config: WebsiteRssConfig) => {
   faviconEditId.value = config.id;
   faviconEditUrl.value = config.favicon || '';
@@ -492,9 +600,165 @@ const saveFavicon = async () => {
     ElMessage.success('图标已更新');
     faviconEditVisible.value = false;
     fetchConfigs();
-  } catch (e) {
-    ElMessage.error('图标更新失败');
+  } catch (error: any) {
+    console.error('图标更新失败:', error);
+    ElMessage.error(`图标更新失败: ${error.message || '网络错误'}`);
   }
+};
+
+// 导出配置
+const exportConfigs = async () => {
+  try {
+    if (configs.value.length === 0) {
+      ElMessage.warning('没有配置可导出');
+      return;
+    }
+    
+    const exportData = configs.value.map(config => ({
+      ...config,
+      id: undefined, // 导出时移除ID
+      key: undefined, // 导出时移除key
+      userId: undefined // 导出时移除userId
+    }));
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `feedhub-configs-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    ElMessage.success(`已导出 ${configs.value.length} 个配置`);
+  } catch (error: any) {
+    console.error('导出配置失败:', error);
+    ElMessage.error(`导出配置失败: ${error.message || '操作失败'}`);
+  }
+};
+
+// 处理文件上传
+const handleFileChange = (file: any) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      importJsonText.value = e.target?.result as string;
+      parseImportData(importJsonText.value);
+    } catch (error: any) {
+      console.error('文件读取失败:', error);
+      ElMessage.error(`文件读取失败: ${error.message || '文件格式错误'}`);
+    }
+  };
+  reader.readAsText(file.raw);
+};
+
+// 监听JSON文本变化
+const watchImportText = () => {
+  parseImportData(importJsonText.value);
+};
+
+// 解析导入数据
+const parseImportData = (jsonText: string) => {
+  try {
+    if (!jsonText.trim()) {
+      importPreview.value = [];
+      return;
+    }
+    
+    const data = JSON.parse(jsonText);
+    const configsData = Array.isArray(data) ? data : [data];
+    
+    importPreview.value = configsData.map((config: any) => {
+      const exists = configs.value.some(c => 
+        c.title === config.title || c.url === config.url
+      );
+      
+      return {
+        title: config.title || '未命名',
+        url: config.url || '',
+        exists
+      };
+    });
+  } catch (error) {
+    importPreview.value = [];
+    if (jsonText.trim()) {
+      ElMessage.error('JSON格式错误');
+    }
+  }
+};
+
+// 导入配置
+const importConfigs = async () => {
+  if (importPreview.value.length === 0) {
+    ElMessage.warning('没有有效的配置可导入');
+    return;
+  }
+  
+  importLoading.value = true;
+  try {
+    const data = JSON.parse(importJsonText.value);
+    const configsData = Array.isArray(data) ? data : [data];
+    
+    let successCount = 0;
+    
+    for (const config of configsData) {
+      try {
+        // 检查是否已存在
+        const exists = configs.value.find(c => 
+          c.title === config.title || c.url === config.url
+        );
+        
+        if (exists && !importOptions.overwrite) {
+          continue; // 跳过已存在的配置
+        }
+        
+        // 清理不需要的字段
+        const cleanConfig = {
+          ...config,
+          id: undefined,
+          key: undefined,
+          userId: undefined
+        };
+        
+        if (exists && importOptions.overwrite) {
+          // 更新现有配置
+          await updateWebsiteRss(exists.id, cleanConfig);
+        } else {
+          // 创建新配置
+          await createWebsiteRss(cleanConfig);
+        }
+        successCount++;
+      } catch (error: any) {
+        console.error(`导入配置失败: ${config.title}`, error);
+      }
+    }
+    
+    if (successCount > 0) {
+      ElMessage.success(`成功导入 ${successCount} 个配置`);
+      closeImportDialog();
+      fetchConfigs();
+    } else {
+      ElMessage.warning('没有配置被导入');
+    }
+  } catch (error: any) {
+    console.error('导入配置失败:', error);
+    ElMessage.error(`导入配置失败: ${error.message || '网络错误'}`);
+  } finally {
+    importLoading.value = false;
+  }
+};
+
+// 关闭导入对话框
+const closeImportDialog = () => {
+  showImportDialog.value = false;
+  importJsonText.value = '';
+  importPreview.value = [];
+  importOptions.overwrite = false;
+  importMethod.value = 'file';
 };
 </script>
 
@@ -508,6 +772,11 @@ const saveFavicon = async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 .feed-list {
   list-style: none;
@@ -596,4 +865,28 @@ const saveFavicon = async () => {
 .log-info { color: #67c23a; }
 .log-debug { color: #409eff; }
 .log-fatal { color: #fff; background: #f56c6c; }
+
+.import-section {
+  padding: 10px 0;
+}
+
+.import-preview {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.import-preview h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.import-options {
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  margin-top: 15px;
+}
 </style>

@@ -49,7 +49,7 @@ export class WebsiteRssService {
   async getAllConfigs(): Promise<ApiResponseData<WebsiteRssConfigAttributes[]>> {
     // 直接数据库查询
     const configs = await WebsiteRssConfig.findAll();
-    return { data: configs };
+    return { success: true, data: configs, message: "获取配置列表成功" };
   }
 
   /**
@@ -59,7 +59,7 @@ export class WebsiteRssService {
     // 直接数据库查询
     const config = await WebsiteRssConfig.findByPk(id);
     if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
-    return { data: config };
+    return { success: true, data: config, message: "获取配置成功" };
   }
 
   /**
@@ -90,7 +90,7 @@ export class WebsiteRssService {
     await this.fetchAndUpdateContent(newConfig.id);
     // 重新获取更新后的配置
     const updatedConfig = await WebsiteRssConfig.findByPk(newConfig.id);
-    return { data: updatedConfig!, message: "网站RSS配置添加成功" };
+    return { success: true, data: updatedConfig!, message: "网站RSS配置添加成功" };
   }
 
   /**
@@ -109,7 +109,7 @@ export class WebsiteRssService {
     if (configData.url || configData.selector) await this.fetchAndUpdateContent(id);
     // 返回最新配置
     const updatedConfig = await WebsiteRssConfig.findByPk(id);
-    return { data: updatedConfig!, message: "网站RSS配置更新成功" };
+    return { success: true, data: updatedConfig!, message: "网站RSS配置更新成功" };
   }
 
   /**
@@ -121,7 +121,7 @@ export class WebsiteRssService {
     if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
     // 删除
     await WebsiteRssConfig.destroy({ where: { id } });
-    return { message: "网站RSS配置删除成功" };
+    return { success: true, data: undefined, message: "网站RSS配置删除成功" };
   }
 
   /**
@@ -135,7 +135,7 @@ export class WebsiteRssService {
     await this.fetchAndUpdateContent(id);
     // 返回最新配置
     const updatedConfig = await WebsiteRssConfig.findByPk(id);
-    return { data: updatedConfig!, message: "网站RSS内容刷新成功" };
+    return { success: true, data: updatedConfig!, message: "网站RSS内容刷新成功" };
   }
 
   /**
@@ -364,6 +364,7 @@ export class WebsiteRssService {
       const executionTime = Date.now() - startTime;
       logs.push(`[INFO] 脚本执行成功，耗时 ${executionTime}ms`);
       return {
+        success: true,
         data: {
           success: true,
           logs,
@@ -376,6 +377,7 @@ export class WebsiteRssService {
       const executionTime = Date.now() - startTime;
       logs.push(`[FATAL] 脚本执行失败: ${(error as Error).message}`);
       return {
+        success: false,
         data: {
           success: false,
           logs,
