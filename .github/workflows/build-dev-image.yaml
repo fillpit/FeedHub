@@ -1,4 +1,4 @@
-name: Docker Image CI/CD
+name: build dev docker images
 on:
   workflow_dispatch: # 添加手动触发
 jobs:
