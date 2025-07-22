@@ -82,6 +82,7 @@ export const withLoading = async <T>(
   }
 ): Promise<T> => {
   const { showGlobal = true, text = '加载中...', componentId } = options || {};
+  console.log(text)
 
   try {
     if (showGlobal) {

@@ -10,6 +10,7 @@ const router = createRouter({
 
 // 全局前置守卫，应用验证逻辑
 router.beforeEach(async (to, from, next) => {
+  console.log(from)
   const validationSchema = to.meta.validationSchema as Record<string, any>;
   if (validationSchema) {
     const validator = new Validator(validationSchema);

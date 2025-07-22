@@ -75,8 +75,8 @@ class FormValidationMiddleware {
     let isValid = true;
     let firstError: string | undefined;
 
-    // 验证所有字段
-    for (const [fieldName, rules] of Object.entries(this.schema)) {
+    // 验证所有字段, rules
+    for (const [fieldName] of Object.entries(this.schema)) {
       const fieldValue = formData[fieldName];
       const fieldResult = this.validateField(fieldName, fieldValue);
       

@@ -53,10 +53,10 @@
                 <el-icon><View /></el-icon>
                 查看配置
               </el-button>
-              <!-- <el-button size="small" @click="batchUpdateConfigs(template)">
+              <el-button size="small" @click="batchUpdateConfigs(template)">
                 <el-icon><Refresh /></el-icon>
                 批量更新
-              </el-button> -->
+              </el-button>
               <el-button size="small" @click="editTemplate(template)">
                 <el-icon><Edit /></el-icon>
                 编辑

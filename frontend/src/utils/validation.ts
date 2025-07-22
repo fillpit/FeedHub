@@ -159,7 +159,7 @@ class Validator {
     }
 
     // 检查必填字段
-    for (const [key, rules] of Object.entries(this.schema)) {
+    for (const [key] of Object.entries(this.schema)) {
       if (!(key in data)) {
         const fieldErrors = this.validateField(key, undefined, data); // 传递 undefined 作为值，因为字段不存在
         if (fieldErrors.length > 0) {
