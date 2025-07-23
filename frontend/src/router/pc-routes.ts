@@ -26,6 +26,11 @@ const routes: RouteRecordRaw[] = [
         name: "auth-credential",
         component: () => import("@/views/AuthCredentialManagement.vue"),
       },
+      {
+        path: "/custom-route",
+        name: "custom-route",
+        component: () => import("@/views/CustomRoute.vue"),
+      },
     ],
   },
   {

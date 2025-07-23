@@ -7,6 +7,7 @@ export const TYPES = {
   RssFeedService: Symbol.for("RssFeedService"),
   WebsiteRssService: Symbol.for("WebsiteRssService"),
   RssTemplateService: Symbol.for("RssTemplateService"),
+  CustomRouteService: Symbol.for("CustomRouteService"),
 
   SettingController: Symbol.for("SettingController"),
   UserController: Symbol.for("UserController"),
@@ -14,4 +15,5 @@ export const TYPES = {
   RssFeedController: Symbol.for("RssFeedController"),
   WebsiteRssController: Symbol.for("WebsiteRssController"),
   RssTemplateController: Symbol.for("RssTemplateController"),
+  CustomRouteController: Symbol.for("CustomRouteController"),
 };

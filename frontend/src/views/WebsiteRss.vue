@@ -17,7 +17,7 @@
         </div>
       </div>
       <ul class="feed-list" v-loading="configsLoading">
-        <li v-for="config in configs" :key="config.id" @click="config.key && copyToClipboard(config.key, 'rss')">
+        <li v-for="config in configs" :key="config.id" @click="config.key && copyRssLink(config.key, 'rss')">
           <div class="feed-item">
             <div class="feed-icon-wrapper">
               <img v-if="config.favicon" :src="config.favicon" class="feed-icon" alt="favicon" />
@@ -39,11 +39,11 @@
               <div class="feed-url">{{ config.url }}</div>
               <div v-if="config.key" class="feed-rss-url">
                 <span>RSS链接: {{ getRssUrl(config.key) }}</span>
-                <el-icon style="cursor:pointer" @click.stop="copyToClipboard(config.key, 'rss')"><CopyDocument /></el-icon>
+                <el-icon style="cursor:pointer" @click.stop="copyRssLink(config.key, 'rss')"><CopyDocument /></el-icon>
               </div>
               <div v-if="config.key" class="feed-json-url">
                 <span>JSON链接: {{ getJsonUrl(config.key) }}</span>
-                <el-icon style="cursor:pointer" @click.stop="copyToClipboard(config.key, 'json')"><CopyDocument /></el-icon>
+                <el-icon style="cursor:pointer" @click.stop="copyRssLink(config.key, 'json')"><CopyDocument /></el-icon>
               </div>
             </div>
             <div class="feed-actions">
@@ -277,9 +277,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import type { FormInstance, FormRules } from 'element-plus';
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import type { FormInstance, FormRules } from "element-plus";
+import { copyToClipboard as copyTextToClipboard } from "@/utils";
 import {
   getWebsiteRssList,
   createWebsiteRss,
@@ -514,44 +515,18 @@ const handleDebugScript = async () => {
   }
 };
 
-const copyToClipboard = (text: string, type: 'rss' | 'json' = 'rss') => {
-  const url = type === 'rss' ? getRssUrl(text) : getJsonUrl(text);
+const copyRssLink = async (text: string, type: "rss" | "json" = "rss") => {
+  const url = type === "rss" ? getRssUrl(text) : getJsonUrl(text);
   
-  // 检查navigator.clipboard是否可用
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => {
-      ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
-    }).catch(err => {
-      console.error('复制失败:', err);
-      fallbackCopyToClipboard(url, type);
-    });
-  } else {
-    // 使用备用方法
-    fallbackCopyToClipboard(url, type);
-  }
-};
-
-// 备用复制方法
-const fallbackCopyToClipboard = (text: string, type: 'rss' | 'json') => {
   try {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    
-    if (successful) {
+    const success = await copyTextToClipboard(url);
+    if (success) {
       ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
     } else {
       ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
     }
   } catch (err) {
-    console.error('备用复制方法失败:', err);
+    console.error("复制失败:", err);
     ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
   }
 };

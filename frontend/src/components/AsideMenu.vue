@@ -109,6 +109,12 @@ const menuList: MenuItem[] = [
     router: "/auth-credential",
   },
   {
+    index: "4",
+    title: "自定义路由",
+    icon: Link,
+    router: "/custom-route",
+  },
+  {
     index: "99",
     title: "设置",
     icon: Setting,

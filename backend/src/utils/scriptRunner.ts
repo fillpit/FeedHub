@@ -292,7 +292,7 @@ export function createScriptContext(config: any, axiosInstance: any, requestConf
 }
 
 export async function executeScript(config: any, context: any, axiosInstance: any, logs?: string[]): Promise<any> {
-  const { fetchHtml, authInfo, createUtils, createConsole, html, $ } = context;
+  const { fetchHtml, authInfo, createUtils, createConsole, html, $, routeParams, helpers } = context;
   await fetchHtml();
   const scriptContext = {
     $: $,
@@ -302,7 +302,9 @@ export async function executeScript(config: any, context: any, axiosInstance: an
     auth: authInfo,
     console: createConsole(),
     utils: createUtils(),
-    dayjs: dayjs
+    dayjs: dayjs,
+    routeParams: routeParams || {},
+    helpers: helpers || {}
   };
   const vmContext = vm.createContext(scriptContext);
   const timeout = config.script?.timeout || 30000;
@@ -312,6 +314,17 @@ export async function executeScript(config: any, context: any, axiosInstance: an
         ${config.script?.script}
       } catch (error) {
         console.error('脚本执行错误:', error.message);
+        
+        // 特殊处理常见错误
+        if (error.message.includes("Cannot read properties of undefined")) {
+          if (error.message.includes("reading 'uid'")) {
+            console.error('提示: 您可能想要访问 guid 属性而不是 uid 属性');
+            console.error('或者使用 helpers.generateGuid() 生成唯一ID');
+            console.error('或者使用 helpers.safeGet(obj, "uid", defaultValue) 安全访问属性');
+          }
+          console.error('提示: 请检查对象是否存在，或使用 helpers.safeGet() 安全访问属性');
+        }
+        
         throw error;
       }
     })()

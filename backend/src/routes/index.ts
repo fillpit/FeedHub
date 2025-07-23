@@ -4,9 +4,11 @@ import { TYPES } from "../core/types";
 import { SettingController } from "../controllers/setting";
 import { UserController } from "../controllers/user";
 import { WebsiteRssController } from "../controllers/websiteRss";
+import { CustomRouteController } from "../controllers/customRoute";
 import AuthCredentialController from '../controllers/authCredential';
 import websiteRssRoutes from "./websiteRss";
 import rssTemplateRoutes from "./rssTemplate";
+import customRouteRoutes from "./customRoute";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
 import { asyncHandler } from "../middleware/errorHandler";
 
@@ -16,6 +18,7 @@ const router = Router();
 const settingController = container.get<SettingController>(TYPES.SettingController);
 const userController = container.get<UserController>(TYPES.UserController);
 const websiteRssController = container.get<WebsiteRssController>(TYPES.WebsiteRssController);
+const customRouteController = container.get<CustomRouteController>(TYPES.CustomRouteController);
 
 // 用户相关路由
 router.post("/user/login", 
@@ -44,6 +47,9 @@ router.use("/website-rss", websiteRssRoutes);
 // RSS模板相关路由
 router.use("/rss-template", rssTemplateRoutes);
 
+// 自定义路由相关路由
+router.use("/custom-route", customRouteRoutes);
+
 // 网站RSS订阅地址（公开访问）
 router.get("/rss/:key", (req, res) => websiteRssController.getRssFeed(req, res));
 
@@ -65,5 +71,8 @@ router.delete('/auth-credential/:id',
   createValidationMiddleware([commonValidationRules.id]),
   asyncHandler(AuthCredentialController.delete.bind(AuthCredentialController))
 );
+
+// 自定义路由执行（公开访问）
+router.get("/custom/*", (req, res) => customRouteController.executeRouteScript(req, res));
 
 export default router;
