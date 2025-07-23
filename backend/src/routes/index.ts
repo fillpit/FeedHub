@@ -9,6 +9,7 @@ import AuthCredentialController from '../controllers/authCredential';
 import websiteRssRoutes from "./websiteRss";
 import rssTemplateRoutes from "./rssTemplate";
 import customRouteRoutes from "./customRoute";
+import npmPackageRoutes from "./npmPackage";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
 import { asyncHandler } from "../middleware/errorHandler";
 
@@ -49,6 +50,9 @@ router.use("/rss-template", rssTemplateRoutes);
 
 // 自定义路由相关路由
 router.use("/custom-route", customRouteRoutes);
+
+// npm包管理相关路由
+router.use("/npm-package", npmPackageRoutes);
 
 // 网站RSS订阅地址（公开访问）
 router.get("/rss/:key", (req, res) => websiteRssController.getRssFeed(req, res));

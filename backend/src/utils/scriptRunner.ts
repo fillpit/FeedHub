@@ -291,9 +291,57 @@ export function createScriptContext(config: any, axiosInstance: any, requestConf
   };
 }
 
-export async function executeScript(config: any, context: any, axiosInstance: any, logs?: string[]): Promise<any> {
+export async function executeScript(config: any, context: any, axiosInstance: any, logs?: string[], npmPackageService?: any): Promise<any> {
   const { fetchHtml, authInfo, createUtils, createConsole, html, $, routeParams, helpers } = context;
   await fetchHtml();
+  
+  // 创建安全的require函数
+  const createSafeRequire = () => {
+    if (!npmPackageService) {
+      return () => {
+        throw new Error('npm包功能未启用');
+      };
+    }
+    
+    return (packageName: string) => {
+      try {
+        // 验证包名格式
+        const packageNameRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+        if (!packageNameRegex.test(packageName)) {
+          throw new Error(`无效的包名: ${packageName}`);
+        }
+        
+        // 检查包是否在白名单中
+        const whitelist = npmPackageService.getSecurityWhitelist();
+        if (!whitelist.includes(packageName)) {
+          throw new Error(`包 ${packageName} 不在安全白名单中`);
+        }
+        
+        // 尝试加载包
+        const packagesDir = npmPackageService.getPackagesDirectory();
+        const packagePath = require.resolve(packageName, { paths: [packagesDir] });
+        const loadedPackage = require(packagePath);
+        
+        // 更新使用统计
+        npmPackageService.updatePackageUsage(packageName).catch((error: any) => {
+          logger.warn(`更新包使用统计失败: ${packageName}`, error);
+        });
+        
+        if (logs) {
+          logs.push(formatMultilineLog('INFO', `成功加载npm包: ${packageName}`));
+        }
+        
+        return loadedPackage;
+      } catch (error) {
+        const errorMessage = `加载npm包失败: ${packageName} - ${(error as Error).message}`;
+        if (logs) {
+          logs.push(formatMultilineLog('ERROR', errorMessage));
+        }
+        throw new Error(errorMessage);
+      }
+    };
+  };
+  
   const scriptContext = {
     $: $,
     html: html,
@@ -304,7 +352,8 @@ export async function executeScript(config: any, context: any, axiosInstance: an
     utils: createUtils(),
     dayjs: dayjs,
     routeParams: routeParams || {},
-    helpers: helpers || {}
+    helpers: helpers || {},
+    require: createSafeRequire()
   };
   const vmContext = vm.createContext(scriptContext);
   const timeout = config.script?.timeout || 30000;
@@ -337,11 +386,39 @@ export async function executeScript(config: any, context: any, axiosInstance: an
     return result;
 }
 
-export function validateScriptResult(result: any): any[] {
-  if (!Array.isArray(result)) {
-    throw new Error("脚本必须返回一个数组");
+export function validateScriptResult(result: any): any {
+  // 如果返回的是数组，说明是旧格式（只返回items），保持向后兼容
+  if (Array.isArray(result)) {
+    const validatedItems = result.map((item, index) => {
+      if (!item || typeof item !== 'object') {
+        throw new Error(`项目 ${index} 必须是对象`);
+      }
+      const validatedItem: any = {
+        title: item.title || `项目 ${index + 1}`,
+        link: item.link || '',
+        guid: item.guid || item.link || uuidv4(),
+        content: item.content || '',
+        contentSnippet: item.contentSnippet || (item.content ? item.content.substring(0, 300) : ''),
+        author: item.author || '',
+        pubDate: item.pubDate || new Date().toISOString(),
+        image: item.image || '' // 添加文章封面字段
+      };
+      return validatedItem;
+    });
+    return { items: validatedItems };
   }
-  const validatedItems = result.map((item, index) => {
+  
+  // 如果返回的是对象，说明是新格式（包含完整RSS字段）
+  if (!result || typeof result !== 'object') {
+    throw new Error("脚本必须返回一个数组或包含RSS字段的对象");
+  }
+  
+  // 验证items字段
+  if (!Array.isArray(result.items)) {
+    throw new Error("返回对象必须包含items数组字段");
+  }
+  
+  const validatedItems = result.items.map((item: any, index: number) => {
     if (!item || typeof item !== 'object') {
       throw new Error(`项目 ${index} 必须是对象`);
     }
@@ -357,5 +434,21 @@ export function validateScriptResult(result: any): any[] {
     };
     return validatedItem;
   });
-  return validatedItems;
+  
+  // 返回完整的RSS结构
+  return {
+    title: result.title || '',
+    description: result.description || '',
+    feed_url: result.feed_url || '',
+    site_url: result.site_url || '',
+    generator: result.generator || 'FeedHub CustomRoute',
+    pubDate: result.pubDate || new Date().toISOString(),
+    language: result.language || '',
+    copyright: result.copyright || '',
+    managingEditor: result.managingEditor || '',
+    webMaster: result.webMaster || '',
+    ttl: result.ttl || undefined,
+    image: result.image || undefined, // RSS频道图片
+    items: validatedItems
+  };
 }

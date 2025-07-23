@@ -13,6 +13,7 @@ import WebsiteRssConfig, { WebsiteRssConfigAttributes } from "../models/WebsiteR
 import { v4 as uuidv4 } from "uuid";
 import { TYPES } from "../core/types";
 import * as he from 'he';
+import { NpmPackageService } from "./NpmPackageService";
 
 // 定义API响应数据类型
 type ApiResponseData<T> = {
@@ -26,8 +27,12 @@ type ApiResponseData<T> = {
 export class RssTemplateService {
   private axiosInstance: AxiosInstance;
   private websiteRssService: WebsiteRssService;
+  private npmPackageService: NpmPackageService;
 
-  constructor(@inject(TYPES.WebsiteRssService) websiteRssService: WebsiteRssService) {
+  constructor(
+    @inject(TYPES.WebsiteRssService) websiteRssService: WebsiteRssService,
+    @inject(TYPES.NpmPackageService) npmPackageService: NpmPackageService
+  ) {
     this.axiosInstance = axios.create({
       timeout: 30000,
       headers: {
@@ -35,6 +40,7 @@ export class RssTemplateService {
       },
     });
     this.websiteRssService = websiteRssService;
+    this.npmPackageService = npmPackageService;
   }
 
   /**
@@ -678,14 +684,14 @@ export class RssTemplateService {
       // 4. 创建脚本上下文并执行
       const axiosInstance = axios.create({ timeout: 30000 });
       const context = createScriptContext(config, axiosInstance, requestConfig, logs);
-      const result = await executeScript(config, context, axiosInstance, logs);
+      const result = await executeScript(config, context, axiosInstance, logs, this.npmPackageService);
 
       // 5. 校验结果
       const validated = validateScriptResult(result);
       // 6. 格式化日期
-      validated.forEach(item => {
-        item.pubDate = formatDate(item.pubDate);
-      });
+      // validated.items.forEach(item => {
+      //   item.pubDate = formatDate(item.pubDate);
+      // });
       const executionTime = Date.now() - startTime;
       logs.push(`[INFO] 模板调试成功，耗时 ${executionTime}ms`);
       return {

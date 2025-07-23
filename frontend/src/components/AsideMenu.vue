@@ -96,24 +96,31 @@ const menuList: MenuItem[] = [
     icon: Document,
     router: "/website-rss",
   },
-  {
+    {
     index: "2",
-    title: "RSS模板管理",
-    icon: Collection,
-    router: "/template-management",
-  },
-  {
-    index: "3",
-    title: "授权管理",
-    icon: Key,
-    router: "/auth-credential",
-  },
-  {
-    index: "4",
     title: "自定义路由",
     icon: Link,
     router: "/custom-route",
   },
+  {
+    index: "3",
+    title: "RSS模板管理",
+    icon: Collection,
+    router: "/template-management",
+  },
+    {
+    index: "5",
+    title: "NPM包管理",
+    icon: Collection,
+    router: "/npm-package",
+  },
+  {
+    index: "9",
+    title: "授权管理",
+    icon: Key,
+    router: "/auth-credential",
+  },
+
   {
     index: "99",
     title: "设置",

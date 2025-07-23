@@ -1,4 +1,4 @@
-import { injectable } from "inversify";
+import { injectable, inject } from "inversify";
 import WebsiteRssConfig, { WebsiteRssConfigAttributes, WebsiteRssSelector } from "../models/WebsiteRssConfig";
 import axios from "axios";
 import { AxiosInstance } from "axios";
@@ -24,6 +24,8 @@ import { createScriptContext, executeScript, validateScriptResult } from "../uti
 import { getFavicon } from "../utils/favicon";
 import { validateselector } from "../utils/selectorValidator";
 import AuthCredential from "../models/AuthCredential";
+import { TYPES } from "../core/types";
+import { NpmPackageService } from "./NpmPackageService";
 
 // 配置 dayjs
 dayjs.extend(relativeTime);
@@ -33,14 +35,16 @@ dayjs.locale(zhCN); // 设置为中文
 @injectable()
 export class WebsiteRssService {
   private axiosInstance: AxiosInstance;
+  private npmPackageService: NpmPackageService;
 
-  constructor() {
+  constructor(@inject(TYPES.NpmPackageService) npmPackageService: NpmPackageService) {
     this.axiosInstance = axios.create({
       timeout: 30000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
+    this.npmPackageService = npmPackageService;
   }
 
   /**
@@ -325,7 +329,7 @@ export class WebsiteRssService {
     }
     // 创建脚本上下文并执行
     const context = createScriptContext(config, this.axiosInstance, requestConfig);
-    const result = await executeScript(config, context, this.axiosInstance);
+    const result = await executeScript(config, context, this.axiosInstance, undefined, this.npmPackageService);
     // 校验结果
     return validateScriptResult(result);
   }
@@ -360,7 +364,7 @@ export class WebsiteRssService {
       // 创建脚本上下文并执行
       const requestConfig = createRequestConfig(auth);
       const context = createScriptContext(config, this.axiosInstance, requestConfig, logs);
-      const result = await executeScript(config, context, this.axiosInstance, logs);
+      const result = await executeScript(config, context, this.axiosInstance, logs, this.npmPackageService);
       const executionTime = Date.now() - startTime;
       logs.push(`[INFO] 脚本执行成功，耗时 ${executionTime}ms`);
       return {

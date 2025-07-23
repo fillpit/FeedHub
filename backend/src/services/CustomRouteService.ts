@@ -1,4 +1,4 @@
-import { injectable } from "inversify";
+import { injectable, inject } from "inversify";
 import CustomRouteConfig, { CustomRouteConfigAttributes, RouteParam } from "../models/CustomRouteConfig";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
@@ -8,6 +8,8 @@ import * as path from "path";
 import { executeScript, createScriptContext, validateScriptResult } from "../utils/scriptRunner";
 import RSS from "rss";
 import { v4 as uuidv4 } from "uuid";
+import { TYPES } from "../core/types";
+import { NpmPackageService } from "./NpmPackageService";
 
 @injectable()
 export class CustomRouteService {
@@ -17,6 +19,10 @@ export class CustomRouteService {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
     },
   });
+
+  constructor(
+    @inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService
+  ) {}
 
   /**
    * 获取所有自定义路由配置
@@ -155,7 +161,9 @@ export class CustomRouteService {
     const result = await executeScript(
       { script: { enabled: true, script: scriptContent, timeout: route.script.timeout || 30000 } },
       context,
-      this.axiosInstance
+      this.axiosInstance,
+      undefined,
+      this.npmPackageService
     );
 
     // 验证结果
@@ -233,7 +241,8 @@ export class CustomRouteService {
         { script: { enabled: true, script: scriptContent, timeout: routeData.script.timeout || 30000 } },
         context,
         this.axiosInstance,
-        logs
+        logs,
+        this.npmPackageService
       );
 
       // 验证结果
@@ -377,19 +386,65 @@ export class CustomRouteService {
   /**
    * 生成RSS XML
    */
-  private generateRssXml(route: CustomRouteConfigAttributes, items: any[]): string {
-    // 构建RSS Feed
-    const feed = new RSS({
-      title: route.name,
-      description: route.description || route.name,
-      feed_url: `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
-      site_url: `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
-      generator: 'FeedHub CustomRoute',
-      pubDate: new Date(),
-    });
+  private generateRssXml(route: CustomRouteConfigAttributes, scriptResult: any): string {
+    // 如果脚本返回的是旧格式（只有items），使用路由配置作为RSS字段
+    if (scriptResult.items && !scriptResult.title) {
+      const feed = new RSS({
+        title: route.name,
+        description: route.description || route.name,
+        feed_url: `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
+        site_url: `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
+        generator: 'FeedHub CustomRoute',
+        pubDate: new Date(),
+      });
+
+      // 添加项目
+      scriptResult.items.forEach((item: any) => {
+        const itemOptions: any = {
+          title: item.title,
+          description: item.content || item.contentSnippet || '',
+          url: item.link,
+          guid: item.guid || item.link || uuidv4(),
+          date: item.pubDate,
+          author: item.author,
+        };
+        
+        // 添加封面图片作为enclosure（如果存在）
+        if (item.image) {
+          itemOptions.enclosure = {
+            url: item.image,
+            type: 'image/jpeg' // 默认类型，实际应用中可根据图片URL后缀判断
+          };
+        }
+        
+        feed.item(itemOptions);
+      });
+
+      return feed.xml({ indent: true });
+    }
+
+    // 如果脚本返回的是新格式（包含完整RSS字段），使用脚本提供的字段
+    const feedOptions: any = {
+      title: scriptResult.title || route.name,
+      description: scriptResult.description || route.description || route.name,
+      feed_url: scriptResult.feed_url || `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
+      site_url: scriptResult.site_url || `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
+      generator: scriptResult.generator || 'FeedHub CustomRoute',
+      pubDate: scriptResult.pubDate ? new Date(scriptResult.pubDate) : new Date(),
+    };
+
+    // 添加可选字段
+    if (scriptResult.language) feedOptions.language = scriptResult.language;
+    if (scriptResult.copyright) feedOptions.copyright = scriptResult.copyright;
+    if (scriptResult.managingEditor) feedOptions.managingEditor = scriptResult.managingEditor;
+    if (scriptResult.webMaster) feedOptions.webMaster = scriptResult.webMaster;
+    if (scriptResult.ttl) feedOptions.ttl = scriptResult.ttl;
+    if (scriptResult.image) feedOptions.image_url = scriptResult.image;
+
+    const feed = new RSS(feedOptions);
 
     // 添加项目
-    items.forEach((item: any) => {
+    scriptResult.items.forEach((item: any) => {
       const itemOptions: any = {
         title: item.title,
         description: item.content || item.contentSnippet || '',

@@ -8,6 +8,7 @@ export const TYPES = {
   WebsiteRssService: Symbol.for("WebsiteRssService"),
   RssTemplateService: Symbol.for("RssTemplateService"),
   CustomRouteService: Symbol.for("CustomRouteService"),
+  NpmPackageService: Symbol.for("NpmPackageService"),
 
   SettingController: Symbol.for("SettingController"),
   UserController: Symbol.for("UserController"),
@@ -16,4 +17,5 @@ export const TYPES = {
   WebsiteRssController: Symbol.for("WebsiteRssController"),
   RssTemplateController: Symbol.for("RssTemplateController"),
   CustomRouteController: Symbol.for("CustomRouteController"),
+  NpmPackageController: Symbol.for("NpmPackageController"),
 };

@@ -41,10 +41,6 @@
             </div>
             
             <div class="template-actions">
-              <el-button size="small" @click="openDebugDialog(template)">
-                <el-icon><Football /></el-icon>
-                调试
-              </el-button>
               <el-button size="small" @click="createRssFromTemplate(template)">
                 <el-icon><DocumentAdd /></el-icon>
                 创建RSS

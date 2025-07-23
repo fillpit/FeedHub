@@ -31,6 +31,11 @@ const routes: RouteRecordRaw[] = [
         name: "custom-route",
         component: () => import("@/views/CustomRoute.vue"),
       },
+      {
+        path: "/npm-package",
+        name: "npm-package",
+        component: () => import("@/views/PackageManagement.vue"),
+      },
     ],
   },
   {

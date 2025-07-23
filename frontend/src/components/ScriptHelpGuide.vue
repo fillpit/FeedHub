@@ -80,7 +80,19 @@ log('提取到的标题:', title);</code></pre>
         
         <h4>脚本返回格式</h4>
         <el-divider></el-divider>
-        <p>脚本必须返回包含以下字段的对象数组：</p>
+        <p>脚本支持两种返回格式：</p>
+        <h5>新格式（推荐）- 完整RSS对象：</h5>
+        <div class="code-example">
+          <pre><code>return {
+  title: "RSS频道标题",
+  description: "RSS频道描述", 
+  site_url: "网站地址",
+  language: "zh-CN",
+  items: [文章数组]
+};</code></pre>
+        </div>
+        <h5>旧格式（向后兼容）- 仅文章数组：</h5>
+        <p>脚本直接返回文章数组，RSS其他字段使用路由配置：</p>
         <div class="code-example">
           <pre><code>return [
   {

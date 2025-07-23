@@ -379,7 +379,26 @@ console.log(date);</pre>
         <el-divider />
 
         <h3>脚本返回格式</h3>
-        <p>脚本必须返回一个数组，数组中的每个对象代表一个RSS项目，必须包含以下字段：</p>
+        <p>脚本支持两种返回格式：</p>
+        <h4>新格式（推荐）- 完整RSS对象：</h4>
+        <pre><code>return {
+  title: "RSS频道标题",
+  description: "RSS频道描述",
+  site_url: "网站地址",
+  language: "zh-CN",
+  items: [
+    {
+      title: "文章标题",
+      link: "文章链接",
+      content: "文章内容",
+      author: "作者",
+      pubDate: "发布时间",
+      image: "封面图片"
+    }
+  ]
+};</code></pre>
+        <h4>旧格式（向后兼容）- 仅文章数组：</h4>
+        <p>脚本直接返回文章数组，RSS其他字段使用路由配置：</p>
 
         <pre class="code-block">[
   {
