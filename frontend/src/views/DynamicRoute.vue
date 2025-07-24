@@ -499,8 +499,8 @@ return items;</pre>
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
-import { ElMessage, ElMessageBox, FormInstance } from "element-plus";
-import { Search, Link } from "@element-plus/icons-vue";
+import { ElMessage, FormInstance } from "element-plus";
+import { Search } from "@element-plus/icons-vue";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
