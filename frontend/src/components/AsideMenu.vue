@@ -97,17 +97,12 @@ const menuList: MenuItem[] = [
     router: "/website-rss",
   },
     {
-    index: "2",
-    title: "自定义路由",
-    icon: Link,
-    router: "/custom-route",
-  },
-  {
-    index: "3",
-    title: "RSS模板管理",
-    icon: Collection,
-    router: "/template-management",
-  },
+      index: "2",
+      title: "动态路由",
+      icon: Link,
+      router: "/dynamic-route",
+    },
+
     {
     index: "5",
     title: "NPM包管理",

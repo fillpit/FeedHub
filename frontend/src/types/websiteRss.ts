@@ -50,8 +50,6 @@ export interface WebsiteRssConfig {
   selector: WebsiteRssSelector;
   auth: WebsiteRssAuth;
   authCredentialId?: number;
-  templateId?: number;
-  templateParameters?: Record<string, any>;
   script: WebsiteRssScript;
   createdAt: string;
   updatedAt: string;

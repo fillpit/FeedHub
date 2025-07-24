@@ -46,8 +46,6 @@ export interface WebsiteRssConfigAttributes {
   script: WebsiteRssScript; // 脚本抓取配置
   auth: WebsiteRssAuth; // 授权配置
   authCredentialId?: number; // 新增：授权信息ID
-  templateId?: number; // 关联的模版ID
-  templateParameters?: Record<string, any>; // 生成配置时使用的模版参数
   lastContent: string; // 上次抓取的内容
   lastFetchTime: Date;
   fetchInterval: number; // 抓取间隔（分钟）
@@ -70,8 +68,6 @@ class WebsiteRssConfig
   public script!: WebsiteRssScript;
   public auth!: WebsiteRssAuth;
   public authCredentialId?: number;
-  public templateId?: number;
-  public templateParameters?: Record<string, any>;
   public lastContent!: string;
   public lastFetchTime!: Date;
   public fetchInterval!: number;
@@ -130,16 +126,7 @@ WebsiteRssConfig.init(
       allowNull: true,
       comment: "授权信息ID"
     },
-    templateId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      comment: "关联的模版ID"
-    },
-    templateParameters: {
-      type: DataTypes.JSON,
-      allowNull: true,
-      comment: "生成配置时使用的模版参数"
-    },
+
     lastContent: {
       type: DataTypes.TEXT,
       allowNull: true,

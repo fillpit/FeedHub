@@ -1,4 +1,14 @@
-import { STORAGE_KEYS } from '@/constants/storage';
+// 存储键常量
+const STORAGE_KEYS = {
+  TOKEN: 'token',
+  USER_INFO: 'userInfo',
+  THEME: 'theme',
+  LANGUAGE: 'language',
+  SIDEBAR_COLLAPSED: 'sidebarCollapsed',
+  RSS_CONFIGS: 'rssConfigs',
+  RECENT_SEARCHES: 'recentSearches',
+  FORM_DRAFTS: 'formDrafts'
+};
 
 // 存储值类型定义
 interface StorageValue {

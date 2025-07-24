@@ -1,5 +1,5 @@
 import { injectable, inject } from "inversify";
-import CustomRouteConfig, { CustomRouteConfigAttributes, RouteParam } from "../models/CustomRouteConfig";
+import DynamicRouteConfig, { DynamicRouteConfigAttributes, RouteParam } from "../models/DynamicRouteConfig";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import axios from "axios";
@@ -10,9 +10,11 @@ import RSS from "rss";
 import { v4 as uuidv4 } from "uuid";
 import { TYPES } from "../core/types";
 import { NpmPackageService } from "./NpmPackageService";
+import AuthCredentialService from "./AuthCredentialService";
+import { AuthCredentialAttributes } from "../models/AuthCredential";
 
 @injectable()
-export class CustomRouteService {
+export class DynamicRouteService {
   private axiosInstance = axios.create({
     timeout: 30000,
     headers: {
@@ -25,56 +27,106 @@ export class CustomRouteService {
   ) {}
 
   /**
-   * 获取所有自定义路由配置
+   * 获取所有动态路由配置
    */
-  async getAllRoutes(): Promise<ApiResponseData<CustomRouteConfigAttributes[]>> {
-    const routes = await CustomRouteConfig.findAll();
-    return { success: true, data: routes, message: "获取自定义路由列表成功" };
+  async getAllRoutes(): Promise<ApiResponseData<DynamicRouteConfigAttributes[]>> {
+    const routes = await DynamicRouteConfig.findAll();
+    return { success: true, data: routes, message: "获取动态路由列表成功" };
   }
 
   /**
-   * 根据ID获取自定义路由配置
+   * 根据ID获取动态路由配置
    */
-  async getRouteById(id: number): Promise<ApiResponseData<CustomRouteConfigAttributes>> {
-    const route = await CustomRouteConfig.findByPk(id);
-    if (!route) throw new Error(`未找到ID为${id}的自定义路由配置`);
-    return { success: true, data: route, message: "获取自定义路由成功" };
+  async getRouteById(id: number): Promise<ApiResponseData<DynamicRouteConfigAttributes>> {
+    const route = await DynamicRouteConfig.findByPk(id);
+    if (!route) throw new Error(`未找到ID为${id}的动态路由配置`);
+    return { success: true, data: route, message: "获取动态路由成功" };
   }
 
   /**
-   * 根据路径获取自定义路由配置
+   * 根据路径获取动态路由配置
    */
-  async getRouteByPath(path: string): Promise<CustomRouteConfigAttributes | null> {
-    return await CustomRouteConfig.findOne({ where: { path } });
+  async getRouteByPath(path: string): Promise<DynamicRouteConfigAttributes | null> {
+    return await DynamicRouteConfig.findOne({ where: { path } });
   }
 
   /**
-   * 添加新的自定义路由配置
+   * 根据路径模式匹配获取动态路由配置
    */
-  async addRoute(routeData: Omit<CustomRouteConfigAttributes, "id" | "createdAt" | "updatedAt">): Promise<ApiResponseData<CustomRouteConfigAttributes>> {
+  async getRouteByPathPattern(requestPath: string): Promise<{ route: DynamicRouteConfigAttributes; pathParams: Record<string, string> } | null> {
+    // 先尝试精确匹配
+    const exactMatch = await this.getRouteByPath(requestPath);
+    if (exactMatch) {
+      return { route: exactMatch, pathParams: {} };
+    }
+
+    // 获取所有路由配置进行模式匹配
+    const allRoutes = await DynamicRouteConfig.findAll();
+    
+    for (const route of allRoutes) {
+      const matchResult = this.matchRoutePattern(route.path, requestPath);
+      if (matchResult) {
+        return { route, pathParams: matchResult };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 匹配路由模式并提取路径参数
+   */
+  private matchRoutePattern(pattern: string, path: string): Record<string, string> | null {
+    // 将路由模式转换为正则表达式
+    const paramNames: string[] = [];
+    const regexPattern = pattern.replace(/:([^/]+)/g, (match, paramName) => {
+      paramNames.push(paramName);
+      return '([^/]+)';
+    });
+
+    const regex = new RegExp(`^${regexPattern}$`);
+    const match = path.match(regex);
+
+    if (!match) {
+      return null;
+    }
+
+    // 提取参数值
+    const pathParams: Record<string, string> = {};
+    for (let i = 0; i < paramNames.length; i++) {
+      pathParams[paramNames[i]] = match[i + 1];
+    }
+
+    return pathParams;
+  }
+
+  /**
+   * 添加新的动态路由配置
+   */
+  async addRoute(routeData: Omit<DynamicRouteConfigAttributes, "id" | "createdAt" | "updatedAt">): Promise<ApiResponseData<DynamicRouteConfigAttributes>> {
     // 检查路径是否已存在
-    const existingRoute = await CustomRouteConfig.findOne({ where: { path: routeData.path } });
+    const existingRoute = await DynamicRouteConfig.findOne({ where: { path: routeData.path } });
     if (existingRoute) throw new Error("该路由路径已存在");
 
     // 验证脚本配置
     this.validateScriptConfig(routeData.script);
 
     // 创建新配置
-    const newRoute = await CustomRouteConfig.create(routeData);
-    return { success: true, data: newRoute, message: "自定义路由配置添加成功" };
+    const newRoute = await DynamicRouteConfig.create(routeData);
+    return { success: true, data: newRoute, message: "动态路由配置添加成功" };
   }
 
   /**
-   * 更新自定义路由配置
+   * 更新动态路由配置
    */
-  async updateRoute(id: number, routeData: Partial<CustomRouteConfigAttributes>): Promise<ApiResponseData<CustomRouteConfigAttributes>> {
+  async updateRoute(id: number, routeData: Partial<DynamicRouteConfigAttributes>): Promise<ApiResponseData<DynamicRouteConfigAttributes>> {
     // 查找原配置
-    const route = await CustomRouteConfig.findByPk(id);
-    if (!route) throw new Error(`未找到ID为${id}的自定义路由配置`);
+    const route = await DynamicRouteConfig.findByPk(id);
+    if (!route) throw new Error(`未找到ID为${id}的动态路由配置`);
 
     // 如果更新了路径，检查是否与其他路由冲突
     if (routeData.path && routeData.path !== route.path) {
-      const existingRoute = await CustomRouteConfig.findOne({ where: { path: routeData.path } });
+      const existingRoute = await DynamicRouteConfig.findOne({ where: { path: routeData.path } });
       if (existingRoute && existingRoute.id !== id) throw new Error("该路由路径已存在");
     }
 
@@ -84,72 +136,92 @@ export class CustomRouteService {
     }
 
     // 更新数据库
-    await CustomRouteConfig.update(routeData, { where: { id } });
+    await DynamicRouteConfig.update(routeData, { where: { id } });
 
     // 返回最新配置
-    const updatedRoute = await CustomRouteConfig.findByPk(id);
-    return { success: true, data: updatedRoute!, message: "自定义路由配置更新成功" };
+    const updatedRoute = await DynamicRouteConfig.findByPk(id);
+    return { success: true, data: updatedRoute!, message: "动态路由配置更新成功" };
   }
 
   /**
-   * 删除自定义路由配置
+   * 删除动态路由配置
    */
   async deleteRoute(id: number): Promise<ApiResponseData<void>> {
     // 查找原配置
-    const route = await CustomRouteConfig.findByPk(id);
-    if (!route) throw new Error(`未找到ID为${id}的自定义路由配置`);
+    const route = await DynamicRouteConfig.findByPk(id);
+    if (!route) throw new Error(`未找到ID为${id}的动态路由配置`);
 
     // 删除
-    await CustomRouteConfig.destroy({ where: { id } });
-    return { success: true, data: undefined, message: "自定义路由配置删除成功" };
+    await DynamicRouteConfig.destroy({ where: { id } });
+    return { success: true, data: undefined, message: "动态路由配置删除成功" };
   }
 
   /**
-   * 执行自定义路由脚本并返回RSS
+   * 执行动态路由脚本并返回RSS
    */
   async executeRouteScript(routePath: string, queryParams: any): Promise<string> {
-    logger.info(`[CustomRouteService] 开始执行自定义路由脚本`);
-    logger.info(`[CustomRouteService] 请求路径: ${routePath}`);
-    logger.info(`[CustomRouteService] 查询参数:`, queryParams);
+    logger.info(`[DynamicRouteService] 开始执行动态路由脚本`);
+    logger.info(`[DynamicRouteService] 请求路径: ${routePath}`);
+    logger.info(`[DynamicRouteService] 查询参数:`, queryParams);
     
-    // 查找路由配置 - 先尝试直接匹配
-    let route = await this.getRouteByPath(routePath);
-    logger.info(`[CustomRouteService] 直接路径查找结果:`, route ? '找到' : '未找到');
+    // 尝试不同的路径格式进行模式匹配
+    const pathsToTry = [
+      routePath,
+      `/${routePath}`,
+      `/custom/${routePath}`
+    ];
     
-    // 如果直接查找失败，尝试不同的路径格式
-    if (!route) {
-      // 尝试添加 / 前缀（因为路由通配符获取的路径不包含前导斜杠）
-      const pathWithSlash = `/${routePath}`;
-      logger.info(`[CustomRouteService] 尝试添加 / 前缀的路径: ${pathWithSlash}`);
-      route = await this.getRouteByPath(pathWithSlash);
-      logger.info(`[CustomRouteService] 添加 / 前缀后查找结果:`, route ? '找到' : '未找到');
-      
-      if (!route) {
-        // 尝试添加 /custom/ 前缀
-        const pathWithCustomPrefix = `/custom/${routePath}`;
-        logger.info(`[CustomRouteService] 尝试添加 /custom/ 前缀的路径: ${pathWithCustomPrefix}`);
-        route = await this.getRouteByPath(pathWithCustomPrefix);
-        logger.info(`[CustomRouteService] 添加 /custom/ 前缀后查找结果:`, route ? '找到' : '未找到');
+    let matchResult: { route: DynamicRouteConfigAttributes; pathParams: Record<string, string> } | null = null;
+    
+    for (const pathToTry of pathsToTry) {
+      logger.info(`[DynamicRouteService] 尝试匹配路径: ${pathToTry}`);
+      matchResult = await this.getRouteByPathPattern(pathToTry);
+      if (matchResult) {
+        logger.info(`[DynamicRouteService] 路径匹配成功: ${pathToTry}`);
+        logger.info(`[DynamicRouteService] 提取的路径参数:`, matchResult.pathParams);
+        break;
       }
     }
     
-    if (!route) {
+    if (!matchResult) {
       // 记录调试信息
       logger.warn(`路径查找失败: ${routePath}`);
-      const allRoutes = await CustomRouteConfig.findAll({ attributes: ['path'] });
+      const allRoutes = await DynamicRouteConfig.findAll({ attributes: ['path'] });
       logger.warn(`现有路径: ${allRoutes.map(r => r.path).join(', ')}`);
-      throw new Error(`未找到路径为${routePath}的自定义路由配置`);
+      throw new Error(`未找到路径为${routePath}的动态路由配置`);
     }
 
+    const { route, pathParams } = matchResult;
+
+    // 合并路径参数和查询参数，路径参数优先级更高
+    const mergedParams = { ...queryParams, ...pathParams };
+    logger.info(`[DynamicRouteService] 合并后的参数:`, mergedParams);
+
     // 验证并处理参数
-    const processedParams = this.processRouteParams(route.params, queryParams);
+    const processedParams = this.processRouteParams(route.params, mergedParams);
+
+    // 获取授权信息
+    let authInfo: AuthCredentialAttributes | null = null;
+    if (route.authCredentialId) {
+      try {
+        const authResult = await AuthCredentialService.getById(route.authCredentialId);
+        if (authResult.success && authResult.data) {
+          authInfo = authResult.data;
+          logger.info(`[DynamicRouteService] 获取到授权信息: ${authInfo.name} (${authInfo.authType})`);
+        } else {
+          logger.warn(`[DynamicRouteService] 未找到授权信息，ID: ${route.authCredentialId}`);
+        }
+      } catch (error) {
+        logger.error(`[DynamicRouteService] 获取授权信息失败:`, error);
+      }
+    }
 
     // 获取脚本内容
     const scriptContent = await this.getScriptContent(route.script);
 
     // 创建脚本上下文并执行
     const context = createScriptContext(
-      { url: "", script: { enabled: true, script: scriptContent } },
+      { url: "", script: { enabled: true, script: scriptContent }, auth: authInfo },
       this.axiosInstance,
       {}
     );
@@ -174,9 +246,9 @@ export class CustomRouteService {
   }
 
   /**
-   * 调试自定义路由脚本
+   * 调试动态路由脚本
    */
-  async debugRouteScript(routeData: CustomRouteConfigAttributes, testParams: any): Promise<ApiResponseData<any>> {
+  async debugRouteScript(routeData: DynamicRouteConfigAttributes, testParams: any): Promise<ApiResponseData<any>> {
     const startTime = Date.now();
     const logs: string[] = [];
 
@@ -191,6 +263,22 @@ export class CustomRouteService {
       const processedParams = this.processRouteParams(routeData.params, testParams);
       console.log("路由参数处理完成");
 
+      // 获取授权信息
+      let authInfo: AuthCredentialAttributes | null = null;
+      if (routeData.authCredentialId) {
+        try {
+          const authResult = await AuthCredentialService.getById(routeData.authCredentialId);
+          if (authResult.success && authResult.data) {
+            authInfo = authResult.data;
+            logs.push(`[DEBUG] 获取到授权信息: ${authInfo.name} (${authInfo.authType})`);
+          } else {
+            logs.push(`[WARN] 未找到授权信息，ID: ${routeData.authCredentialId}`);
+          }
+        } catch (error) {
+          logs.push(`[ERROR] 获取授权信息失败: ${(error as Error).message}`);
+        }
+      }
+
       // 获取脚本内容
       console.log("开始获取脚本内容");
       const scriptContent = await this.getScriptContent(routeData.script);
@@ -198,7 +286,7 @@ export class CustomRouteService {
 
       // 创建脚本上下文并执行
       const context = createScriptContext(
-        { url: "", script: { enabled: true, script: scriptContent } },
+        { url: "", script: { enabled: true, script: scriptContent }, auth: authInfo },
         this.axiosInstance,
         {},
         logs
@@ -386,15 +474,15 @@ export class CustomRouteService {
   /**
    * 生成RSS XML
    */
-  private generateRssXml(route: CustomRouteConfigAttributes, scriptResult: any): string {
+  private generateRssXml(route: DynamicRouteConfigAttributes, scriptResult: any): string {
     // 如果脚本返回的是旧格式（只有items），使用路由配置作为RSS字段
     if (scriptResult.items && !scriptResult.title) {
       const feed = new RSS({
         title: route.name,
         description: route.description || route.name,
-        feed_url: `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
-        site_url: `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
-        generator: 'FeedHub CustomRoute',
+        feed_url: `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
+        site_url: `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
+        generator: 'FeedHub DynamicRoute',
         pubDate: new Date(),
       });
 
@@ -427,9 +515,9 @@ export class CustomRouteService {
     const feedOptions: any = {
       title: scriptResult.title || route.name,
       description: scriptResult.description || route.description || route.name,
-      feed_url: scriptResult.feed_url || `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
-      site_url: scriptResult.site_url || `${process.env.API_BASE_URL || ''}/api/custom-route${route.path}`,
-      generator: scriptResult.generator || 'FeedHub CustomRoute',
+      feed_url: scriptResult.feed_url || `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
+      site_url: scriptResult.site_url || `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
+      generator: scriptResult.generator || 'FeedHub DynamicRoute',
       pubDate: scriptResult.pubDate ? new Date(scriptResult.pubDate) : new Date(),
     };
 

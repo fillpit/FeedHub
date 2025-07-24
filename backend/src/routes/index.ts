@@ -4,11 +4,11 @@ import { TYPES } from "../core/types";
 import { SettingController } from "../controllers/setting";
 import { UserController } from "../controllers/user";
 import { WebsiteRssController } from "../controllers/websiteRss";
-import { CustomRouteController } from "../controllers/customRoute";
+import { DynamicRouteController } from "../controllers/dynamicRoute";
 import AuthCredentialController from '../controllers/authCredential';
 import websiteRssRoutes from "./websiteRss";
-import rssTemplateRoutes from "./rssTemplate";
-import customRouteRoutes from "./customRoute";
+
+import dynamicRouteRoutes from "./dynamicRoute";
 import npmPackageRoutes from "./npmPackage";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
 import { asyncHandler } from "../middleware/errorHandler";
@@ -19,7 +19,7 @@ const router = Router();
 const settingController = container.get<SettingController>(TYPES.SettingController);
 const userController = container.get<UserController>(TYPES.UserController);
 const websiteRssController = container.get<WebsiteRssController>(TYPES.WebsiteRssController);
-const customRouteController = container.get<CustomRouteController>(TYPES.CustomRouteController);
+const dynamicRouteController = container.get<DynamicRouteController>(TYPES.DynamicRouteController);
 
 // 用户相关路由
 router.post("/user/login", 
@@ -46,10 +46,10 @@ router.post("/setting/save", asyncHandler((req: Request, res: Response) => setti
 router.use("/website-rss", websiteRssRoutes);
 
 // RSS模板相关路由
-router.use("/rss-template", rssTemplateRoutes);
+
 
 // 自定义路由相关路由
-router.use("/custom-route", customRouteRoutes);
+router.use("/dynamic-route", dynamicRouteRoutes);
 
 // npm包管理相关路由
 router.use("/npm-package", npmPackageRoutes);
@@ -77,6 +77,6 @@ router.delete('/auth-credential/:id',
 );
 
 // 自定义路由执行（公开访问）
-router.get("/custom/*", (req, res) => customRouteController.executeRouteScript(req, res));
+router.get("/dynamic/*", (req, res) => dynamicRouteController.executeRouteScript(req, res));
 
 export default router;

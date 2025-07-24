@@ -1,70 +1,70 @@
 import { Request, Response } from "express";
 import { injectable, inject } from "inversify";
 import { TYPES } from "../core/types";
-import { CustomRouteService } from "../services/CustomRouteService";
+import { DynamicRouteService } from "../services/DynamicRouteService";
 import { BaseController } from "./BaseController";
 
 @injectable()
-export class CustomRouteController extends BaseController {
-  constructor(@inject(TYPES.CustomRouteService) private customRouteService: CustomRouteService) {
+export class DynamicRouteController extends BaseController {
+  constructor(@inject(TYPES.DynamicRouteService) private dynamicRouteService: DynamicRouteService) {
     super();
   }
 
   /**
    * 获取所有自定义路由配置
    */
-  async getAllRoutes(req: Request, res: Response): Promise<void> {
+  async getAllDynamicRoutes(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
-      return await this.customRouteService.getAllRoutes();
+      return await this.dynamicRouteService.getAllRoutes();
     });
   }
 
   /**
    * 根据ID获取自定义路由配置
    */
-  async getRouteById(req: Request, res: Response): Promise<void> {
+  async getDynamicRoute(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const id = Number(req.params.id);
-      return await this.customRouteService.getRouteById(id);
+      return await this.dynamicRouteService.getRouteById(id);
     });
   }
 
   /**
    * 添加自定义路由配置
    */
-  async addRoute(req: Request, res: Response): Promise<void> {
+  async addDynamicRoute(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
-      return await this.customRouteService.addRoute(req.body);
+      return await this.dynamicRouteService.addRoute(req.body);
     });
   }
 
   /**
    * 更新自定义路由配置
    */
-  async updateRoute(req: Request, res: Response): Promise<void> {
+  async updateDynamicRoute(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const id = Number(req.params.id);
-      return await this.customRouteService.updateRoute(id, req.body);
+      return await this.dynamicRouteService.updateRoute(id, req.body);
     });
   }
 
   /**
    * 删除自定义路由配置
    */
-  async deleteRoute(req: Request, res: Response): Promise<void> {
+  async deleteDynamicRoute(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const id = Number(req.params.id);
-      return await this.customRouteService.deleteRoute(id);
+      return await this.dynamicRouteService.deleteRoute(id);
     });
   }
 
   /**
    * 调试自定义路由脚本
    */
-  async debugRouteScript(req: Request, res: Response): Promise<void> {
+  async debugDynamicRouteScript(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const { routeConfig, params } = req.body;
-      return await this.customRouteService.debugRouteScript(routeConfig, params);
+      return await this.dynamicRouteService.debugRouteScript(routeConfig, params);
     });
   }
 
@@ -74,7 +74,7 @@ export class CustomRouteController extends BaseController {
   async executeRouteScript(req: Request, res: Response): Promise<void> {
     try {
       const routePath = req.params[0]; // 使用通配符路由，获取完整路径
-      const rssXml = await this.customRouteService.executeRouteScript(routePath, req.query);
+      const rssXml = await this.dynamicRouteService.executeRouteScript(routePath, req.query);
       
       // 设置正确的内容类型
       res.setHeader('Content-Type', 'application/rss+xml');

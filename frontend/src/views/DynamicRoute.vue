@@ -1,7 +1,7 @@
 <template>
-  <div class="custom-route-container">
+  <div class="dynamic-route-container">
     <div class="page-header">
-      <h1 class="page-title">自定义路由管理</h1>
+      <h1 class="page-title">动态路由管理</h1>
       <div class="page-actions">
         <el-button type="primary" @click="openAddDrawer">添加路由</el-button>
         <el-button @click="refreshRoutes">刷新</el-button>
@@ -12,7 +12,7 @@
     <el-card class="route-list-card" v-loading="loading">
       <template #header>
         <div class="card-header">
-          <span>自定义路由列表</span>
+          <span>动态路由列表</span>
           <el-input
             v-model="searchKeyword"
             placeholder="搜索路由名称或路径"
@@ -27,7 +27,7 @@
       </template>
 
       <!-- 空状态 -->
-      <el-empty v-if="filteredRoutes.length === 0" description="暂无自定义路由配置" />
+      <el-empty v-if="filteredRoutes.length === 0" description="暂无动态路由配置" />
 
       <!-- 路由列表 -->
       <el-table v-else :data="filteredRoutes" style="width: 100%">
@@ -44,8 +44,8 @@
         <el-table-column prop="path" label="路径" min-width="150">
           <template #default="{ row }">
             <div class="route-path">
-              <el-tooltip :content="`${baseUrl}/custom${row.path}`" placement="top">
-                <span class="path-text">/custom{{ row.path }}</span>
+              <el-tooltip :content="`${baseUrl}/dynamic${row.path}`" placement="top">
+                <span class="path-text">/dynamic{{ row.path }}</span>
               </el-tooltip>
               <el-button
                 type="primary"
@@ -98,7 +98,7 @@
     <!-- 添加/编辑抽屉 -->
     <el-drawer
       v-model="drawerVisible"
-      :title="isEdit ? '编辑自定义路由' : '添加自定义路由'"
+      :title="isEdit ? '编辑动态路由' : '添加动态路由'"
       direction="rtl"
       size="50%"
       :before-close="closeDrawer"
@@ -115,9 +115,12 @@
         </el-form-item>
 
         <el-form-item label="路由路径" prop="path">
-          <el-input v-model="form.path" placeholder="请输入路由路径，例如: /my-route">
+          <el-input v-model="form.path" placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid">
             <template #prepend>/custom</template>
           </el-input>
+          <div style="font-size: 12px; color: #909399; margin-top: 4px;">
+            路由路径格式说明：路径以 / 开头，支持动态参数（如 :uid、:id），动态参数会自动传递给脚本的 routeParams 对象
+          </div>
         </el-form-item>
 
         <el-form-item label="HTTP方法" prop="method">
@@ -134,6 +137,21 @@
             placeholder="请输入路由描述"
             :rows="2"
           />
+        </el-form-item>
+
+        <el-form-item label="授权信息" prop="authCredentialId">
+          <el-select v-model="form.authCredentialId" placeholder="请选择授权信息（可选）" clearable>
+            <el-option label="无授权" :value="undefined" />
+            <el-option
+              v-for="auth in authCredentials"
+              :key="auth.id"
+              :label="`${auth.name} (${auth.authType})`"
+              :value="auth.id"
+            />
+          </el-select>
+          <div style="font-size: 12px; color: #909399; margin-top: 4px;">
+            选择授权信息后，脚本中可以通过 utils.getAuthInfo() 获取授权信息，utils.fetchApi() 会自动应用授权
+          </div>
         </el-form-item>
 
         <!-- 参数配置 -->
@@ -258,7 +276,7 @@
     <!-- 调试抽屉 -->
     <el-drawer
       v-model="debugDrawerVisible"
-      title="调试自定义路由脚本"
+      title="调试动态路由脚本"
       direction="rtl"
       size="50%"
     >
@@ -349,9 +367,16 @@
         <el-divider />
 
         <h4>1. 获取路由参数</h4>
-        <pre class="code-block">// 获取路由参数
+        <p>路由参数包括查询参数和路径参数（动态参数）：</p>
+        <pre class="code-block">// 获取所有路由参数（包括查询参数和路径参数）
 const params = routeParams;
-console.log('路由参数:', params);</pre>
+console.log('路由参数:', params);
+
+// 解构获取特定参数
+const { keyword, limit = 10, uid } = routeParams;
+
+// 示例：对于路由 /bilibili/:uid 和请求 /custom/bilibili/123?limit=20
+// routeParams 将包含: { uid: '123', limit: '20' }</pre>
 
         <h4>2. 发起HTTP请求</h4>
         <pre class="code-block">// 发起GET请求
@@ -416,6 +441,8 @@ console.log(date);</pre>
         <el-divider />
 
         <h3>完整示例</h3>
+        <h4>示例1：使用查询参数</h4>
+        <p>路由路径：<code>/search</code>，请求：<code>/custom/search?keyword=技术&limit=10</code></p>
         <pre class="code-block">// 获取路由参数
 const { keyword, limit = 10 } = routeParams;
 
@@ -439,6 +466,32 @@ const items = data.items.map(item => ({
 
 // 返回结果
 return items;</pre>
+
+        <h4>示例2：使用动态路径参数</h4>
+        <p>路由路径：<code>/bilibili/:uid</code>，请求：<code>/custom/bilibili/123456?limit=20</code></p>
+        <pre class="code-block">// 获取路由参数（包括路径参数uid和查询参数limit）
+const { uid, limit = 10 } = routeParams;
+
+// 构建API URL，使用路径参数
+const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${uid}&ps=${limit}`;
+
+// 发起请求
+const response = await fetchApi(apiUrl);
+const data = await response.json();
+
+// 处理结果
+const items = data.data.list.vlist.map(item => ({
+  title: item.title,
+  link: `https://www.bilibili.com/video/${item.bvid}`,
+  guid: item.bvid,
+  content: item.description,
+  pubDate: new Date(item.created * 1000),
+  author: item.author,
+  image: item.pic
+}));
+
+// 返回结果
+return items;</pre>
       </div>
     </el-dialog>
   </div>
@@ -448,12 +501,22 @@ return items;</pre>
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, ElMessageBox, FormInstance } from "element-plus";
 import { Search, Link } from "@element-plus/icons-vue";
-import { getAllCustomRoutes, addCustomRoute, updateCustomRoute, deleteCustomRoute, debugCustomRouteScript, type CustomRouteConfig } from "@/api/customRoute";
+import {
+  getAllDynamicRoutes,
+  addDynamicRoute,
+  updateDynamicRoute,
+  deleteDynamicRoute,
+  debugDynamicRouteScript,
+  type DynamicRouteConfig,
+} from "@/api/dynamicRoute";
+import { authCredentialApi } from "@/api/authCredential";
+import type { AuthCredential } from "@/types/authCredential";
 import { copyToClipboard } from "@/utils";
 
 // 状态
 const loading = ref(false);
-const routes = ref<CustomRouteConfig[]>([]);
+const routes = ref<DynamicRouteConfig[]>([]);
+const authCredentials = ref<AuthCredential[]>([]);
 const searchKeyword = ref("");
 const drawerVisible = ref(false);
 const isEdit = ref(false);
@@ -464,18 +527,19 @@ const debugResult = ref<Record<string, any>>();
 const activeDebugTab = ref("result");
 const scriptHelpVisible = ref(false);
 const testParams = ref<Record<string, unknown>>({});
-const debugForm = ref<CustomRouteConfig>({} as CustomRouteConfig);
+const debugForm = ref<DynamicRouteConfig>({} as DynamicRouteConfig);
 
 // 基础URL
 const baseUrl = window.location.origin;
 
 // 表单数据
-const form = reactive<CustomRouteConfig>({
+const form = reactive<DynamicRouteConfig>({
   id: 0,
   name: "",
   path: "",
   method: "GET",
   description: "",
+  authCredentialId: undefined,
   params: [],
   script: {
     sourceType: "inline",
@@ -493,7 +557,7 @@ const rules = {
   path: [
     { required: true, message: "请输入路由路径", trigger: "blur" },
     { max: 100, message: "路由路径不能超过100个字符", trigger: "blur" },
-    { pattern: /^\/[\w\-\/]*$/, message: "路由路径格式不正确，应以/开头，只能包含字母、数字、下划线、连字符和斜杠", trigger: "blur" },
+    { pattern: /^\/[\w\-\/\:]*$/, message: "路由路径格式不正确，应以/开头，支持动态参数（如 :id），只能包含字母、数字、下划线、连字符、冒号和斜杠", trigger: "blur" },
   ],
   method: [
     { required: true, message: "请选择HTTP方法", trigger: "change" },
@@ -516,7 +580,7 @@ const filteredRoutes = computed(() => {
   
   const keyword = searchKeyword.value.toLowerCase();
   return routes.value.filter(
-    (route) =>
+    (route: DynamicRouteConfig) =>
       route.name.toLowerCase().includes(keyword) ||
       route.path.toLowerCase().includes(keyword)
   );
@@ -526,15 +590,15 @@ const filteredRoutes = computed(() => {
 const fetchRoutes = async () => {
   loading.value = true;
   try {
-    const res = await getAllCustomRoutes();
+    const res = await getAllDynamicRoutes();
     if (res.success) {
-      routes.value = res.data as CustomRouteConfig[];
+      routes.value = res.data as DynamicRouteConfig[];
     } else {
-      ElMessage.error(res.message || "获取自定义路由列表失败");
+      ElMessage.error(res.message || "获取动态路由列表失败");
     }
   } catch (error) {
-    console.error("获取自定义路由列表出错:", error);
-    ElMessage.error("获取自定义路由列表出错");
+    console.error("获取动态路由列表出错:", error);
+    ElMessage.error("获取动态路由列表出错");
   } finally {
     loading.value = false;
   }
@@ -575,6 +639,20 @@ const closeDrawer = () => {
   resetForm();
 };
 
+// 获取所有授权凭证
+const fetchAuthCredentials = async () => {
+  try {
+    const res = await authCredentialApi.getAll();
+    if (res.success) {
+      authCredentials.value = res.data as AuthCredential[];
+    } else {
+      console.error("获取授权凭证列表失败:", res.message);
+    }
+  } catch (error) {
+    console.error("获取授权凭证列表出错:", error);
+  }
+};
+
 // 重置表单
 const resetForm = () => {
   form.id = 0;
@@ -582,6 +660,7 @@ const resetForm = () => {
   form.path = "";
   form.method = "GET";
   form.description = "";
+  form.authCredentialId = undefined;
   form.params = [];
   form.script = {
     sourceType: "inline",
@@ -622,9 +701,9 @@ const submitForm = async () => {
         let res;
         
         if (isEdit.value) {
-          res = await updateCustomRoute(form.id!, data);
+          res = await updateDynamicRoute(form.id!, data);
         } else {
-          res = await addCustomRoute(data);
+          res = await addDynamicRoute(data);
         }
         
         if (res.success) {
@@ -635,8 +714,8 @@ const submitForm = async () => {
           ElMessage.error(res.message || (isEdit.value ? "更新失败" : "添加失败"));
         }
       } catch (error) {
-        console.error(isEdit.value ? "更新自定义路由出错:" : "添加自定义路由出错:", error);
-        ElMessage.error(isEdit.value ? "更新自定义路由出错" : "添加自定义路由出错");
+        console.error(isEdit.value ? "更新动态路由出错:" : "添加动态路由出错:", error);
+        ElMessage.error(isEdit.value ? "更新动态路由出错" : "添加动态路由出错");
       }
     }
   });
@@ -645,7 +724,7 @@ const submitForm = async () => {
 // 删除路由
 const deleteRoute = async (id: number) => {
   try {
-    const res = await deleteCustomRoute(id);
+    const res = await deleteDynamicRoute(id);
     if (res.success) {
       ElMessage.success("删除成功");
       fetchRoutes();
@@ -653,14 +732,14 @@ const deleteRoute = async (id: number) => {
       ElMessage.error(res.message || "删除失败");
     }
   } catch (error) {
-    console.error("删除自定义路由出错:", error);
-    ElMessage.error("删除自定义路由出错");
+    console.error("删除动态路由出错:", error);
+    ElMessage.error("删除动态路由出错");
   }
 };
 
 // 复制RSS链接
-const copyRssLink = (row: CustomRouteConfig) => {
-  const link = `${baseUrl}/custom${row.path}`;
+const copyRssLink = (row: DynamicRouteConfig) => {
+  const link = `${baseUrl}/api/dynamic${row.path}`;
   copyToClipboard(link)
     .then((success) => {
       if (success) {
@@ -736,7 +815,7 @@ const showScriptHelp = () => {
 const debugScript = async () => {
   debugging.value = true;
   try {
-    const res = await debugCustomRouteScript(debugForm.value!, testParams.value);
+    const res = await debugDynamicRouteScript(debugForm.value!, testParams.value);
     if (res.success) {
       debugResult.value = (res.data as Record<string, unknown> | undefined) ;
       activeDebugTab.value = "result";
@@ -754,11 +833,12 @@ const debugScript = async () => {
 // 初始化
 onMounted(() => {
   fetchRoutes();
+  fetchAuthCredentials();
 });
 </script>
 
 <style lang="scss" scoped>
-.custom-route-container {
+.dynamic-route-container {
   padding: 20px;
 
   .page-header {

@@ -13,6 +13,7 @@ export interface CustomRouteConfig {
     content: string;
     timeout?: number;
   };
+  authCredentialId?: number; // 关联的授权信息ID
 }
 
 // 路由参数接口

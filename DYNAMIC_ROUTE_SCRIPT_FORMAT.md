@@ -1,8 +1,8 @@
-# 自定义路由脚本返回格式说明
+# 动态路由脚本返回格式说明
 
 ## 概述
 
-自定义路由脚本现在支持两种返回格式：
+动态路由脚本现在支持两种返回格式：
 
 1. **旧格式（向后兼容）**：直接返回文章项目数组
 2. **新格式（推荐）**：返回包含完整RSS字段的对象
@@ -34,7 +34,7 @@ return [
 
 ## 新格式（推荐）
 
-脚本返回包含完整RSS字段的对象，可以自定义RSS频道的所有信息：
+脚本返回包含完整RSS字段的对象，可以动态设置RSS频道的所有信息：
 
 ```javascript
 // 返回完整RSS对象
@@ -84,7 +84,7 @@ return {
 | `description` | string | 否 | RSS频道描述，未提供时使用路由配置中的描述 |
 | `feed_url` | string | 否 | RSS订阅地址，未提供时自动生成 |
 | `site_url` | string | 否 | 网站地址，未提供时使用feed_url |
-| `generator` | string | 否 | RSS生成器标识，默认为"FeedHub CustomRoute" |
+| `generator` | string | 否 | RSS生成器标识，默认为"FeedHub DynamicRoute" |
 | `pubDate` | string | 否 | 发布时间，ISO格式，默认为当前时间 |
 | `language` | string | 否 | 语言代码，如"zh-CN"、"en-US" |
 | `copyright` | string | 否 | 版权信息 |

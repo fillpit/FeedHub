@@ -36,11 +36,7 @@ FeedHub 是一个功能强大的 RSS 订阅管理系统，专注于解决网站�
 - 🐳 **Docker部署**: 提供完整的Docker部署方案
 - 🔧 **配置管理**: 支持全局设置和用户个性化设置
 
-### 模板系统
 
-- 📋 **模板管理**: 创建、编辑、删除和查看RSS抓取模板
-- 🔍 **参数化配置**: 支持动态参数、参数验证、默认值和参数描述
-- 🚀 **一键生成**: 通过模板和参数快速生成RSS配置
 
 ## 环境要求
 
@@ -155,18 +151,7 @@ docker-compose down
 
 详细示例请参考 [SCRIPT_EXAMPLES.md](./SCRIPT_EXAMPLES.md)
 
-### 模板系统
 
-系统支持模板配置，让你可以快速创建多个相似平台的RSS订阅，而无需重复编写相同的抓取逻辑。
-
-#### 支持的平台
-
-- B站UP主视频更新
-- 抖音博主视频更新
-- YouTube频道视频更新
-- 更多平台持续添加中...
-
-详细使用方法请参考 [TEMPLATE_USAGE.md](./TEMPLATE_USAGE.md) 和 [TEMPLATE_SYSTEM_GUIDE.md](./TEMPLATE_SYSTEM_GUIDE.md)
 
 ## 特别声明
 

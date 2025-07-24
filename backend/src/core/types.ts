@@ -6,8 +6,8 @@ export const TYPES = {
   SponsorsService: Symbol.for("SponsorsService"),
   RssFeedService: Symbol.for("RssFeedService"),
   WebsiteRssService: Symbol.for("WebsiteRssService"),
-  RssTemplateService: Symbol.for("RssTemplateService"),
-  CustomRouteService: Symbol.for("CustomRouteService"),
+
+  DynamicRouteService: Symbol.for("DynamicRouteService"),
   NpmPackageService: Symbol.for("NpmPackageService"),
 
   SettingController: Symbol.for("SettingController"),
@@ -15,7 +15,7 @@ export const TYPES = {
   SponsorsController: Symbol.for("SponsorsController"),
   RssFeedController: Symbol.for("RssFeedController"),
   WebsiteRssController: Symbol.for("WebsiteRssController"),
-  RssTemplateController: Symbol.for("RssTemplateController"),
-  CustomRouteController: Symbol.for("CustomRouteController"),
+
+  DynamicRouteController: Symbol.for("DynamicRouteController"),
   NpmPackageController: Symbol.for("NpmPackageController"),
 };

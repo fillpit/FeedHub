@@ -20,7 +20,7 @@ export interface RouteParam {
   description?: string; // 参数描述
 }
 
-export interface CustomRouteConfigAttributes {
+export interface DynamicRouteConfigAttributes {
   id: number;
   name: string; // 路由名称
   path: string; // 路由路径，例如 /custom/my-route
@@ -28,15 +28,16 @@ export interface CustomRouteConfigAttributes {
   params: RouteParam[]; // 路由参数配置
   script: CustomRouteScript; // 脚本配置
   description: string; // 路由描述
+  authCredentialId?: number; // 关联的授权信息ID
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface CustomRouteConfigCreationAttributes extends Optional<CustomRouteConfigAttributes, "id" | "createdAt" | "updatedAt"> {}
+interface DynamicRouteConfigCreationAttributes extends Optional<DynamicRouteConfigAttributes, "id" | "createdAt" | "updatedAt"> {}
 
-class CustomRouteConfig
-  extends Model<CustomRouteConfigAttributes, CustomRouteConfigCreationAttributes>
-  implements CustomRouteConfigAttributes
+class DynamicRouteConfig
+  extends Model<DynamicRouteConfigAttributes, DynamicRouteConfigCreationAttributes>
+  implements DynamicRouteConfigAttributes
 {
   public id!: number;
   public name!: string;
@@ -45,11 +46,12 @@ class CustomRouteConfig
   public params!: RouteParam[];
   public script!: CustomRouteScript;
   public description!: string;
+  public authCredentialId?: number;
   public createdAt!: Date;
   public updatedAt!: Date;
 }
 
-CustomRouteConfig.init(
+DynamicRouteConfig.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -83,6 +85,14 @@ CustomRouteConfig.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    authCredentialId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'auth_credentials',
+        key: 'id'
+      },
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -101,4 +111,4 @@ CustomRouteConfig.init(
   }
 );
 
-export default CustomRouteConfig;
+export default DynamicRouteConfig;
