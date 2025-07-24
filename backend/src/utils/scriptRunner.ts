@@ -264,6 +264,31 @@ export function createScriptContext(config: any, axiosInstance: any, requestConf
         return false;
       }
       return true;
+    },
+    queryParams: (obj: any, ignoreEmpty: boolean = false) => {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+        return '';
+      }
+      const params = new URLSearchParams();
+      Object.keys(obj).forEach(key => {
+        const value = obj[key];
+        if (value !== null && value !== undefined) {
+          if (ignoreEmpty && String(value).trim() === '') {
+            return; // 跳过空值
+          }
+          if (Array.isArray(value)) {
+            value.forEach(item => {
+              const itemStr = String(item);
+              if (!ignoreEmpty || itemStr.trim() !== '') {
+                params.append(key, itemStr);
+              }
+            });
+          } else {
+            params.append(key, String(value));
+          }
+        }
+      });
+      return params.toString();
     }
   });
   const createConsole = () => {

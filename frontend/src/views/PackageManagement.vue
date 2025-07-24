@@ -10,6 +10,14 @@
           style="width: 300px; margin-right: 16px;"
           clearable
         />
+        <el-button type="success" @click="exportPackages">
+          <el-icon><Download /></el-icon>
+          导出配置
+        </el-button>
+        <el-button type="warning" @click="triggerImport">
+          <el-icon><Upload /></el-icon>
+          导入配置
+        </el-button>
         <el-button type="primary" @click="showInstallDialog = true">
           <el-icon><Plus /></el-icon>
           安装新包
@@ -18,6 +26,13 @@
           <el-icon><Refresh /></el-icon>
           刷新
         </el-button>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".json"
+          style="display: none"
+          @change="handleFileImport"
+        />
       </div>
     </div>
 
@@ -216,7 +231,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh } from '@element-plus/icons-vue'
+import { Plus, Refresh, Download, Upload } from '@element-plus/icons-vue'
 import { npmPackageApi, type NpmPackage, type PackageStats } from '@/api/npmPackage'
 
 // 接口定义已从 @/api/npmPackage 导入
@@ -230,6 +245,7 @@ const showDetailsDialog = ref(false)
 const selectedPackage = ref<NpmPackage | null>(null)
 const installing = ref('')
 const uninstalling = ref('')
+const fileInputRef = ref<HTMLInputElement>()
 const stats = ref<PackageStats>({
   totalPackages: 0,
   installedPackages: 0,
@@ -394,6 +410,105 @@ const uninstallPackage = async (packageName: string) => {
 const showPackageDetails = (pkg: NpmPackage) => {
   selectedPackage.value = pkg
   showDetailsDialog.value = true
+}
+
+// 导出包配置
+const exportPackages = () => {
+  try {
+    const exportData = {
+      exportTime: new Date().toISOString(),
+      packages: packages.value.map(pkg => ({
+        name: pkg.name,
+        version: pkg.version,
+        description: pkg.description,
+        isWhitelisted: pkg.isWhitelisted,
+        status: pkg.status
+      }))
+    }
+    
+    const dataStr = JSON.stringify(exportData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `npm-packages-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    ElMessage.success('包配置导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error('导出失败:', error)
+  }
+}
+
+// 触发文件选择
+const triggerImport = () => {
+  fileInputRef.value?.click()
+}
+
+// 处理文件导入
+const handleFileImport = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file) return
+  
+  try {
+    const text = await file.text()
+    const importData = JSON.parse(text)
+    
+    if (!importData.packages || !Array.isArray(importData.packages)) {
+      ElMessage.error('导入文件格式不正确')
+      return
+    }
+    
+    await ElMessageBox.confirm(
+      `确定要导入 ${importData.packages.length} 个包的配置吗？这将会安装文件中标记为已安装的包。`,
+      '确认导入',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    // 批量安装包
+    let successCount = 0
+    let failCount = 0
+    
+    for (const pkg of importData.packages) {
+      if (pkg.status === 'installed') {
+        try {
+          await npmPackageApi.installPackage({ 
+            packageName: pkg.version ? `${pkg.name}@${pkg.version}` : pkg.name 
+          })
+          successCount++
+        } catch (error) {
+          failCount++
+          console.error(`安装包 ${pkg.name} 失败:`, error)
+        }
+      }
+    }
+    
+    await refreshPackages()
+    
+    if (failCount === 0) {
+      ElMessage.success(`导入成功，共安装 ${successCount} 个包`)
+    } else {
+      ElMessage.warning(`导入完成，成功安装 ${successCount} 个包，失败 ${failCount} 个包`)
+    }
+    
+  } catch (error) {
+    ElMessage.error('导入文件解析失败，请检查文件格式')
+    console.error('导入失败:', error)
+  } finally {
+    // 清空文件输入
+    target.value = ''
+  }
 }
 
 onMounted(() => {

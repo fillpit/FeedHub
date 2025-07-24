@@ -109,10 +109,13 @@ export class DynamicRouteService {
     if (existingRoute) throw new Error("该路由路径已存在");
 
     // 验证脚本配置
+    console.log('开始验证脚本配置')
     this.validateScriptConfig(routeData.script);
+    console.log('验证脚本配置通过')
 
     // 创建新配置
     const newRoute = await DynamicRouteConfig.create(routeData);
+    console.log("newRoute", newRoute)
     return { success: true, data: newRoute, message: "动态路由配置添加成功" };
   }
 

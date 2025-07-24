@@ -5,6 +5,21 @@
       <div class="page-actions">
         <el-button type="primary" @click="openAddDrawer">添加路由</el-button>
         <el-button @click="refreshRoutes">刷新</el-button>
+        <el-button type="success" @click="exportRoutes" :disabled="selectedRoutes.length === 0">
+          <el-icon><Download /></el-icon>
+          导出选中配置 ({{ selectedRoutes.length }})
+        </el-button>
+        <el-button type="warning" @click="triggerImport">
+          <el-icon><Upload /></el-icon>
+          导入配置
+        </el-button>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".json"
+          style="display: none"
+          @change="handleFileImport"
+        />
       </div>
     </div>
 
@@ -30,7 +45,8 @@
       <el-empty v-if="filteredRoutes.length === 0" description="暂无动态路由配置" />
 
       <!-- 路由列表 -->
-      <el-table v-else :data="filteredRoutes" style="width: 100%">
+      <el-table v-else :data="filteredRoutes" style="width: 100%" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="name" label="名称" min-width="120">
           <template #default="{ row }">
             <div class="route-name">
@@ -500,7 +516,7 @@ return items;</pre>
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
-import { Search } from "@element-plus/icons-vue";
+import { Search, Download, Upload } from "@element-plus/icons-vue";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
@@ -528,13 +544,15 @@ const activeDebugTab = ref("result");
 const scriptHelpVisible = ref(false);
 const testParams = ref<Record<string, unknown>>({});
 const debugForm = ref<DynamicRouteConfig>({} as DynamicRouteConfig);
+const fileInputRef = ref<HTMLInputElement>();
+const selectedRoutes = ref<DynamicRouteConfig[]>([]);
 
 // 基础URL
 const baseUrl = window.location.origin;
 
 // 表单数据
 const form = reactive<DynamicRouteConfig>({
-  id: 0,
+  id: undefined,
   name: "",
   path: "",
   method: "GET",
@@ -655,7 +673,7 @@ const fetchAuthCredentials = async () => {
 
 // 重置表单
 const resetForm = () => {
-  form.id = 0;
+  form.id = undefined;
   form.name = "";
   form.path = "";
   form.method = "GET";
@@ -827,6 +845,118 @@ const debugScript = async () => {
     ElMessage.error("调试脚本出错");
   } finally {
     debugging.value = false;
+  }
+};
+
+// 处理表格选择变化
+const handleSelectionChange = (selection: DynamicRouteConfig[]) => {
+  selectedRoutes.value = selection;
+};
+
+// 导出路由配置
+const exportRoutes = () => {
+  try {
+    // 检查是否有选择的路由
+    if (selectedRoutes.value.length === 0) {
+      ElMessage.warning('请先选择要导出的路由配置');
+      return;
+    }
+
+    const exportData = {
+      version: "1.0",
+      exportTime: new Date().toISOString(),
+      routes: selectedRoutes.value.map(route => ({
+        name: route.name,
+        path: route.path,
+        method: route.method,
+        description: route.description,
+        authCredentialId: route.authCredentialId,
+        params: route.params,
+        script: route.script
+      }))
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dynamic-routes-selected-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    ElMessage.success(`成功导出 ${selectedRoutes.value.length} 个选中的路由配置`);
+  } catch (error) {
+    console.error('导出路由配置失败:', error);
+    ElMessage.error('导出路由配置失败');
+  }
+};
+
+// 触发导入
+const triggerImport = () => {
+  fileInputRef.value?.click();
+};
+
+// 处理文件导入
+const handleFileImport = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const importData = JSON.parse(text);
+    
+    // 验证导入数据格式
+    if (!importData.routes || !Array.isArray(importData.routes)) {
+      ElMessage.error('导入文件格式不正确，缺少routes数组');
+      return;
+    }
+    
+    // 批量添加路由
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const routeData of importData.routes) {
+      try {
+        // 确保路径以/开头
+        if (!routeData.path.startsWith("/")) {
+          routeData.path = "/" + routeData.path;
+        }
+        
+        const res = await addDynamicRoute(routeData);
+        if (res.success) {
+          successCount++;
+        } else {
+          failCount++;
+          console.warn(`导入路由失败: ${routeData.name}`, res.message);
+        }
+      } catch (error) {
+        failCount++;
+        console.error(`导入路由出错: ${routeData.name}`, error);
+      }
+    }
+    
+    // 刷新路由列表
+    await fetchRoutes();
+    
+    // 显示导入结果
+    if (successCount > 0) {
+      ElMessage.success(`成功导入 ${successCount} 个路由配置${failCount > 0 ? `，失败 ${failCount} 个` : ''}`);
+    } else {
+      ElMessage.error(`导入失败，共 ${failCount} 个路由配置导入失败`);
+    }
+    
+  } catch (error) {
+    console.error('解析导入文件失败:', error);
+    ElMessage.error('导入文件格式不正确，请检查文件内容');
+  } finally {
+    // 清空文件输入
+    target.value = '';
   }
 };
 
