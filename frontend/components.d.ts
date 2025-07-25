@@ -52,6 +52,7 @@ declare module 'vue' {
     IconSelector: typeof import('./src/components/IconSelector.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ScriptHelpContent: typeof import('./src/components/ScriptHelpContent.vue')['default']
     ScriptHelpGuide: typeof import('./src/components/ScriptHelpGuide.vue')['default']
     SimpleIcon: typeof import('./src/components/SimpleIcon.vue')['default']
   }

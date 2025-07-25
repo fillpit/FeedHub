@@ -375,141 +375,7 @@
     </el-drawer>
 
     <!-- 脚本帮助指南对话框 -->
-    <el-dialog v-model="scriptHelpVisible" title="脚本帮助指南" width="60%">
-      <div class="script-help-content">
-        <h3>可用工具函数</h3>
-        <p>在脚本中，您可以使用以下工具函数：</p>
-
-        <el-divider />
-
-        <h4>1. 获取路由参数</h4>
-        <p>路由参数包括查询参数和路径参数（动态参数）：</p>
-        <pre class="code-block">// 获取所有路由参数（包括查询参数和路径参数）
-const params = routeParams;
-console.log('路由参数:', params);
-
-// 解构获取特定参数
-const { keyword, limit = 10, uid } = routeParams;
-
-// 示例：对于路由 /bilibili/:uid 和请求 /custom/bilibili/123?limit=20
-// routeParams 将包含: { uid: '123', limit: '20' }</pre>
-
-        <h4>2. 发起HTTP请求</h4>
-        <pre class="code-block">// 发起GET请求
-const response = await fetchApi('https://api.example.com/data', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();</pre>
-
-        <h4>3. 日志输出</h4>
-        <pre class="code-block">// 输出不同级别的日志
-console.log('这是一条信息日志');
-console.warn('这是一条警告日志');
-console.error('这是一条错误日志');
-console.debug('这是一条调试日志');</pre>
-
-        <h4>4. 解析日期</h4>
-        <pre class="code-block">// 解析日期字符串为Date对象
-const date = parseDate('2023-01-01 12:00:00');
-console.log(date);</pre>
-
-        <el-divider />
-
-        <h3>脚本返回格式</h3>
-        <p>脚本支持两种返回格式：</p>
-        <h4>新格式（推荐）- 完整RSS对象：</h4>
-        <pre><code>return {
-  title: "RSS频道标题",
-  description: "RSS频道描述",
-  site_url: "网站地址",
-  language: "zh-CN",
-  items: [
-    {
-      title: "文章标题",
-      link: "文章链接",
-      content: "文章内容",
-      author: "作者",
-      pubDate: "发布时间",
-      image: "封面图片"
-    }
-  ]
-};</code></pre>
-        <h4>旧格式（向后兼容）- 仅文章数组：</h4>
-        <p>脚本直接返回文章数组，RSS其他字段使用路由配置：</p>
-
-        <pre class="code-block">[
-  {
-    title: '文章标题',
-    link: 'https://example.com/article/1',
-    guid: 'unique-id-1', // 可选，默认使用link
-    content: '文章内容或摘要',
-    pubDate: new Date(), // 发布日期
-    author: '作者名称', // 可选
-    image: 'https://example.com/image.jpg' // 可选，封面图片URL
-  },
-  // 更多项目...
-]</pre>
-
-        <el-divider />
-
-        <h3>完整示例</h3>
-        <h4>示例1：使用查询参数</h4>
-        <p>路由路径：<code>/search</code>，请求：<code>/custom/search?keyword=技术&limit=10</code></p>
-        <pre class="code-block">// 获取路由参数
-const { keyword, limit = 10 } = routeParams;
-
-// 构建API URL
-const apiUrl = `https://api.example.com/search?q=${encodeURIComponent(keyword)}&limit=${limit}`;
-
-// 发起请求
-const response = await fetchApi(apiUrl);
-const data = await response.json();
-
-// 处理结果
-const items = data.items.map(item => ({
-  title: item.title,
-  link: item.url,
-  guid: item.id,
-  content: item.description,
-  pubDate: parseDate(item.published_at),
-  author: item.author?.name,
-  image: item.image_url
-}));
-
-// 返回结果
-return items;</pre>
-
-        <h4>示例2：使用动态路径参数</h4>
-        <p>路由路径：<code>/bilibili/:uid</code>，请求：<code>/custom/bilibili/123456?limit=20</code></p>
-        <pre class="code-block">// 获取路由参数（包括路径参数uid和查询参数limit）
-const { uid, limit = 10 } = routeParams;
-
-// 构建API URL，使用路径参数
-const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${uid}&ps=${limit}`;
-
-// 发起请求
-const response = await fetchApi(apiUrl);
-const data = await response.json();
-
-// 处理结果
-const items = data.data.list.vlist.map(item => ({
-  title: item.title,
-  link: `https://www.bilibili.com/video/${item.bvid}`,
-  guid: item.bvid,
-  content: item.description,
-  pubDate: new Date(item.created * 1000),
-  author: item.author,
-  image: item.pic
-}));
-
-// 返回结果
-return items;</pre>
-      </div>
-    </el-dialog>
+    <ScriptHelpGuide mode="dialog" v-model="scriptHelpVisible" />
   </div>
 </template>
 
@@ -528,6 +394,7 @@ import {
 import { authCredentialApi } from "@/api/authCredential";
 import type { AuthCredential } from "@/types/authCredential";
 import { copyToClipboard } from "@/utils";
+import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
 
 // 状态
 const loading = ref(false);

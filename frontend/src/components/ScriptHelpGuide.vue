@@ -1,6 +1,15 @@
 <template>
   <div class="script-help-guide">
+    <!-- 对话框模式 -->
+    <el-dialog v-if="mode === 'dialog'" v-model="visible" title="脚本帮助指南" width="60%">
+      <div class="script-help-content">
+        <ScriptHelpContent />
+      </div>
+    </el-dialog>
+    
+    <!-- 弹出框模式 -->
     <el-popover
+      v-else
       placement="right"
       :width="500"
       trigger="click"
@@ -14,139 +23,37 @@
       </template>
       
       <div class="help-content">
-        <h4>可用工具函数</h4>
-        <el-divider></el-divider>
-        
-        <div class="tool-item">
-          <h5>fetch(url, options)</h5>
-          <p>发送HTTP请求获取数据</p>
-          <div class="code-example">
-            <pre><code>// 基本用法
-const response = await fetch('https://example.com');
-const html = await response.text();
-
-// 带选项的用法
-const response = await fetch('https://api.example.com', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ key: 'value' })
-});
-const data = await response.json();</code></pre>
-          </div>
-        </div>
-        
-        <div class="tool-item">
-          <h5>parseHTML(html)</h5>
-          <p>解析HTML字符串为DOM对象，便于使用选择器</p>
-          <div class="code-example">
-            <pre><code>const dom = parseHTML(html);
-const title = dom.querySelector('h1').textContent;</code></pre>
-          </div>
-        </div>
-        
-        <div class="tool-item">
-          <h5>extractItems(selector, options)</h5>
-          <p>从HTML中提取多个项目</p>
-          <div class="code-example">
-            <pre><code>// 从HTML中提取所有文章
-const articles = extractItems({
-  container: '.article-list .article',
-  title: '.article-title',
-  link: 'a.article-link',
-  content: '.article-content',
-  date: '.article-date',
-  image: '.article-image img'
-});</code></pre>
-          </div>
-        </div>
-        
-        <div class="tool-item">
-          <h5>formatDate(dateString, format)</h5>
-          <p>格式化日期字符串</p>
-          <div class="code-example">
-            <pre><code>// 将日期字符串转换为标准格式
-const isoDate = formatDate('2023年5月1日', 'YYYY-MM-DD');</code></pre>
-          </div>
-        </div>
-        
-        <div class="tool-item">
-          <h5>log(message)</h5>
-          <p>输出日志信息，便于调试</p>
-          <div class="code-example">
-            <pre><code>log('正在处理数据...');
-log('提取到的标题:', title);</code></pre>
-          </div>
-        </div>
-        
-        <h4>脚本返回格式</h4>
-        <el-divider></el-divider>
-        <p>脚本支持两种返回格式：</p>
-        <h5>新格式（推荐）- 完整RSS对象：</h5>
-        <div class="code-example">
-          <pre><code>return {
-  title: "RSS频道标题",
-  description: "RSS频道描述", 
-  site_url: "网站地址",
-  language: "zh-CN",
-  items: [文章数组]
-};</code></pre>
-        </div>
-        <h5>旧格式（向后兼容）- 仅文章数组：</h5>
-        <p>脚本直接返回文章数组，RSS其他字段使用路由配置：</p>
-        <div class="code-example">
-          <pre><code>return [
-  {
-    title: '文章标题',
-    link: 'https://example.com/article1',
-    content: '文章内容...',
-    author: '作者名称',  // 可选
-    date: '2023-05-01T12:00:00Z',  // ISO格式日期
-    image: 'https://example.com/image.jpg'  // 可选
-  },
-  // 更多文章...
-];</code></pre>
-        </div>
-        
-        <h4>完整示例</h4>
-        <el-divider></el-divider>
-        <div class="code-example">
-          <pre><code>async function run() {
-  // 获取网页内容
-  const response = await fetch('https://example.com/blog');
-  const html = await response.text();
-  
-  // 解析HTML
-  const dom = parseHTML(html);
-  
-  // 提取文章列表
-  const articles = [];
-  const items = dom.querySelectorAll('.article-item');
-  
-  for (const item of items) {
-    const title = item.querySelector('.title').textContent.trim();
-    const link = item.querySelector('a').href;
-    const content = item.querySelector('.summary').textContent.trim();
-    const dateStr = item.querySelector('.date').textContent.trim();
-    const date = formatDate(dateStr, 'YYYY-MM-DD');
-    
-    articles.push({
-      title,
-      link,
-      content,
-      date
-    });
-  }
-  
-  return articles;
-}</code></pre>
-        </div>
+        <ScriptHelpContent :compact="true" />
       </div>
     </el-popover>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, defineProps, defineEmits } from 'vue';
 import { QuestionFilled } from '@element-plus/icons-vue';
+import ScriptHelpContent from './ScriptHelpContent.vue';
+
+interface Props {
+  mode?: 'dialog' | 'popover';
+  modelValue?: boolean;
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: boolean): void;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  mode: 'popover',
+  modelValue: false
+});
+
+const emit = defineEmits<Emits>();
+
+const visible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+});
 </script>
 
 <style scoped>
