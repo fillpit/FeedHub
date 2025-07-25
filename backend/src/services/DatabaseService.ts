@@ -24,6 +24,7 @@ export class DatabaseService {
     try {
       await this.sequelize.query("PRAGMA foreign_keys = OFF");
       await this.cleanupBackupTables();
+      // 使用alter选项同步表结构
       await this.sequelize.sync({ alter: true });
       await this.sequelize.query("PRAGMA foreign_keys = ON");
       await this.initializeGlobalSettings();
@@ -75,15 +76,20 @@ export class DatabaseService {
   }
 
   private async cleanupBackupTables(): Promise<void> {
-    const backupTables = await this.sequelize.query<{ name: string }>(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%\\_backup%' ESCAPE '\\'",
-      { type: QueryTypes.SELECT }
-    );
+    try {
+      const backupTables = await this.sequelize.query<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_backup%'",
+        { type: QueryTypes.SELECT }
+      );
 
-    for (const table of backupTables) {
-      if (table?.name) {
-        await this.sequelize.query(`DROP TABLE IF EXISTS ${table.name}`);
+      for (const table of backupTables) {
+        if (table?.name) {
+          await this.sequelize.query(`DROP TABLE IF EXISTS \`${table.name}\``);
+        }
       }
+    } catch (error) {
+      // 忽略清理备份表时的错误，不影响主要初始化流程
+      console.warn('清理备份表时出现警告:', (error as Error).message);
     }
   }
 

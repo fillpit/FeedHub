@@ -18,38 +18,59 @@ const { keyword, limit = 10, uid } = routeParams;
 // routeParams 将包含: { uid: '123', limit: '20' }</pre>
 
     <h4>2. 发起HTTP请求</h4>
-    <pre class="code-block">// 使用 fetchApi 发起请求（推荐，支持自动授权）
-const response = await fetchApi('https://api.example.com/data', {
-  method: 'GET',
+    <pre class="code-block">// 使用 utils.fetchApi 发起GET请求
+const response = await utils.fetchApi('https://jsonplaceholder.typicode.com/posts/1');
+console.log(response.status); // 输出: 200
+console.log(response.data.title); // 输出: 文章标题
+
+// 发起POST请求
+const postResponse = await utils.fetchApi('https://api.example.com/articles', {
+  method: 'POST',
   headers: {
     'Content-Type': 'application/json'
+  },
+  data: {
+    title: '新文章',
+    content: '文章内容'
   }
 });
-const data = await response.json();
+console.log(postResponse.status); // 输出: 201 (创建成功)
 
-// 使用原生 fetch（不支持自动授权）
-const response = await fetch('https://api.example.com/data');
-const data = await response.json();</pre>
+// 使用 axios 实例（也支持自动授权）
+const axiosResponse = await axios.get('https://api.example.com/users');
+console.log(axiosResponse.data.length); // 输出: 用户数量</pre>
 
     <h4>3. 获取授权信息</h4>
-    <p>如果路由配置了授权信息，可以通过 utils.getAuthInfo() 获取：</p>
+    <p>如果路由配置了授权信息，可以通过 utils.getAuthInfo() 或 auth 对象获取：</p>
     <pre class="code-block">// 获取当前路由的授权信息
 const authInfo = utils.getAuthInfo();
-if (authInfo) {
-  console.log('授权类型:', authInfo.authType);
-  console.log('授权数据:', authInfo.authData);
-  
-  // 根据授权类型处理
-  if (authInfo.authType === 'bearer') {
-    // Bearer Token 授权
-    const token = authInfo.authData.token;
-  } else if (authInfo.authType === 'basic') {
-    // Basic 授权
-    const { username, password } = authInfo.authData;
-  } else if (authInfo.authType === 'apikey') {
-    // API Key 授权
-    const { key, value } = authInfo.authData;
-  }
+// 或者直接使用 auth 对象
+const authInfo = auth;
+
+console.log('授权类型:', authInfo.type); // 输出: 'bearer' 或 'basic' 等
+
+// Bearer Token 示例
+if (authInfo.type === 'bearer' && authInfo.bearerToken) {
+  console.log('Bearer Token:', authInfo.bearerToken);
+  // 输出: Bearer Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+}
+
+// Basic Auth 示例
+if (authInfo.type === 'basic' && authInfo.basicAuth) {
+  console.log('用户名:', authInfo.basicAuth.username); // 输出: admin
+  console.log('密码:', authInfo.basicAuth.password); // 输出: password123
+}
+
+// Cookie 示例
+if (authInfo.type === 'cookie' && authInfo.cookie) {
+  console.log('Cookie:', authInfo.cookie);
+  // 输出: sessionId=abc123; userId=456
+}
+
+// 自定义请求头示例
+if (authInfo.type === 'custom' && authInfo.customHeaders) {
+  console.log('自定义请求头:', authInfo.customHeaders);
+  // 输出: { 'X-API-Key': 'your-api-key', 'X-Client-ID': 'client123' }
 }</pre>
 
     <h4>4. 日志输出</h4>
@@ -57,63 +78,143 @@ if (authInfo) {
 console.log('这是一条信息日志');
 console.warn('这是一条警告日志');
 console.error('这是一条错误日志');
-console.debug('这是一条调试日志');
 
-// 使用 utils.log（推荐）
-utils.log('info', '这是一条信息日志');
-utils.log('warn', '这是一条警告日志');
-utils.log('error', '这是一条错误日志');
-utils.log('debug', '这是一条调试日志');</pre>
+// 注意：console 对象已经过特殊处理，会自动记录到调试日志中</pre>
 
-    <h4>5. 解析日期</h4>
-    <pre class="code-block">// 解析日期字符串为Date对象
-const date = parseDate('2023-01-01 12:00:00');
-console.log(date);
+    <h4>5. 日期处理工具</h4>
+    <pre class="code-block">// 使用 utils.parseDate 解析日期字符串
+const isoDate = utils.parseDate('2023-01-01 12:00:00');
+console.log(isoDate); // 输出: 2023-01-01T12:00:00.000Z
 
-// 解析各种格式的日期
-const date1 = parseDate('2023年5月1日');
-const date2 = parseDate('May 1, 2023');
-const date3 = parseDate('2023-05-01T10:30:00Z');</pre>
+// 解析中文日期
+const chineseDate = utils.parseDate('2023年5月1日');
+console.log(chineseDate); // 输出: 2023-05-01T00:00:00.000Z
+
+// 使用 utils.formatDate 格式化日期
+const formatted = utils.formatDate('2023-01-01', 'YYYY年MM月DD日');
+console.log(formatted); // 输出: 2023年01月01日
+
+// 使用 dayjs 进行更复杂的日期操作
+const now = dayjs();
+console.log(now.format('YYYY-MM-DD')); // 输出: 2024-12-24 (当前日期)
+
+const tomorrow = dayjs().add(1, 'day');
+console.log(tomorrow.format('YYYY-MM-DD')); // 输出: 2024-12-25
+
+const formatted2 = dayjs('2023-01-01').format('YYYY-MM-DD HH:mm:ss');
+console.log(formatted2); // 输出: 2023-01-01 00:00:00
+
+// 计算日期差
+const diff = dayjs().diff(dayjs('2023-01-01'), 'days');
+console.log(diff); // 输出: 距离2023年1月1日的天数</pre>
 
     <h4>6. HTML解析工具</h4>
-    <pre class="code-block">// 解析HTML字符串为DOM对象
-const dom = parseHTML(html);
-const title = dom.querySelector('h1').textContent;
+    <pre class="code-block">// 使用 $ (jQuery-like) 解析当前页面HTML
+const title = $('h1').text();
+console.log(title); // 输出: 页面主标题
 
-// 批量提取元素
-const items = dom.querySelectorAll('.article-item');
-for (const item of items) {
-  const title = item.querySelector('.title')?.textContent?.trim();
-  const link = item.querySelector('a')?.href;
-}</pre>
+const items = $('.article-item');
+console.log(items.length); // 输出: 文章项目数量
 
-    <h4>7. 字符串处理工具</h4>
-    <pre class="code-block">// 清理HTML标签
-const cleanText = utils.stripHtml('<p>Hello <b>World</b></p>'); // 'Hello World'
+// 遍历元素并提取信息
+const articles = [];
+items.each((index, element) => {
+  const $item = $(element);
+  const title = $item.find('.title').text().trim();
+  const link = $item.find('a').attr('href');
+  const date = $item.find('.date').text();
+  
+  console.log(`文章 ${index + 1}: ${title}`);
+  articles.push({ title, link, date });
+});
 
-// 截取文本
-const summary = utils.truncate(longText, 200); // 截取前200个字符
+// 获取特定属性
+const firstLink = $('a').first().attr('href');
+console.log(firstLink); // 输出: 第一个链接的href属性
 
-// URL处理
-const absoluteUrl = utils.resolveUrl('https://example.com', '/path/to/page');
-// 结果: 'https://example.com/path/to/page'
+// 提取纯文本内容
+const htmlContent = '<p>Hello <b>World</b></p>';
+const plainText = utils.extractText(htmlContent);
+console.log(plainText); // 输出: Hello World
 
-// 编码处理
-const encoded = encodeURIComponent('中文参数');
-const decoded = decodeURIComponent(encoded);</pre>
+// 处理复杂HTML结构
+const complexHtml = '<div><h2>标题</h2><p>段落1</p><p>段落2</p></div>';
+const textOnly = utils.extractText(complexHtml);
+console.log(textOnly); // 输出: 标题段落1段落2</pre>
 
-    <h4>8. 数据处理工具</h4>
-    <pre class="code-block">// 去重
-const uniqueItems = utils.unique(items, 'id'); // 根据id字段去重
+    <h4>7. 数据处理工具</h4>
+    <pre class="code-block">// JSON 解析
+const jsonString = '{"name": "张三", "age": 25}';
+const data = utils.parseJson(jsonString);
+console.log(data.name); // 输出: 张三
 
-// 排序
-const sortedItems = utils.sortBy(items, 'pubDate', 'desc'); // 按发布日期降序
+// 安全获取对象属性
+const user = { profile: { name: '李四' } };
+const name = utils.safeGet(user, 'profile.name', '匿名用户');
+console.log(name); // 输出: 李四
+const email = utils.safeGet(user, 'profile.email', 'no-email');
+console.log(email); // 输出: no-email (因为不存在)
 
-// 过滤
+// 确保数组类型
+const maybeArray = null;
+const arr = utils.safeArray(maybeArray);
+console.log(arr); // 输出: [] (空数组)
+const realArray = utils.safeArray([1, 2, 3]);
+console.log(realArray); // 输出: [1, 2, 3]
+
+// 确保对象类型
+const maybeObject = null;
+const obj = utils.safeObject(maybeObject);
+console.log(obj); // 输出: {} (空对象)
+
+// 选择对象的指定属性
+const user = { name: '王五', email: 'wang@example.com', age: 30, password: '123456' };
+const picked = utils.pick(user, ['name', 'email', 'age']);
+console.log(picked); // 输出: { name: '王五', email: 'wang@example.com', age: 30 }
+
+// 数组分块
+const largeArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const chunks = utils.chunk(largeArray, 3);
+console.log(chunks); // 输出: [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
+
+// 生成查询参数字符串
+const params = { name: 'test', page: 1, tags: ['tech', 'news'] };
+const queryString = utils.queryParams(params);
+console.log(queryString); // 输出: name=test&page=1&tags=tech&tags=news</pre>
+
+    <h4>8. 其他实用工具</h4>
+    <pre class="code-block">// 生成UUID
+const id = utils.uuid();
+console.log(id); // 输出: 类似 '550e8400-e29b-41d4-a716-446655440000'
+
+// 验证数据项
+const item1 = { title: '文章标题', link: 'https://example.com' };
+const isValid1 = utils.validateItem(item1, 0);
+console.log(isValid1); // 输出: true
+
+const item2 = { content: '只有内容' }; // 缺少标题
+const isValid2 = utils.validateItem(item2, 1);
+console.log(isValid2); // 输出: false
+
+// 过滤最近的文章
+const items = [
+  { title: '今天的文章', pubDate: new Date().toISOString() },
+  { title: '一个月前的文章', pubDate: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString() }
+];
 const recentItems = items.filter(item => {
   const daysDiff = (Date.now() - new Date(item.pubDate).getTime()) / (1000 * 60 * 60 * 24);
   return daysDiff <= 30; // 只保留30天内的文章
-});</pre>
+});
+console.log(recentItems.length); // 输出: 1 (只有今天的文章)
+
+// 使用 require 加载 npm 包（需要在白名单中）
+try {
+  const lodash = require('lodash');
+  const uniqueArray = lodash.uniq([1, 2, 2, 3, 3, 4]);
+  console.log(uniqueArray); // 输出: [1, 2, 3, 4]
+} catch (error) {
+  console.log('lodash 包未在白名单中或未安装');
+}</pre>
 
     <el-divider />
 
@@ -165,8 +266,8 @@ const { keyword, limit = 10 } = routeParams;
 const apiUrl = `https://api.example.com/search?q=${encodeURIComponent(keyword)}&limit=${limit}`;
 
 // 发起请求
-const response = await fetchApi(apiUrl);
-const data = await response.json();
+const response = await utils.fetchApi(apiUrl);
+const data = response.data;
 
 // 处理结果
 const items = data.items.map(item => ({
@@ -174,7 +275,7 @@ const items = data.items.map(item => ({
   link: item.url,
   guid: item.id,
   content: item.description,
-  pubDate: parseDate(item.published_at),
+  pubDate: utils.parseDate(item.published_at),
   author: item.author?.name,
   image: item.image_url
 }));
@@ -191,8 +292,8 @@ const { uid, limit = 10 } = routeParams;
 const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${uid}&ps=${limit}`;
 
 // 发起请求
-const response = await fetchApi(apiUrl);
-const data = await response.json();
+const response = await utils.fetchApi(apiUrl);
+const data = response.data;
 
 // 处理结果
 const items = data.data.list.vlist.map(item => ({
@@ -224,16 +325,16 @@ if (authInfo && authInfo.authType === 'apikey') {
   headers[key] = value; // 例如: headers['X-API-Key'] = 'your-api-key'
 }
 
-// 发起请求（推荐使用fetchApi，会自动应用授权）
-const response = await fetchApi(`https://api.example.com/search?q=${keyword}&limit=${limit}`);
-const data = await response.json();
+// 发起请求（推荐使用utils.fetchApi，会自动应用授权）
+const response = await utils.fetchApi(`https://api.example.com/search?q=${keyword}&limit=${limit}`);
+const data = response.data;
 
 // 处理结果
 return data.articles.map(article => ({
   title: article.title,
   link: article.url,
-  content: utils.stripHtml(article.content),
-  pubDate: parseDate(article.publishedAt),
+  content: utils.extractText(article.content),
+  pubDate: utils.parseDate(article.publishedAt),
   author: article.author,
   image: article.thumbnail
 }));</pre>
@@ -241,58 +342,56 @@ return data.articles.map(article => ({
     <h4>示例4：网页抓取示例</h4>
     <p>抓取网页内容并解析：</p>
     <pre class="code-block">// 获取网页内容
-const response = await fetchApi('https://example.com/blog');
-const html = await response.text();
+const response = await utils.fetchApi('https://example.com/blog');
+const htmlContent = response.data;
 
-// 解析HTML
-const dom = parseHTML(html);
+// 注意：html 变量已经包含了页面内容，可以直接使用 $ 解析
 
 // 提取文章列表
 const articles = [];
-const items = dom.querySelectorAll('.article-item');
+const items = $('.article-item');
 
-for (const item of items) {
-  const titleEl = item.querySelector('.title');
-  const linkEl = item.querySelector('a');
-  const contentEl = item.querySelector('.summary');
-  const dateEl = item.querySelector('.date');
-  const imageEl = item.querySelector('img');
+items.each((index, element) => {
+  const $item = $(element);
+  const title = $item.find('.title').text().trim();
+  const link = $item.find('a').attr('href');
+  const content = $item.find('.summary').text().trim();
+  const dateText = $item.find('.date').text().trim();
+  const imageSrc = $item.find('img').attr('src');
   
-  if (titleEl && linkEl) {
-    const title = titleEl.textContent.trim();
-    const link = utils.resolveUrl('https://example.com', linkEl.getAttribute('href'));
-    const content = contentEl ? utils.stripHtml(contentEl.innerHTML) : '';
-    const pubDate = dateEl ? parseDate(dateEl.textContent.trim()) : new Date();
-    const image = imageEl ? utils.resolveUrl('https://example.com', imageEl.src) : null;
+  if (title && link) {
+    // 构建绝对URL（如果需要）
+    const absoluteLink = link.startsWith('http') ? link : `https://example.com${link}`;
+    const absoluteImage = imageSrc && !imageSrc.startsWith('http') ? `https://example.com${imageSrc}` : imageSrc;
     
     articles.push({
       title,
-      link,
-      content: utils.truncate(content, 300),
-      pubDate,
-      image
+      link: absoluteLink,
+      content: content.substring(0, 300), // 截取前300个字符
+      pubDate: dateText ? utils.parseDate(dateText) : new Date().toISOString(),
+      image: absoluteImage || null
     });
   }
-}
+});
 
 // 按日期排序并返回
-return utils.sortBy(articles, 'pubDate', 'desc');</pre>
+return articles.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());</pre>
 
     <div v-if="!compact" class="additional-info">
       <el-divider />
       <h3>性能优化建议</h3>
       <ul>
-        <li>使用 <code>fetchApi</code> 而不是原生 <code>fetch</code>，可以自动应用授权信息</li>
+        <li>使用 <code>utils.fetchApi</code> 而不是原生 <code>fetch</code>，可以自动应用授权信息</li>
         <li>合理设置脚本超时时间，避免长时间运行</li>
-        <li>使用 <code>utils.unique</code> 去重，避免重复内容</li>
-        <li>使用 <code>utils.truncate</code> 截取过长的内容</li>
+        <li>使用数组的 <code>filter</code> 和 <code>Map</code> 去重，避免重复内容</li>
+        <li>使用字符串的 <code>substring</code> 方法截取过长的内容</li>
         <li>适当使用缓存，避免频繁请求同一资源</li>
         <li>处理异常情况，确保脚本稳定运行</li>
       </ul>
 
       <h3>调试技巧</h3>
       <ul>
-        <li>使用 <code>console.log</code> 或 <code>utils.log</code> 输出调试信息</li>
+        <li>使用 <code>console.log</code> 输出调试信息</li>
         <li>在调试模式下查看日志输出选项卡</li>
         <li>检查返回的JSON格式是否正确</li>
         <li>验证日期格式是否能正确解析</li>

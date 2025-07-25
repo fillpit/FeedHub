@@ -36,14 +36,34 @@ export function getNodeText(node: any): string {
   return '';
 }
 
-export function extractContentWithCSS(html: string, selector: WebsiteRssSelector, baseUrl?: string): any[] {
+export function extractContentWithCSS(html: string, selector: WebsiteRssSelector, baseUrl?: string, logs?: string[]): any[] {
   const $ = cheerio.load(html);
   const items: any[] = [];
 
+  if (logs) logs.push(`[DEBUG] 使用CSS选择器模式`);
+  if (logs) logs.push(`[DEBUG] 容器选择器: ${selector.container}`);
+  
+  const containerElements = $(selector.container);
+  if (logs) logs.push(`[INFO] 找到 ${containerElements.length} 个容器元素`);
+  
+  if (containerElements.length === 0) {
+    if (logs) logs.push(`[WARN] 未找到匹配容器选择器的元素: ${selector.container}`);
+    return items;
+  }
+
   $(selector.container).each((index, element) => {
     const $element = $(element);
-    const title = $element.find(selector.title).text().trim();
-    const link = $element.find(selector.link).attr('href');
+    if (logs) logs.push(`[DEBUG] 处理第 ${index + 1} 个容器元素`);
+    
+    // 提取标题
+    const titleElement = $element.find(selector.title);
+    const title = titleElement.text().trim();
+    if (logs) logs.push(`[DEBUG] 标题选择器: ${selector.title}, 找到 ${titleElement.length} 个元素, 提取结果: "${title}"`);
+    
+    // 提取链接
+    const linkElement = $element.find(selector.link);
+    const link = linkElement.attr('href');
+    if (logs) logs.push(`[DEBUG] 链接选择器: ${selector.link}, 找到 ${linkElement.length} 个元素, 提取结果: "${link}"`);
     
     // 处理相对URL
     let absoluteLink = link;
@@ -51,8 +71,10 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
       try {
         const configUrl = new URL(baseUrl);
         absoluteLink = new URL(link, configUrl.origin).href;
+        if (logs) logs.push(`[DEBUG] 转换相对URL: "${link}" -> "${absoluteLink}"`);
       } catch (error) {
         logger.warn(`处理相对URL失败: ${(error as Error).message}`);
+        if (logs) logs.push(`[WARN] 处理相对URL失败: ${(error as Error).message}`);
         absoluteLink = link; // 保持原始链接
       }
     }
@@ -64,49 +86,78 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
     };
 
     // 提取日期（如果有）
-    if (selector.date && $element.find(selector.date).length > 0) {
-      const dateText = $element.find(selector.date).text().trim();
-      item.pubDate = dateText;
-    }
-
-    // 提取内容（如果有）
-    if (selector.content && $element.find(selector.content).length > 0) {
-      item.content = $element.find(selector.content).html() || '';
-      item.contentSnippet = $element.find(selector.content).text().trim().substring(0, 300);
-    }
-
-    // 提取作者（如果有）
-    if (selector.author && $element.find(selector.author).length > 0) {
-      item.author = $element.find(selector.author).text().trim();
-    }
-    
-    // 提取封面图片（如果有）
-    if (selector.image && $element.find(selector.image).length > 0) {
-      // 尝试获取图片的src属性
-      const imgSrc = $element.find(selector.image).attr('src');
-      if (imgSrc) {
-        // 处理相对URL
-        if (imgSrc && !imgSrc.startsWith('http') && baseUrl) {
-          try {
-            const configUrl = new URL(baseUrl);
-            item.image = new URL(imgSrc, configUrl.origin).href;
-          } catch (error) {
-            logger.warn(`处理图片相对URL失败: ${(error as Error).message}`);
-            item.image = imgSrc; // 保持原始链接
-          }
-        } else {
-          item.image = imgSrc;
-        }
+    if (selector.date) {
+      const dateElement = $element.find(selector.date);
+      if (dateElement.length > 0) {
+        const dateText = dateElement.text().trim();
+        item.pubDate = dateText;
+        if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date}, 找到 ${dateElement.length} 个元素, 提取结果: "${dateText}"`);
+      } else {
+        if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date}, 未找到匹配元素`);
       }
     }
 
+    // 提取内容（如果有）
+    if (selector.content) {
+      const contentElement = $element.find(selector.content);
+      if (contentElement.length > 0) {
+        item.content = contentElement.html() || '';
+        item.contentSnippet = contentElement.text().trim().substring(0, 300);
+        if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content}, 找到 ${contentElement.length} 个元素, 内容长度: ${item.content.length} 字符`);
+      } else {
+        if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content}, 未找到匹配元素`);
+      }
+    }
+
+    // 提取作者（如果有）
+    if (selector.author) {
+      const authorElement = $element.find(selector.author);
+      if (authorElement.length > 0) {
+        item.author = authorElement.text().trim();
+        if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author}, 找到 ${authorElement.length} 个元素, 提取结果: "${item.author}"`);
+      } else {
+        if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author}, 未找到匹配元素`);
+      }
+    }
+    
+    // 提取封面图片（如果有）
+    if (selector.image) {
+      const imageElement = $element.find(selector.image);
+      if (imageElement.length > 0) {
+        // 尝试获取图片的src属性
+        const imgSrc = imageElement.attr('src');
+        if (imgSrc) {
+          // 处理相对URL
+          if (imgSrc && !imgSrc.startsWith('http') && baseUrl) {
+            try {
+              const configUrl = new URL(baseUrl);
+              item.image = new URL(imgSrc, configUrl.origin).href;
+              if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 转换相对URL: "${imgSrc}" -> "${item.image}"`);
+            } catch (error) {
+              logger.warn(`处理图片相对URL失败: ${(error as Error).message}`);
+              if (logs) logs.push(`[WARN] 处理图片相对URL失败: ${(error as Error).message}`);
+              item.image = imgSrc; // 保持原始链接
+            }
+          } else {
+            item.image = imgSrc;
+            if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 找到 ${imageElement.length} 个元素, 提取结果: "${imgSrc}"`);
+          }
+        } else {
+          if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 找到元素但无src属性`);
+        }
+      } else {
+        if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 未找到匹配元素`);
+      }
+    }
+
+    if (logs) logs.push(`[INFO] 第 ${index + 1} 个项目提取完成: 标题="${title}", 链接="${absoluteLink}"`);
     items.push(item);
   });
 
   return items;
 }
 
-export function extractContentWithXPath(html: string, selector: WebsiteRssSelector, baseUrl?: string): any[] {
+export function extractContentWithXPath(html: string, selector: WebsiteRssSelector, baseUrl?: string, logs?: string[]): any[] {
   const items: any[] = [];
   const doc = new DOMParser({
     errorHandler: {
@@ -116,19 +167,32 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
     }
   }).parseFromString(html, "text/html");
 
+  if (logs) logs.push(`[DEBUG] 使用XPath选择器模式`);
+  if (logs) logs.push(`[DEBUG] 容器选择器: ${selector.container}`);
+
   // 获取所有容器节点
   const containerNodesResult = xpath.select(selector.container, doc);
   const containerNodes = Array.isArray(containerNodesResult) ? containerNodesResult : [containerNodesResult];
+  
+  if (logs) logs.push(`[INFO] 找到 ${containerNodes.length} 个容器节点`);
+  
+  if (containerNodes.length === 0) {
+    if (logs) logs.push(`[WARN] 未找到匹配容器选择器的节点: ${selector.container}`);
+    return items;
+  }
   
   // 遍历每个容器节点
   for (let i = 0; i < containerNodes.length; i++) {
     const containerNode = containerNodes[i];
     if (!containerNode) continue;
     
+    if (logs) logs.push(`[DEBUG] 处理第 ${i + 1} 个容器节点`);
+    
     // 提取标题
     const titleNodesResult = xpath.select(selector.title, containerNode as Node);
     const titleNodes = Array.isArray(titleNodesResult) ? titleNodesResult : [titleNodesResult];
     const title = titleNodes.length > 0 && titleNodes[0] ? getNodeText(titleNodes[0]) : '';
+    if (logs) logs.push(`[DEBUG] 标题选择器: ${selector.title}, 找到 ${titleNodes.length} 个节点, 提取结果: "${title}"`);
     
     // 提取链接
     const linkNodesResult = xpath.select(selector.link, containerNode as Node);
@@ -142,6 +206,7 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
         link = linkNode.getAttribute('href') || '';
       }
     }
+    if (logs) logs.push(`[DEBUG] 链接选择器: ${selector.link}, 找到 ${linkNodes.length} 个节点, 提取结果: "${link}"`);
     
     // 处理相对URL
     let absoluteLink = link;
@@ -149,8 +214,10 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
       try {
         const configUrl = new URL(baseUrl);
         absoluteLink = new URL(link, configUrl.origin).href;
+        if (logs) logs.push(`[DEBUG] 转换相对URL: "${link}" -> "${absoluteLink}"`);
       } catch (error) {
         logger.warn(`处理相对URL失败: ${(error as Error).message}`);
+        if (logs) logs.push(`[WARN] 处理相对URL失败: ${(error as Error).message}`);
         absoluteLink = link;
       }
     }
@@ -168,6 +235,9 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
       if (dateNodes.length > 0 && dateNodes[0]) {
         const dateText = getNodeText(dateNodes[0]);
         item.pubDate = dateText;
+        if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date}, 找到 ${dateNodes.length} 个节点, 提取结果: "${dateText}"`);
+      } else {
+        if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date}, 未找到匹配节点`);
       }
     }
 
@@ -184,6 +254,9 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
           item.content = getNodeText(contentNode);
           item.contentSnippet = item.content.substring(0, 300);
         }
+        if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content}, 找到 ${contentNodes.length} 个节点, 内容长度: ${item.content.length} 字符`);
+      } else {
+        if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content}, 未找到匹配节点`);
       }
     }
 
@@ -193,6 +266,9 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
       const authorNodes = Array.isArray(authorNodesResult) ? authorNodesResult : [authorNodesResult];
       if (authorNodes.length > 0 && authorNodes[0]) {
         item.author = getNodeText(authorNodes[0]);
+        if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author}, 找到 ${authorNodes.length} 个节点, 提取结果: "${item.author}"`);
+      } else {
+        if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author}, 未找到匹配节点`);
       }
     }
     
@@ -213,36 +289,47 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
           imgSrc = imageNode.getAttribute('src') || '';
         }
         
-        // 处理相对URL
-        if (imgSrc && !imgSrc.startsWith('http') && baseUrl) {
-          try {
-            const configUrl = new URL(baseUrl);
-            item.image = new URL(imgSrc, configUrl.origin).href;
-          } catch (error) {
-            logger.warn(`处理图片相对URL失败: ${(error as Error).message}`);
-            item.image = imgSrc; // 保持原始链接
+        if (imgSrc) {
+          // 处理相对URL
+          if (imgSrc && !imgSrc.startsWith('http') && baseUrl) {
+            try {
+              const configUrl = new URL(baseUrl);
+              item.image = new URL(imgSrc, configUrl.origin).href;
+              if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 转换相对URL: "${imgSrc}" -> "${item.image}"`);
+            } catch (error) {
+              logger.warn(`处理图片相对URL失败: ${(error as Error).message}`);
+              if (logs) logs.push(`[WARN] 处理图片相对URL失败: ${(error as Error).message}`);
+              item.image = imgSrc; // 保持原始链接
+            }
+          } else {
+            item.image = imgSrc;
+            if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 找到 ${imageNodes.length} 个节点, 提取结果: "${imgSrc}"`);
           }
-        } else if (imgSrc) {
-          item.image = imgSrc;
+        } else {
+          if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 找到节点但无有效src值`);
         }
+      } else {
+        if (logs) logs.push(`[DEBUG] 图片选择器: ${selector.image}, 未找到匹配节点`);
       }
     }
 
+    if (logs) logs.push(`[INFO] 第 ${i + 1} 个项目提取完成: 标题="${title}", 链接="${absoluteLink}"`);
     items.push(item);
   }
 
   return items;
 }
 
-export function extractContentFromHtml(html: string, selector: WebsiteRssSelector, baseUrl?: string): any[] {
+export function extractContentFromHtml(html: string, selector: WebsiteRssSelector, baseUrl?: string, logs?: string[]): any[] {
   try {
     if (selector.selectorType === "xpath") {
-      return extractContentWithXPath(html, selector, baseUrl);
+      return extractContentWithXPath(html, selector, baseUrl, logs);
     } else {
-      return extractContentWithCSS(html, selector, baseUrl);
+      return extractContentWithCSS(html, selector, baseUrl, logs);
     }
   } catch (error) {
     logger.error(`解析HTML内容失败: ${(error as Error).message}`);
+    if (logs) logs.push(`[ERROR] 解析HTML内容失败: ${(error as Error).message}`);
     throw new Error(`解析HTML内容失败: ${(error as Error).message}`);
   }
 }

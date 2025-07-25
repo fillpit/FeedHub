@@ -66,6 +66,6 @@ export const getJsonUrl = (key: string) => {
   return `${window.location.origin}/api/json/${key}`
 }
 
-export const debugScript = (data: Partial<WebsiteRssConfig>) => {
-  return request.post('/api/website-rss/debug-script', data)
+export const debugSelector = (data: Partial<WebsiteRssConfig>) => {
+  return request.post('/api/website-rss/debug-selector', data)
 }

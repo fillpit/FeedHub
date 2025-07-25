@@ -2,20 +2,13 @@ import { injectable, inject } from "inversify";
 import WebsiteRssConfig, { WebsiteRssConfigAttributes, WebsiteRssSelector } from "../models/WebsiteRssConfig";
 import axios from "axios";
 import { AxiosInstance } from "axios";
-import GlobalSetting from "../models/GlobalSetting";
 import { ApiResponseData } from "../utils/apiResponse";
-import { logger } from "../utils/logger";
-import * as cheerio from "cheerio";
 import RSS from "rss";
 import { v4 as uuidv4 } from "uuid";
-import * as xpath from "xpath";
-import { DOMParser } from "xmldom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import zhCN from "dayjs/locale/zh-cn";
-import * as vm from "vm"; // 使用 Node.js 内置的 vm 模块
-import * as util from 'util';
 // 工具函数导入
 import { extractContentFromHtml } from "../utils/htmlExtractor";
 import { formatDate } from "../utils/dateUtils";
@@ -211,20 +204,16 @@ export class WebsiteRssService {
     // 创建带有授权信息的请求配置
     const requestConfig = createRequestConfig(auth);
     let extractedContent: any[] = [];
-    if (config.fetchMode === "script") {
-      // 脚本抓取模式
-      extractedContent = await this.extractContentWithScript(config, requestConfig);
-    } else {
-      // 选择器抓取模式（默认）
-      const response = await this.axiosInstance.get(config.url, requestConfig);
-      const html = response.data;
-      // 提取内容并格式化日期
-      extractedContent = extractContentFromHtml(html, config.selector as WebsiteRssSelector, config.url)
-        .map(item => ({
-          ...item,
-          pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat)
-        }));
-    }
+    // 选择器抓取模式（默认）
+    const response = await this.axiosInstance.get(config.url, requestConfig);
+    const html = response.data;
+    // 提取内容并格式化日期
+    extractedContent = extractContentFromHtml(html, config.selector as WebsiteRssSelector, config.url)
+      .map(item => ({
+        ...item,
+        pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat)
+      }));
+
     console.log('extractedContent', extractedContent)
     // 更新配置
     await WebsiteRssConfig.update(
@@ -320,77 +309,94 @@ export class WebsiteRssService {
   }
 
   /**
-   * 使用脚本抓取内容
+   * 调试选择器配置
    */
-  private async extractContentWithScript(config: WebsiteRssConfigAttributes, requestConfig: any): Promise<any[]> {
-    // 校验脚本
-    if (!config.script || !config.script.enabled || !config.script.script) {
-      throw new Error("脚本抓取未启用或脚本内容为空");
-    }
-    // 创建脚本上下文并执行
-    const context = createScriptContext(config, this.axiosInstance, requestConfig);
-    const result = await executeScript(config, context, this.axiosInstance, undefined, this.npmPackageService);
-    // 校验结果
-    return validateScriptResult(result);
-  }
-
-  /**
-   * 脚本调试
-   */
-  public async debugScript(config: WebsiteRssConfigAttributes): Promise<ApiResponseData<any>> {
+  async debugSelector(configData: any): Promise<ApiResponseData<any>> {
     const startTime = Date.now();
     const logs: string[] = [];
+
     try {
-      // 校验脚本
-      if (!config.script || !config.script.enabled || !config.script.script) {
-        throw new Error("脚本未启用或脚本内容为空");
-      }
-      // 新增：如有authCredentialId，查库组装
-      let auth = config.auth || { enabled: false, authType: "none" };
-      if (config.authCredentialId) {
-        const authObj = await AuthCredential.findByPk(config.authCredentialId);
-        if (!authObj) throw new Error("未找到授权信息");
-        let customHeaders: Record<string, string> | undefined = undefined;
-        if (authObj.customHeaders && typeof authObj.customHeaders === 'object') {
-          try {
-            customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
-          } catch {
-            customHeaders = undefined;
+      logs.push(`[INFO] 开始调试选择器配置`);
+      logs.push(`[DEBUG] 目标URL: ${configData.url}`);
+      logs.push(`[DEBUG] 选择器配置: ${JSON.stringify(configData.selector, null, 2)}`);
+
+      // 获取授权信息
+      let auth = configData.auth || { enabled: false, authType: "none" };
+      if (configData.authCredentialId) {
+        const authObj = await AuthCredential.findByPk(configData.authCredentialId);
+        if (authObj) {
+          let customHeaders: Record<string, string> | undefined = undefined;
+          if (authObj.customHeaders && typeof authObj.customHeaders === 'object') {
+            try {
+              customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
+            } catch {
+              customHeaders = undefined;
+            }
           }
+          auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
+          logs.push(`[INFO] 使用授权信息: ${authObj.name} (${authObj.authType})`);
+        } else {
+          logs.push(`[WARN] 未找到授权信息，ID: ${configData.authCredentialId}`);
         }
-        auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
-        config.auth = auth;
       }
-      // 创建脚本上下文并执行
+
+      // 创建请求配置
       const requestConfig = createRequestConfig(auth);
-      const context = createScriptContext(config, this.axiosInstance, requestConfig, logs);
-      const result = await executeScript(config, context, this.axiosInstance, logs, this.npmPackageService);
+      logs.push(`[DEBUG] 请求配置: ${JSON.stringify(requestConfig, null, 2)}`);
+
+      // 获取网页内容
+      logs.push(`[INFO] 正在获取网页内容...`);
+      const response = await this.axiosInstance.get(configData.url, requestConfig);
+      logs.push(`[INFO] 网页获取成功，状态码: ${response.status}`);
+      logs.push(`[INFO] 响应头: ${JSON.stringify(response.headers, null, 2)}`);
+      
+      const html = response.data;
+      logs.push(`[INFO] 网页内容长度: ${html.length} 字符`);
+
+      // 使用选择器提取内容
+      logs.push(`[INFO] 开始使用选择器提取内容...`);
+      const extractedContent = extractContentFromHtml(html, configData.selector as WebsiteRssSelector, configData.url, logs);
+      logs.push(`[INFO] 提取完成，共找到 ${extractedContent.length} 个项目`);
+
+      // 格式化日期
+      const formattedContent = extractedContent.map(item => ({
+        ...item,
+        pubDate: formatDate(item.pubDate, (configData.selector as WebsiteRssSelector).dateFormat)
+      }));
+
       const executionTime = Date.now() - startTime;
-      logs.push(`[INFO] 脚本执行成功，耗时 ${executionTime}ms`);
+      logs.push(`[INFO] 调试完成，耗时: ${executionTime}ms`);
+
       return {
         success: true,
         data: {
           success: true,
+          result: formattedContent,
           logs,
-          result,
           executionTime,
+          totalItems: formattedContent.length
         },
-        message: "脚本调试成功"
+        message: "选择器调试成功"
       };
-    } catch (error) {
+    } catch (error: any) {
       const executionTime = Date.now() - startTime;
-      logs.push(`[FATAL] 脚本执行失败: ${(error as Error).message}`);
+      logs.push(`[ERROR] 调试失败: ${error.message}`);
+      if (error.stack) {
+        logs.push(`[ERROR] 错误堆栈: ${error.stack}`);
+      }
+
       return {
         success: false,
         data: {
           success: false,
+          error: error.message,
+          stack: error.stack,
           logs,
-          error: (error as Error).message,
-          stack: (error as Error).stack,
-          executionTime,
+          executionTime
         },
-        message: "脚本调试失败"
+        message: "选择器调试失败"
       };
     }
   }
+
 }

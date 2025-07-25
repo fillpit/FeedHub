@@ -24,7 +24,7 @@ router.delete("/:id", (req, res) => websiteRssController.deleteConfig(req, res))
 // 刷新网站RSS配置
 router.post("/:id/refresh", (req, res) => websiteRssController.refreshConfig(req, res));
 
-// 新增路由
-router.post('/debug-script', (req, res) => websiteRssController.debugScript(req, res));
+// 调试选择器配置
+router.post("/debug-selector", (req, res) => websiteRssController.debugSelector(req, res));
 
 export default router;

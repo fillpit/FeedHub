@@ -45,9 +45,9 @@
       <el-empty v-if="filteredRoutes.length === 0" description="暂无动态路由配置" />
 
       <!-- 路由列表 -->
-      <el-table v-else :data="filteredRoutes" style="width: 100%" @selection-change="handleSelectionChange">
+      <el-table v-else :data="filteredRoutes" border style="width: 100%" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="name" label="名称" min-width="120">
+        <el-table-column prop="name" label="名称"  min-width="100">
           <template #default="{ row }">
             <div class="route-name">
               <span>{{ row.name }}</span>
@@ -57,7 +57,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="path" label="路径" min-width="150">
+        <el-table-column prop="path" label="路径" min-width="130">
           <template #default="{ row }">
             <div class="route-path">
               <el-tooltip :content="`${baseUrl}/dynamic${row.path}`" placement="top">
@@ -132,7 +132,7 @@
 
         <el-form-item label="路由路径" prop="path">
           <el-input v-model="form.path" placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid">
-            <template #prepend>/custom</template>
+            <template #prepend>/dynamic</template>
           </el-input>
           <div style="font-size: 12px; color: #909399; margin-top: 4px;">
             路由路径格式说明：路径以 / 开头，支持动态参数（如 :uid、:id），动态参数会自动传递给脚本的 routeParams 对象
@@ -196,13 +196,13 @@
               </el-form-item>
             </el-col>
 
-            <el-col :span="6">
+            <el-col :span="4">
               <el-form-item :label="'必填'" :prop="`params.${index}.required`" label-width="60px">
                 <el-switch v-model="param.required" />
               </el-form-item>
             </el-col>
 
-            <el-col :span="4">
+            <el-col :span="6">
               <el-form-item :label="'默认值'" :prop="`params.${index}.default`" label-width="60px">
                 <el-input v-model="param.defaultValue" placeholder="默认值" />
               </el-form-item>
@@ -234,15 +234,28 @@
         <el-form-item label="脚本内容" prop="script.content">
           <!-- 内联脚本 -->
           <template v-if="form.script.sourceType === 'inline'">
-            <el-input
+            <CodeEditor
               v-model="form.script.content"
-              type="textarea"
-              placeholder="请输入JavaScript脚本"
-              :rows="10"
-              class="script-textarea"
+              language="javascript"
+              theme="vs-dark"
+              :height="400"
+              :options="{
+                placeholder: '请输入JavaScript脚本...',
+                suggest: {
+                  showKeywords: true,
+                  showSnippets: true,
+                  showFunctions: true
+                },
+                quickSuggestions: {
+                  other: true,
+                  comments: true,
+                  strings: true
+                }
+              }"
             />
             <div class="script-help">
               <el-button type="primary" link @click="showScriptHelp">脚本帮助指南</el-button>
+              <span class="editor-tips">支持语法高亮、自动补全、错误检查等功能</span>
             </div>
           </template>
 
@@ -395,6 +408,7 @@ import { authCredentialApi } from "@/api/authCredential";
 import type { AuthCredential } from "@/types/authCredential";
 import { copyToClipboard } from "@/utils";
 import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
+import CodeEditor from "@/components/CodeEditor.vue";
 
 // 状态
 const loading = ref(false);
@@ -936,9 +950,16 @@ onMounted(() => {
     }
 
     .script-help {
-      margin-top: 5px;
-      text-align: right;
-    }
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .editor-tips {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
 
     .script-upload {
       width: 100%;

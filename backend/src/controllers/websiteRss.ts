@@ -50,11 +50,6 @@ export class WebsiteRssController extends BaseController {
     });
   }
 
-  async debugScript(req: Request, res: Response): Promise<void> {
-    await this.handleRequest(req, res, async () => {
-      return await this.websiteRssService.debugScript(req.body);
-    });
-  }
 
   async getRssFeed(req: Request, res: Response): Promise<void> {
     try {
@@ -81,5 +76,11 @@ export class WebsiteRssController extends BaseController {
       console.error('获取JSON Feed失败:', error);
       res.status(500).json({ error: `获取JSON Feed失败: ${error instanceof Error ? error.message : "未知错误"}` });
     }
+  }
+
+  async debugSelector(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      return await this.websiteRssService.debugSelector(req.body);
+    });
   }
 }

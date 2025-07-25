@@ -78,25 +78,18 @@
         <el-form-item label="网站URL" prop="url">
           <el-input v-model="form.url" placeholder="请输入网站URL" />
         </el-form-item>
+        <el-form-item label="网站图标" prop="favicon">
+          <el-input v-model="form.favicon" placeholder="请输入图标URL（可选）" />
+        </el-form-item>
         <el-form-item label="刷新间隔(分钟)" prop="fetchInterval">
           <el-input-number v-model="form.fetchInterval" :min="1" />
-        </el-form-item>
-        <el-form-item label="最大条目数" prop="maxFeeds">
-          <el-input-number v-model="form.maxFeeds" :min="1" :max="200" />
         </el-form-item>
         <el-form-item label="启用代理" prop="useProxy">
           <el-switch v-model="form.useProxy" />
         </el-form-item>
 
         <el-divider>抓取设置</el-divider>
-        <el-form-item label="抓取模式" prop="script.enabled">
-           <el-radio-group v-model="form.script.enabled">
-             <el-radio-button :value="false">选择器模式</el-radio-button>
-             <el-radio-button :value="true">脚本模式</el-radio-button>
-           </el-radio-group>
-         </el-form-item>
-
-        <template v-if="!form.script.enabled">
+        
           <el-form-item label="选择器类型" prop="selector.selectorType">
             <el-radio-group v-model="form.selector.selectorType">
               <el-radio-button label="css">CSS</el-radio-button>
@@ -106,94 +99,110 @@
           <el-form-item label="容器选择器" prop="selector.container">
             <el-input v-model="form.selector.container" placeholder="请输入容器选择器" />
           </el-form-item>
-          <el-form-item label="标题选择器" prop="selector.title">
-            <el-input v-model="form.selector.title" placeholder="请输入标题选择器" />
-          </el-form-item>
-          <el-form-item label="链接选择器" prop="selector.link">
-            <el-input v-model="form.selector.link" placeholder="请输入链接选择器" />
-          </el-form-item>
-          <el-form-item label="内容选择器" prop="selector.content">
-            <el-input v-model="form.selector.content" placeholder="请输入内容选择器" />
-          </el-form-item>
-          <el-form-item label="作者选择器" prop="selector.author">
-            <el-input v-model="form.selector.author" placeholder="请输入作者选择器" />
-          </el-form-item>
-          <el-form-item label="发布日期选择器" prop="selector.date">
-            <el-input v-model="form.selector.date" placeholder="请输入发布日期选择器" />
-          </el-form-item>
-          <el-form-item label="封面图片选择器" prop="selector.image">
-            <el-input v-model="form.selector.image" placeholder="请输入封面图片选择器" />
-          </el-form-item>
-        </template>
-        
-        <template v-if="form.script.enabled">
-          <el-form-item label="脚本超时时间(ms)" prop="script.timeout">
-            <el-input-number v-model="form.script.timeout" :min="5000" :max="120000" :step="1000" placeholder="默认30000毫秒" />
-          </el-form-item>
-          <el-form-item label="JavaScript脚本" prop="script.script">
-            <div class="script-input-container">
-              <el-input v-model="form.script.script" type="textarea" :rows="15" placeholder="请输入JavaScript脚本代码" />
-              <div class="script-help-container">
-                <ScriptHelpGuide />
-              </div>
+          <el-form-item label="标题选择器" prop="selector.title.selector">
+            <div class="selector-field-group">
+              <el-input v-model="form.selector.title.selector" placeholder="请输入标题选择器" style="flex: 1; margin-right: 8px;" />
+              <el-select v-model="form.selector.title.extractType" style="width: 100px; margin-right: 8px;">
+                <el-option label="文本" value="text" />
+                <el-option label="属性" value="attr" />
+              </el-select>
+              <el-input 
+                v-if="form.selector.title.extractType === 'attr'" 
+                v-model="form.selector.title.attrName" 
+                placeholder="属性名" 
+                style="width: 120px;" 
+              />
             </div>
           </el-form-item>
-        </template>
-        
+          <el-form-item label="链接选择器" prop="selector.link.selector">
+             <div class="selector-field-group">
+               <el-input v-model="form.selector.link!.selector" placeholder="请输入链接选择器" style="flex: 1; margin-right: 8px;" />
+               <el-select v-model="form.selector.link!.extractType" style="width: 100px; margin-right: 8px;">
+                 <el-option label="文本" value="text" />
+                 <el-option label="属性" value="attr" />
+               </el-select>
+               <el-input 
+                 v-if="form.selector.link!.extractType === 'attr'" 
+                 v-model="form.selector.link!.attrName" 
+                 placeholder="属性名" 
+                 style="width: 120px;" 
+               />
+             </div>
+           </el-form-item>
+          <el-form-item label="内容选择器" prop="selector.content.selector">
+            <div class="selector-field-group">
+              <el-input v-model="form.selector.content.selector" placeholder="请输入内容选择器" style="flex: 1; margin-right: 8px;" />
+              <el-select v-model="form.selector.content.extractType" style="width: 100px; margin-right: 8px;">
+                <el-option label="文本" value="text" />
+                <el-option label="属性" value="attr" />
+              </el-select>
+              <el-input 
+                v-if="form.selector.content.extractType === 'attr'" 
+                v-model="form.selector.content.attrName" 
+                placeholder="属性名" 
+                style="width: 120px;" 
+              />
+            </div>
+          </el-form-item>
+          <el-form-item label="作者选择器" prop="selector.author.selector">
+             <div class="selector-field-group">
+               <el-input v-model="form.selector.author!.selector" placeholder="请输入作者选择器" style="flex: 1; margin-right: 8px;" />
+               <el-select v-model="form.selector.author!.extractType" style="width: 100px; margin-right: 8px;">
+                 <el-option label="文本" value="text" />
+                 <el-option label="属性" value="attr" />
+               </el-select>
+               <el-input 
+                 v-if="form.selector.author!.extractType === 'attr'" 
+                 v-model="form.selector.author!.attrName" 
+                 placeholder="属性名" 
+                 style="width: 120px;" 
+               />
+             </div>
+           </el-form-item>
+          <el-form-item label="发布日期选择器" prop="selector.date.selector">
+             <div class="selector-field-group">
+               <el-input v-model="form.selector.date!.selector" placeholder="请输入发布日期选择器" style="flex: 1; margin-right: 8px;" />
+               <el-select v-model="form.selector.date!.extractType" style="width: 100px; margin-right: 8px;">
+                 <el-option label="文本" value="text" />
+                 <el-option label="属性" value="attr" />
+               </el-select>
+               <el-input 
+                 v-if="form.selector.date!.extractType === 'attr'" 
+                 v-model="form.selector.date!.attrName" 
+                 placeholder="属性名" 
+                 style="width: 120px;" 
+               />
+             </div>
+           </el-form-item>
+
         <el-divider>授权设置</el-divider>
         <el-form-item label="选择授权">
-          <el-select v-model="form.authCredentialId" @change="handleSelectAuth" clearable placeholder="选择已保存的授权信息">
-            <el-option label="自定义" :value="undefined" />
+          <el-select v-model="form.authCredentialId" clearable placeholder="选择已保存的授权信息">
+            <el-option label="无授权" :value="undefined" />
             <el-option v-for="item in authCredentials" :key="item.id" :label="item.name + '（' + item.authType + '）'" :value="item.id" />
           </el-select>
         </el-form-item>
 
-        <template v-if="!form.authCredentialId">
-          <el-form-item label="授权方式" prop="auth.authType">
-            <el-select v-model="form.auth.authType" placeholder="请选择授权方式">
-              <el-option label="无" value="none" />
-              <el-option label="Cookie" value="cookie" />
-              <el-option label="Basic Auth" value="basic" />
-              <el-option label="Bearer Token" value="bearer" />
-              <el-option label="自定义请求头" value="custom" />
-            </el-select>
-          </el-form-item>
-          <template v-if="form.auth.authType === 'cookie'">
-            <el-form-item label="Cookie" prop="auth.cookie">
-              <el-input v-model="form.auth.cookie" type="textarea" :rows="3" placeholder="请输入Cookie" />
-            </el-form-item>
-          </template>
-          <template v-if="form.auth.authType === 'basic' && form.auth.basicAuth">
-            <el-form-item label="用户名" prop="auth.basicAuth.username">
-              <el-input v-model="form.auth.basicAuth.username" placeholder="请输入用户名" />
-            </el-form-item>
-            <el-form-item label="密码" prop="auth.basicAuth.password">
-              <el-input v-model="form.auth.basicAuth.password" type="password" placeholder="请输入密码" show-password />
-            </el-form-item>
-          </template>
-          <template v-if="form.auth.authType === 'bearer'">
-            <el-form-item label="Bearer Token" prop="auth.bearerToken">
-              <el-input v-model="form.auth.bearerToken" type="textarea" :rows="3" placeholder="请输入Bearer Token" />
-            </el-form-item>
-          </template>
-          <template v-if="form.auth.authType === 'custom'">
-            <el-form-item label="自定义请求头">
-              <!-- Custom Headers UI -->
-            </el-form-item>
-          </template>
-        </template>
+        <el-divider>调试工具</el-divider>
+        <el-form-item>
+          <el-button type="warning" @click="handleDebugSelector" :loading="debugging">
+            <el-icon><Tools /></el-icon>
+            调试选择器
+          </el-button>
+          <div class="debug-tip">
+            <el-text type="info" size="small">点击调试按钮可以测试当前选择器配置是否能正确抓取内容</el-text>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
           <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
-          <el-button v-if="form.script.enabled" type="warning" @click="handleDebugScript" :loading="debugging">调 试</el-button>
         </div>
       </template>
     </el-drawer>
 
-    <!-- Debug Result Dialog -->
-    <DebugResultDialog :visible="debugDialogVisible" :result="debugResult" @close="debugDialogVisible=false" />
+
 
     <!-- Import Config Dialog -->
     <el-dialog v-model="showImportDialog" title="导入配置" width="600px">
@@ -273,6 +282,91 @@
         <el-button type="primary" @click="saveFavicon">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- Debug Result Dialog -->
+    <el-dialog v-model="debugDialogVisible" title="调试结果" width="80%" top="5vh">
+      <div v-if="debugResult" class="debug-result-container">
+        <!-- 执行概览 -->
+        <el-card class="debug-overview" shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span>执行概览</span>
+              <el-tag :type="debugResult.success ? 'success' : 'danger'" size="small">
+                {{ debugResult.success ? '成功' : '失败' }}
+              </el-tag>
+            </div>
+          </template>
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-statistic title="执行时间" :value="debugResult.executionTime" suffix="ms" />
+            </el-col>
+            <el-col :span="6">
+              <el-statistic title="抓取条数" :value="debugResult.items?.length || 0" suffix="条" />
+            </el-col>
+            <el-col :span="6">
+              <el-statistic title="目标URL" :value="debugResult.url" value-style="font-size: 14px; word-break: break-all;" />
+            </el-col>
+            <el-col :span="6">
+              <el-statistic title="选择器类型" :value="debugResult.selectorType" />
+            </el-col>
+          </el-row>
+        </el-card>
+
+        <!-- 错误信息 -->
+        <el-card v-if="debugResult.error" class="debug-error" shadow="never">
+          <template #header>
+            <span>错误信息</span>
+          </template>
+          <el-alert :title="debugResult.error" type="error" show-icon :closable="false" />
+        </el-card>
+
+        <!-- 抓取结果预览 -->
+        <el-card v-if="debugResult.items && debugResult.items.length > 0" class="debug-items" shadow="never">
+          <template #header>
+            <span>抓取结果预览 ({{ debugResult.items.length }} 条)</span>
+          </template>
+          <el-table :data="debugResult.items.slice(0, 5)" size="small" max-height="300">
+            <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="link" label="链接" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">
+                <el-link :href="row.link" target="_blank" type="primary" :underline="false">
+                  {{ row.link }}
+                </el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="content" label="内容" min-width="300" show-overflow-tooltip>
+              <template #default="{ row }">
+                <span>{{ row.content ? (row.content.length > 100 ? row.content.substring(0, 100) + '...' : row.content) : '无内容' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="author" label="作者" width="120" show-overflow-tooltip />
+            <el-table-column prop="date" label="发布时间" width="150" show-overflow-tooltip />
+          </el-table>
+          <div v-if="debugResult.items.length > 5" class="more-items-tip">
+            <el-text type="info" size="small">还有 {{ debugResult.items.length - 5 }} 条数据未显示</el-text>
+          </div>
+        </el-card>
+
+        <!-- 调试日志 -->
+        <el-card v-if="debugResult.logs && debugResult.logs.length > 0" class="debug-logs" shadow="never">
+          <template #header>
+            <span>调试日志 ({{ debugResult.logs.length }} 条)</span>
+          </template>
+          <div class="logs-container">
+            <div v-for="(log, index) in debugResult.logs" :key="index" class="log-item" :class="`log-${log.level}`">
+              <el-tag :type="getLogTagType(log.level)" size="small" class="log-level">{{ log.level.toUpperCase() }}</el-tag>
+              <span class="log-message">{{ log.message }}</span>
+            </div>
+          </div>
+        </el-card>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="debugDialogVisible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -287,17 +381,16 @@ import {
   updateWebsiteRss,
   deleteWebsiteRss,
   refreshWebsiteRss,
-  debugScript,
+  debugSelector,
   getRssUrl,
   getJsonUrl,
   getConfigById
 } from '@/api/websiteRss';
 import type { WebsiteRssConfig } from '@/types/websiteRss';
-import { Document, Refresh, Edit, Delete, CopyDocument, Download, Upload, UploadFilled } from '@element-plus/icons-vue';
+import { Document, Refresh, Edit, Delete, CopyDocument, Download, Upload, UploadFilled, Tools } from '@element-plus/icons-vue';
 import { authCredentialApi } from '@/api/authCredential';
 import type { AuthCredential } from '@/types';
-import DebugResultDialog from '@/components/DebugResultDialog.vue';
-import ScriptHelpGuide from '@/components/ScriptHelpGuide.vue';
+
 
 const configs = ref<WebsiteRssConfig[]>([]);
 const configsLoading = ref(false);
@@ -307,6 +400,9 @@ const dialogTitle = ref('');
 const formRef = ref<FormInstance>();
 const isEdit = ref(false);
 const authCredentials = ref<AuthCredential[]>([]);
+const debugging = ref(false);
+const debugDialogVisible = ref(false);
+const debugResult = ref<any>(null);
 
 const getInitialFormState = (): WebsiteRssConfig => ({
   id: 0,
@@ -324,12 +420,36 @@ const getInitialFormState = (): WebsiteRssConfig => ({
   selector: {
     selectorType: 'css',
     container: '',
-    title: '',
-    link: '',
-    content: '',
-    author: '',
-    date: '',
-    image: '',
+    title: {
+      selector: '',
+      extractType: 'text',
+      attrName: ''
+    },
+    link: {
+      selector: '',
+      extractType: 'attr',
+      attrName: 'href'
+    },
+    content: {
+      selector: '',
+      extractType: 'text',
+      attrName: ''
+    },
+    author: {
+      selector: '',
+      extractType: 'text',
+      attrName: ''
+    },
+    date: {
+      selector: '',
+      extractType: 'text',
+      attrName: ''
+    },
+    image: {
+      selector: '',
+      extractType: 'attr',
+      attrName: 'src'
+    },
   },
   auth: {
     enabled: false,
@@ -360,17 +480,7 @@ const rules = reactive<FormRules>({
   url: [{ required: true, message: '请输入网站URL', trigger: 'blur' }],
 });
 
-const debugging = ref(false);
-const debugDialogVisible = ref(false);
-const activeTab = ref('result');
-const debugResult = reactive({
-  success: false,
-  logs: [] as string[],
-  result: null as any,
-  error: '',
-  stack: '',
-  executionTime: 0,
-});
+
 
 
 const fetchConfigs = async () => {
@@ -416,6 +526,64 @@ const editConfig = (config: WebsiteRssConfig) => {
   if (!form.value.selector.selectorType) form.value.selector.selectorType = 'css';
   if (!form.value.selector.container && (form.value.selector as any).item) form.value.selector.container = (form.value.selector as any).item;
   if (!form.value.selector.date && (form.value.selector as any).pubDate) form.value.selector.date = (form.value.selector as any).pubDate;
+  
+  // 兼容旧版本选择器格式：将字符串类型转换为SelectorField对象
+  const selector = form.value.selector as any;
+  
+  // 转换title字段
+  if (typeof selector.title === 'string') {
+    selector.title = {
+      selector: selector.title,
+      extractType: 'text',
+      attrName: ''
+    };
+  }
+  
+  // 转换link字段
+  if (typeof selector.link === 'string') {
+    selector.link = {
+      selector: selector.link,
+      extractType: 'attr',
+      attrName: 'href'
+    };
+  }
+  
+  // 转换content字段
+  if (typeof selector.content === 'string') {
+    selector.content = {
+      selector: selector.content,
+      extractType: 'text',
+      attrName: ''
+    };
+  }
+  
+  // 转换author字段
+  if (typeof selector.author === 'string') {
+    selector.author = {
+      selector: selector.author,
+      extractType: 'text',
+      attrName: ''
+    };
+  }
+  
+  // 转换date字段
+  if (typeof selector.date === 'string') {
+    selector.date = {
+      selector: selector.date,
+      extractType: 'text',
+      attrName: ''
+    };
+  }
+  
+  // 转换image字段
+  if (typeof selector.image === 'string') {
+    selector.image = {
+      selector: selector.image,
+      extractType: 'attr',
+      attrName: 'src'
+    };
+  }
+  
   if (!form.value.authCredentialId) form.value.authCredentialId = undefined;
   dialogVisible.value = true;
 };
@@ -494,26 +662,7 @@ const refreshConfig = async (id: number) => {
   }
 };
 
-const handleDebugScript = async () => {
-  if (!form.value.script.script) {
-    ElMessage.warning('脚本内容不能为空');
-    return;
-  }
-  debugging.value = true;
-  try {
-    const res: any = await debugScript(form.value);
-    // 现在调试脚本返回标准的ApiResponse格式，数据在res.data中
-    Object.assign(debugResult, res.data);
-    debugDialogVisible.value = true;
-    activeTab.value = res.data.success ? 'result' : 'error';
-    ElMessage.success('调试执行完成');
-  } catch (error: any) {
-    console.error('调试请求失败:', error);
-    ElMessage.error(`调试请求失败: ${error.message || '网络错误'}`);
-  } finally {
-    debugging.value = false;
-  }
-};
+
 
 const copyRssLink = async (text: string, type: "rss" | "json" = "rss") => {
   const url = type === "rss" ? getRssUrl(text) : getJsonUrl(text);
@@ -531,12 +680,7 @@ const copyRssLink = async (text: string, type: "rss" | "json" = "rss") => {
   }
 };
 
-const handleSelectAuth = (authId: number|null) => {
-  form.value.authCredentialId = authId || undefined;
-  if (authId) {
-    form.value.auth = { enabled: false, authType: 'none', cookie: '', basicAuth: { username: '', password: '' }, bearerToken: '', customHeaders: {} };
-  }
-};
+
 
 const faviconEditVisible = ref(false);
 const faviconEditUrl = ref('');
@@ -727,6 +871,83 @@ const importConfigs = async () => {
   }
 };
 
+// 调试选择器
+const handleDebugSelector = async () => {
+  if (!form.value.url) {
+    ElMessage.warning('请先输入网站URL');
+    return;
+  }
+  
+  debugging.value = true;
+  try {
+    const debugConfig = {
+      url: form.value.url,
+      selector: form.value.selector,
+      authCredentialId: form.value.authCredentialId,
+      useProxy: form.value.useProxy
+    };
+    
+    const result = await debugSelector(debugConfig);
+    
+    // 处理调试结果 - 后端返回的数据结构是嵌套的
+    const data = result.data as any;
+    debugResult.value = {
+      success: data.success,
+      executionTime: data.executionTime || 0,
+      items: data.result || [], // 后端返回的是 result 字段，不是 items
+      logs: (data.logs || []).map((log: string) => {
+        // 解析日志格式，提取级别和消息
+        const match = log.match(/^\[(\w+)\]\s*(.*)$/);
+        if (match) {
+          return {
+            level: match[1].toLowerCase(),
+            message: match[2]
+          };
+        }
+        return {
+          level: 'info',
+          message: log
+        };
+      }),
+      error: data.error,
+      url: form.value.url,
+      selectorType: form.value.selector.selectorType
+    };
+    
+    // 显示调试对话框
+    debugDialogVisible.value = true;
+    
+    if (data.error) {
+      ElMessage.error('调试失败，请检查配置');
+    } else {
+      ElMessage.success('调试完成');
+    }
+    
+  } catch (error: any) {
+    console.error('调试失败:', error);
+    ElMessage.error(`调试失败: ${error.message || '网络错误'}`);
+  } finally {
+    debugging.value = false;
+  }
+};
+
+// 获取日志标签类型
+const getLogTagType = (level: string) => {
+  switch (level.toLowerCase()) {
+    case 'error':
+    case 'fatal':
+      return 'danger';
+    case 'warn':
+      return 'warning';
+    case 'info':
+      return 'info';
+    case 'debug':
+      return 'info';
+    default:
+      return 'info';
+  }
+};
+
 // 关闭导入对话框
 const closeImportDialog = () => {
   showImportDialog.value = false;
@@ -863,5 +1084,137 @@ const closeImportDialog = () => {
   background-color: #f5f7fa;
   border-radius: 4px;
   margin-top: 15px;
+}
+
+/* 选择器字段组样式 */
+.selector-field-group {
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: #fafbfc;
+  display: flex;
+  width: 100%;
+}
+
+.selector-field-group .el-form-item {
+  margin-bottom: 12px;
+}
+
+.selector-field-group .el-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.selector-field-group .el-form-item__label {
+  font-size: 13px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.selector-field-group .el-input {
+  font-size: 13px;
+}
+
+.selector-field-group .el-select {
+  width: 100%;
+}
+
+/* 调试工具样式 */
+.debug-tip {
+  margin-top: 8px;
+}
+
+.debug-tip .el-text {
+  font-size: 12px;
+}
+
+/* 调试结果对话框样式 */
+.debug-result-container {
+  padding: 0;
+}
+
+.debug-result-container .el-card {
+  margin-bottom: 16px;
+}
+
+.debug-result-container .el-card:last-child {
+  margin-bottom: 0;
+}
+
+.debug-overview .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debug-error {
+  border-left: 4px solid #f56c6c;
+}
+
+.debug-items .more-items-tip {
+  text-align: center;
+  padding: 10px;
+  background-color: #f5f7fa;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+
+.debug-logs .logs-container {
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.debug-logs .log-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.debug-logs .log-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.debug-logs .log-level {
+  margin-right: 12px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.debug-logs .log-message {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.debug-logs .log-error {
+  background-color: #fef0f0;
+  border-left: 3px solid #f56c6c;
+  padding-left: 8px;
+}
+
+.debug-logs .log-warn {
+  background-color: #fdf6ec;
+  border-left: 3px solid #e6a23c;
+  padding-left: 8px;
+}
+
+.debug-logs .log-info {
+  background-color: #f0f9ff;
+  border-left: 3px solid #409eff;
+  padding-left: 8px;
+}
+
+.debug-logs .log-debug {
+  background-color: #f5f7fa;
+  border-left: 3px solid #909399;
+  padding-left: 8px;
 }
 </style>
