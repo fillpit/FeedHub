@@ -1,16 +1,23 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
 
+// 字段抓取配置
+export interface SelectorField {
+  selector: string;    // 选择器表达式
+  extractType: "text" | "attr"; // 抓取类型：文本值或属性值
+  attrName?: string;   // 当extractType为attr时，指定属性名
+}
+
 export interface WebsiteRssSelector {
-  selectorType: "css" | "xpath";
-  container: string;
-  title: string;
-  link: string;
-  date?: string;
-  content?: string;
-  author?: string;
-  dateFormat?: string;
-  image?: string; // 文章封面图片选择器
+  selectorType: "css" | "xpath"; // 选择器类型：CSS 或 XPath
+  container: string;  // 文章容器选择器（必填）
+  title: SelectorField;       // 标题选择器配置
+  date?: SelectorField;       // 日期选择器配置（可选）
+  content: SelectorField;     // 内容选择器配置
+  link?: SelectorField;       // 链接选择器配置（可选）
+  dateFormat?: string; // 日期格式（可选）
+  author?: SelectorField;     // 作者选择器配置（可选）
+  image?: SelectorField;      // 文章封面图片选择器配置（可选）
 }
 
 // 授权配置接口

@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineProps, defineEmits } from 'vue';
+import { computed, defineProps, defineEmits } from 'vue';
 import { QuestionFilled } from '@element-plus/icons-vue';
 import ScriptHelpContent from './ScriptHelpContent.vue';
 
