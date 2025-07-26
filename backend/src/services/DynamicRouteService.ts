@@ -12,6 +12,7 @@ import { TYPES } from "../core/types";
 import { NpmPackageService } from "./NpmPackageService";
 import AuthCredentialService from "./AuthCredentialService";
 import { AuthCredentialAttributes } from "../models/AuthCredential";
+import { ICacheService, getCacheService } from "./cache";
 
 @injectable()
 export class DynamicRouteService {
@@ -22,9 +23,87 @@ export class DynamicRouteService {
     },
   });
 
+  private cacheService: ICacheService | null = null;
+
   constructor(
     @inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService
-  ) {}
+  ) {
+    this.initializeCacheService();
+  }
+
+  /**
+   * 初始化缓存服务
+   */
+  private async initializeCacheService(): Promise<void> {
+    try {
+      this.cacheService = await getCacheService();
+      logger.info('[DynamicRouteService] 缓存服务初始化成功');
+    } catch (error) {
+      logger.error('[DynamicRouteService] 缓存服务初始化失败:', error);
+    }
+  }
+
+  /**
+   * 确保缓存服务已初始化
+   */
+  private async ensureCacheService(): Promise<ICacheService> {
+    if (!this.cacheService) {
+      this.cacheService = await getCacheService();
+    }
+    return this.cacheService;
+  }
+
+  /**
+   * 生成缓存键
+   */
+  private generateCacheKey(routePath: string, queryParams: any): string {
+    const paramsStr = JSON.stringify(queryParams, Object.keys(queryParams).sort());
+    return `route:${routePath}:${Buffer.from(paramsStr).toString('base64')}`;
+  }
+
+  /**
+   * 获取缓存
+   */
+  private async getCache(key: string): Promise<string | null> {
+    try {
+      const cacheService = await this.ensureCacheService();
+      const result = await cacheService.get(key);
+      if (result) {
+        logger.info(`[DynamicRouteService] 缓存命中: ${key}`);
+      }
+      return result;
+    } catch (error) {
+      logger.error('[DynamicRouteService] 获取缓存失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 设置缓存
+   */
+  private async setCache(key: string, data: string, ttlMinutes: number): Promise<void> {
+    try {
+      const cacheService = await this.ensureCacheService();
+      await cacheService.set(key, data, ttlMinutes * 60); // 转换为秒
+      logger.info(`[DynamicRouteService] 缓存设置: ${key}, TTL: ${ttlMinutes}分钟`);
+    } catch (error) {
+      logger.error('[DynamicRouteService] 设置缓存失败:', error);
+    }
+  }
+
+  /**
+   * 清除特定路由的所有缓存
+   */
+  private async clearRouteCache(routePath: string): Promise<void> {
+    try {
+      const cacheService = await this.ensureCacheService();
+      const pattern = `route:${routePath}:*`;
+      await cacheService.deletePattern(pattern);
+      logger.info(`[DynamicRouteService] 清除路由缓存: ${routePath}`);
+    } catch (error) {
+      logger.error('[DynamicRouteService] 清除路由缓存失败:', error);
+    }
+  }
 
   /**
    * 获取所有动态路由配置
@@ -141,6 +220,13 @@ export class DynamicRouteService {
     // 更新数据库
     await DynamicRouteConfig.update(routeData, { where: { id } });
 
+    // 清除相关缓存
+    await this.clearRouteCache(route.path);
+    if (routeData.path && routeData.path !== route.path) {
+      // 如果路径发生变化，也清除新路径的缓存
+      await this.clearRouteCache(routeData.path);
+    }
+
     // 返回最新配置
     const updatedRoute = await DynamicRouteConfig.findByPk(id);
     return { success: true, data: updatedRoute!, message: "动态路由配置更新成功" };
@@ -154,6 +240,9 @@ export class DynamicRouteService {
     const route = await DynamicRouteConfig.findByPk(id);
     if (!route) throw new Error(`未找到ID为${id}的动态路由配置`);
 
+    // 清除相关缓存
+    await this.clearRouteCache(route.path);
+    
     // 删除
     await DynamicRouteConfig.destroy({ where: { id } });
     return { success: true, data: undefined, message: "动态路由配置删除成功" };
@@ -166,6 +255,16 @@ export class DynamicRouteService {
     logger.info(`[DynamicRouteService] 开始执行动态路由脚本`);
     logger.info(`[DynamicRouteService] 请求路径: ${routePath}`);
     logger.info(`[DynamicRouteService] 查询参数:`, queryParams);
+    
+    // 生成缓存键
+    const cacheKey = this.generateCacheKey(routePath, queryParams);
+    
+    // 尝试从缓存获取结果
+    const cachedResult = await this.getCache(cacheKey);
+    if (cachedResult) {
+      logger.info(`[DynamicRouteService] 返回缓存结果`);
+      return cachedResult;
+    }
     
     // 尝试不同的路径格式进行模式匹配
     const pathsToTry = [
@@ -245,7 +344,15 @@ export class DynamicRouteService {
     const validatedResult = validateScriptResult(result);
 
     // 生成RSS
-    return this.generateRssXml(route, validatedResult);
+    const rssXml = this.generateRssXml(route, validatedResult);
+    
+    // 将结果存入缓存，使用refreshInterval作为缓存时间
+    const refreshInterval = route.refreshInterval || 60; // 默认60分钟
+    await this.setCache(cacheKey, rssXml, refreshInterval);
+    
+    logger.info(`[DynamicRouteService] 脚本执行完成，结果已缓存 ${refreshInterval} 分钟`);
+    
+    return rssXml;
   }
 
   /**

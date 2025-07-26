@@ -155,6 +155,13 @@
           />
         </el-form-item>
 
+        <el-form-item label="刷新间隔(分钟)" prop="refreshInterval">
+          <el-input-number v-model="form.refreshInterval" :min="1" :max="1440" />
+          <div style="font-size: 12px; color: #909399; margin-top: 4px;">
+            设置路由缓存刷新间隔，减少对目标网站的请求压力（1-1440分钟）
+          </div>
+        </el-form-item>
+
         <el-form-item label="授权信息" prop="authCredentialId">
           <el-select v-model="form.authCredentialId" placeholder="请选择授权信息（可选）" clearable>
             <el-option label="无授权" :value="undefined" />
@@ -438,6 +445,7 @@ const form = reactive<DynamicRouteConfig>({
   path: "",
   method: "GET",
   description: "",
+  refreshInterval: 60,
   authCredentialId: undefined,
   params: [],
   script: {
@@ -460,6 +468,10 @@ const rules = {
   ],
   method: [
     { required: true, message: "请选择HTTP方法", trigger: "change" },
+  ],
+  refreshInterval: [
+    { required: true, message: "请设置刷新间隔", trigger: "blur" },
+    { type: "number", min: 1, max: 1440, message: "刷新间隔必须在1-1440分钟之间", trigger: "blur" },
   ],
   "script.sourceType": [
     { required: true, message: "请选择脚本来源类型", trigger: "change" },
@@ -559,6 +571,7 @@ const resetForm = () => {
   form.path = "";
   form.method = "GET";
   form.description = "";
+  form.refreshInterval = 60;
   form.authCredentialId = undefined;
   form.params = [];
   form.script = {

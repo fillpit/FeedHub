@@ -28,6 +28,7 @@ export interface DynamicRouteConfigAttributes {
   params: RouteParam[]; // 路由参数配置
   script: CustomRouteScript; // 脚本配置
   description: string; // 路由描述
+  refreshInterval: number; // 刷新间隔（分钟）
   authCredentialId?: number; // 关联的授权信息ID
   createdAt: Date;
   updatedAt: Date;
@@ -46,6 +47,7 @@ class DynamicRouteConfig
   public params!: RouteParam[];
   public script!: CustomRouteScript;
   public description!: string;
+  public refreshInterval!: number;
   public authCredentialId?: number;
   public createdAt!: Date;
   public updatedAt!: Date;
@@ -84,6 +86,11 @@ DynamicRouteConfig.init(
     description: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    refreshInterval: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 60, // 默认60分钟
     },
     authCredentialId: {
       type: DataTypes.INTEGER,

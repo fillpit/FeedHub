@@ -7,6 +7,7 @@ export interface DynamicRouteConfig {
   path: string;
   method: string;
   description?: string;
+  refreshInterval: number; // 刷新间隔（分钟）
   params?: RouteParam[];
   script: {
     sourceType: 'inline' | 'url' | 'file';
