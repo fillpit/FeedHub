@@ -9,7 +9,12 @@
         <el-table-column prop="name" label="名称" width="120" />
         <el-table-column prop="authType" label="类型" width="100" />
         <el-table-column prop="cookie" label="Cookie" width="180" show-overflow-tooltip />
-        <el-table-column prop="bearerToken" label="Bearer Token" width="180" show-overflow-tooltip />
+        <el-table-column
+          prop="bearerToken"
+          label="Bearer Token"
+          width="180"
+          show-overflow-tooltip
+        />
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="customHeaders" label="自定义头" width="120">
           <template #default="scope">
@@ -38,13 +43,18 @@
             <el-option label="自定义头" value="custom" />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="form.authType==='cookie'" label="Cookie" prop="cookie">
+        <el-form-item v-if="form.authType === 'cookie'" label="Cookie" prop="cookie">
           <el-input v-model="form.cookie" type="textarea" rows="2" placeholder="请输入Cookie" />
         </el-form-item>
-        <el-form-item v-if="form.authType==='bearer'" label="Bearer Token" prop="bearerToken">
-          <el-input v-model="form.bearerToken" type="textarea" rows="2" placeholder="请输入Bearer Token" />
+        <el-form-item v-if="form.authType === 'bearer'" label="Bearer Token" prop="bearerToken">
+          <el-input
+            v-model="form.bearerToken"
+            type="textarea"
+            rows="2"
+            placeholder="请输入Bearer Token"
+          />
         </el-form-item>
-        <template v-if="form.authType==='basic'">
+        <template v-if="form.authType === 'basic'">
           <el-form-item label="用户名" prop="username">
             <el-input v-model="form.username" placeholder="请输入用户名" />
           </el-form-item>
@@ -52,15 +62,20 @@
             <el-input v-model="form.password" type="password" placeholder="请输入密码" />
           </el-form-item>
         </template>
-        <el-form-item v-if="form.authType==='custom'" label="自定义头" prop="customHeaders">
-          <el-input v-model="headersInput" type="textarea" rows="2" placeholder="请输入JSON格式，如 { 'X-Token': 'abc' }" />
+        <el-form-item v-if="form.authType === 'custom'" label="自定义头" prop="customHeaders">
+          <el-input
+            v-model="headersInput"
+            type="textarea"
+            rows="2"
+            placeholder="请输入JSON格式，如 { 'X-Token': 'abc' }"
+          />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" placeholder="备注" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible=false">取消</el-button>
+        <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="submit">保存</el-button>
       </template>
     </el-dialog>
@@ -68,51 +83,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue';
-import { ElMessage } from 'element-plus';
-import { authCredentialApi } from '@/api/authCredential';
-import type { AuthCredential } from '@/types';
+import { ref, reactive, onMounted, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { authCredentialApi } from "@/api/authCredential";
+import type { AuthCredential } from "@/types";
 
 const list = ref<AuthCredential[]>([]);
 const loading = ref(false);
 const dialogVisible = ref(false);
 const isEdit = ref(false);
 const form = reactive<AuthCredential>({
-  name: '',
-  authType: 'cookie',
-  cookie: '',
-  bearerToken: '',
-  username: '',
-  password: '',
+  name: "",
+  authType: "cookie",
+  cookie: "",
+  bearerToken: "",
+  username: "",
+  password: "",
   customHeaders: {},
-  remark: ''
+  remark: "",
 });
-const headersInput = ref('');
+const headersInput = ref("");
 const formRef = ref();
 const rules = {
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-  authType: [{ required: true, message: '请选择类型', trigger: 'change' }],
+  name: [{ required: true, message: "请输入名称", trigger: "blur" }],
+  authType: [{ required: true, message: "请选择类型", trigger: "change" }],
 };
 
 function formatHeaders(headers: any) {
-  if (!headers) return '';
+  if (!headers) return "";
   try {
     return JSON.stringify(headers);
   } catch {
-    return '';
+    return "";
   }
 }
 
 function resetForm() {
-  form.name = '';
-  form.authType = 'cookie';
-  form.cookie = '';
-  form.bearerToken = '';
-  form.username = '';
-  form.password = '';
+  form.name = "";
+  form.authType = "cookie";
+  form.cookie = "";
+  form.bearerToken = "";
+  form.username = "";
+  form.password = "";
   form.customHeaders = {};
-  form.remark = '';
-  headersInput.value = '';
+  form.remark = "";
+  headersInput.value = "";
 }
 
 async function fetchList() {
@@ -133,7 +148,7 @@ function openDialog() {
 
 function edit(row: AuthCredential) {
   Object.assign(form, row);
-  headersInput.value = row.customHeaders ? JSON.stringify(row.customHeaders) : '';
+  headersInput.value = row.customHeaders ? JSON.stringify(row.customHeaders) : "";
   isEdit.value = true;
   dialogVisible.value = true;
 }
@@ -141,18 +156,18 @@ function edit(row: AuthCredential) {
 async function remove(id?: number) {
   if (!id) return;
   await authCredentialApi.delete(id);
-  ElMessage.success('删除成功');
+  ElMessage.success("删除成功");
   fetchList();
 }
 
 async function submit() {
   await formRef.value?.validate();
   // 处理自定义头
-  if (form.authType === 'custom') {
+  if (form.authType === "custom") {
     try {
       form.customHeaders = headersInput.value ? JSON.parse(headersInput.value) : {};
     } catch {
-      ElMessage.error('自定义头格式错误');
+      ElMessage.error("自定义头格式错误");
       return;
     }
   } else {
@@ -160,16 +175,16 @@ async function submit() {
   }
   if (isEdit.value && form.id) {
     await authCredentialApi.update(form.id, form);
-    ElMessage.success('更新成功');
+    ElMessage.success("更新成功");
   } else {
     await authCredentialApi.create(form);
-    ElMessage.success('创建成功');
+    ElMessage.success("创建成功");
   }
   dialogVisible.value = false;
   fetchList();
 }
 
-watch(dialogVisible, val => {
+watch(dialogVisible, (val) => {
   if (!val) resetForm();
 });
 
@@ -186,4 +201,4 @@ onMounted(fetchList);
   align-items: center;
   margin-bottom: 16px;
 }
-</style> 
+</style>

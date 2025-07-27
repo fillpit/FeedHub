@@ -4,45 +4,58 @@ import { DOMParser } from "xmldom";
 import { v4 as uuidv4 } from "uuid";
 import { WebsiteRssSelector, SelectorField } from "../models/WebsiteRssConfig";
 import { logger } from "./logger";
-import { formatDate } from "../utils/dateUtils"
+import { formatDate } from "../utils/dateUtils";
 
 // 判断是否为元素节点
-export function isElementNode(node: any): node is { nodeType: number; getAttribute: (name: string) => string | null; toString: () => string; textContent?: string } {
-  return node && typeof node === 'object' && node.nodeType === 1 && typeof node.getAttribute === 'function';
+export function isElementNode(node: any): node is {
+  nodeType: number;
+  getAttribute: (name: string) => string | null;
+  toString: () => string;
+  textContent?: string;
+} {
+  return (
+    node &&
+    typeof node === "object" &&
+    node.nodeType === 1 &&
+    typeof node.getAttribute === "function"
+  );
 }
 
 // 判断是否为属性节点
 export function isAttributeNode(node: any): node is { nodeType: number; nodeValue: string | null } {
-  return node && typeof node === 'object' && node.nodeType === 2 && 'nodeValue' in node;
+  return node && typeof node === "object" && node.nodeType === 2 && "nodeValue" in node;
 }
 
 // 判断是否为文本节点
 export function isTextNode(node: any): node is { nodeType: number; nodeValue: string | null } {
-  return node && typeof node === 'object' && node.nodeType === 3 && 'nodeValue' in node;
+  return node && typeof node === "object" && node.nodeType === 3 && "nodeValue" in node;
 }
 
 // 辅助方法：获取节点文本内容
 export function getNodeText(node: any): string {
-  if (!node) return '';
-  if (typeof node === 'string') return node.trim();
-  if (typeof node === 'number' || typeof node === 'boolean') return String(node);
-  if (isTextNode(node)) { // 文本节点
-    return String(node.nodeValue || '').trim();
-  } else if (isAttributeNode(node)) { // 属性节点
-    return String(node.nodeValue || '').trim();
-  } else if (isElementNode(node)) { // 元素节点
-    return String(node.textContent || '').trim();
+  if (!node) return "";
+  if (typeof node === "string") return node.trim();
+  if (typeof node === "number" || typeof node === "boolean") return String(node);
+  if (isTextNode(node)) {
+    // 文本节点
+    return String(node.nodeValue || "").trim();
+  } else if (isAttributeNode(node)) {
+    // 属性节点
+    return String(node.nodeValue || "").trim();
+  } else if (isElementNode(node)) {
+    // 元素节点
+    return String(node.textContent || "").trim();
   }
-  return '';
+  return "";
 }
 
 // 辅助方法：根据SelectorField配置提取内容（CSS选择器）
 function extractWithSelectorField($element: any, field: SelectorField): string {
   const elements = $element.find(field.selector);
-  if (elements.length === 0) return '';
+  if (elements.length === 0) return "";
 
-  if (field.extractType === 'attr' && field.attrName) {
-    return elements.attr(field.attrName) || '';
+  if (field.extractType === "attr" && field.attrName) {
+    return elements.attr(field.attrName) || "";
   } else {
     return elements.text().trim();
   }
@@ -53,11 +66,11 @@ function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField
   const nodesResult = xpath.select(field.selector, containerNode);
   const nodes = Array.isArray(nodesResult) ? nodesResult : [nodesResult];
 
-  if (nodes.length === 0 || !nodes[0]) return '';
+  if (nodes.length === 0 || !nodes[0]) return "";
 
   const node = nodes[0];
 
-  if (field.extractType === 'attr' && field.attrName) {
+  if (field.extractType === "attr" && field.attrName) {
     if (isElementNode(node)) {
       // 忽略大小写匹配属性名
       // 首先尝试直接获取
@@ -72,19 +85,24 @@ function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField
         for (let i = 0; i < attributes.length; i++) {
           const attr = attributes.item(i);
           if (attr && attr.name.toLowerCase() === field.attrName.toLowerCase()) {
-            return attr.value || '';
+            return attr.value || "";
           }
         }
       }
-      return '';
+      return "";
     }
-    return '';
+    return "";
   } else {
     return getNodeText(node);
   }
 }
 
-export function extractContentWithCSS(html: string, selector: WebsiteRssSelector, baseUrl?: string, logs?: string[]): any[] {
+export function extractContentWithCSS(
+  html: string,
+  selector: WebsiteRssSelector,
+  baseUrl?: string,
+  logs?: string[]
+): any[] {
   const $ = cheerio.load(html);
   const items: any[] = [];
 
@@ -105,18 +123,24 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
 
     // 提取标题
     const title = extractWithSelectorField($element, selector.title);
-    if (logs) logs.push(`[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`);
+    if (logs)
+      logs.push(
+        `[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`
+      );
 
     // 提取链接
-    let link = '';
+    let link = "";
     if (selector.link) {
       link = extractWithSelectorField($element, selector.link);
-      if (logs) logs.push(`[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`);
+      if (logs)
+        logs.push(
+          `[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`
+        );
     }
 
     // 处理相对URL
     let absoluteLink = link;
-    if (link && !link.startsWith('http') && baseUrl) {
+    if (link && !link.startsWith("http") && baseUrl) {
       try {
         const configUrl = new URL(baseUrl);
         absoluteLink = new URL(link, configUrl.origin).href;
@@ -139,7 +163,10 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
       const dateText = extractWithSelectorField($element, selector.date);
       if (dateText) {
         item.pubDate = dateText;
-        if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date.selector}, 提取类型: ${selector.date.extractType}, 提取结果: "${dateText}"`);
+        if (logs)
+          logs.push(
+            `[DEBUG] 日期选择器: ${selector.date.selector}, 提取类型: ${selector.date.extractType}, 提取结果: "${dateText}"`
+          );
       } else {
         if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date.selector}, 未找到匹配元素`);
       }
@@ -149,15 +176,18 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
     const contentText = extractWithSelectorField($element, selector.content);
     if (contentText) {
       // 对于内容，如果是文本提取，我们需要获取HTML内容
-      if (selector.content.extractType === 'text') {
+      if (selector.content.extractType === "text") {
         const contentElement = $element.find(selector.content.selector);
-        item.content = contentElement.html() || '';
+        item.content = contentElement.html() || "";
         item.contentSnippet = contentText.substring(0, 300);
       } else {
         item.content = contentText;
         item.contentSnippet = contentText.substring(0, 300);
       }
-      if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content.selector}, 提取类型: ${selector.content.extractType}, 内容长度: ${item.content.length} 字符`);
+      if (logs)
+        logs.push(
+          `[DEBUG] 内容选择器: ${selector.content.selector}, 提取类型: ${selector.content.extractType}, 内容长度: ${item.content.length} 字符`
+        );
     } else {
       if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content.selector}, 未找到匹配元素`);
     }
@@ -167,34 +197,45 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
       const authorText = extractWithSelectorField($element, selector.author);
       if (authorText) {
         item.author = authorText;
-        if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author.selector}, 提取类型: ${selector.author.extractType}, 提取结果: "${authorText}"`);
+        if (logs)
+          logs.push(
+            `[DEBUG] 作者选择器: ${selector.author.selector}, 提取类型: ${selector.author.extractType}, 提取结果: "${authorText}"`
+          );
       } else {
         if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author.selector}, 未找到匹配元素`);
       }
     }
 
-    if (logs) logs.push(`[INFO] 第 ${index + 1} 个项目提取完成: 标题="${title}", 链接="${absoluteLink}"`);
+    if (logs)
+      logs.push(`[INFO] 第 ${index + 1} 个项目提取完成: 标题="${title}", 链接="${absoluteLink}"`);
     items.push(item);
   });
 
   return items;
 }
 
-export function extractContentWithXPath(html: string, selector: WebsiteRssSelector, baseUrl?: string, logs?: string[]): any[] {
+export function extractContentWithXPath(
+  html: string,
+  selector: WebsiteRssSelector,
+  baseUrl?: string,
+  logs?: string[]
+): any[] {
   const items: any[] = [];
 
   if (logs) logs.push(`[DEBUG] 使用XPath选择器模式`);
   const doc = new DOMParser().parseFromString(html);
 
   // 检查解析是否成功
-  if (!doc || doc.documentElement.nodeName === 'parsererror') {
-    throw new Error('HTML解析失败');
+  if (!doc || doc.documentElement.nodeName === "parsererror") {
+    throw new Error("HTML解析失败");
   }
 
   if (logs) logs.push(`[DEBUG] 容器选择器: ${selector.container}`);
-  let containerNodesResult: any = xpath.select(selector.container, doc);
+  const containerNodesResult: any = xpath.select(selector.container, doc);
 
-  const containerNodes = Array.isArray(containerNodesResult) ? containerNodesResult : [containerNodesResult];
+  const containerNodes = Array.isArray(containerNodesResult)
+    ? containerNodesResult
+    : [containerNodesResult];
 
   if (logs) logs.push(`[INFO] 找到 ${containerNodes.length} 个容器节点`);
 
@@ -212,18 +253,24 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
 
     // 提取标题
     const title = extractWithSelectorFieldXPath(containerNode as Node, selector.title);
-    if (logs) logs.push(`[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`);
+    if (logs)
+      logs.push(
+        `[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`
+      );
 
     // 提取链接
-    let link = '';
+    let link = "";
     if (selector.link) {
       link = extractWithSelectorFieldXPath(containerNode as Node, selector.link);
-      if (logs) logs.push(`[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`);
+      if (logs)
+        logs.push(
+          `[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`
+        );
     }
 
     // 处理相对URL
     let absoluteLink = link;
-    if (link && !link.startsWith('http') && baseUrl) {
+    if (link && !link.startsWith("http") && baseUrl) {
       try {
         const configUrl = new URL(baseUrl);
         absoluteLink = new URL(link, configUrl.origin).href;
@@ -246,7 +293,10 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
       const dateText = extractWithSelectorFieldXPath(containerNode as Node, selector.date);
       if (dateText) {
         item.pubDate = formatDate(dateText);
-        if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date.selector}, 提取类型: ${selector.date.extractType}, 提取结果: "${dateText}"`);
+        if (logs)
+          logs.push(
+            `[DEBUG] 日期选择器: ${selector.date.selector}, 提取类型: ${selector.date.extractType}, 提取结果: "${dateText}"`
+          );
       } else {
         if (logs) logs.push(`[DEBUG] 日期选择器: ${selector.date.selector}, 未找到匹配节点`);
       }
@@ -256,11 +306,13 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
     const contentText = extractWithSelectorFieldXPath(containerNode as Node, selector.content);
     if (contentText) {
       // 对于内容，如果是文本提取，我们需要获取HTML内容
-      if (selector.content.extractType === 'text') {
+      if (selector.content.extractType === "text") {
         const contentNodesResult = xpath.select(selector.content.selector, containerNode as Node);
-        const contentNodes = Array.isArray(contentNodesResult) ? contentNodesResult : [contentNodesResult];
+        const contentNodes = Array.isArray(contentNodesResult)
+          ? contentNodesResult
+          : [contentNodesResult];
         if (contentNodes.length > 0 && contentNodes[0] && isElementNode(contentNodes[0])) {
-          item.content = contentNodes[0].toString() || '';
+          item.content = contentNodes[0].toString() || "";
         } else {
           item.content = contentText;
         }
@@ -269,7 +321,10 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
         item.content = contentText;
         item.contentSnippet = contentText.substring(0, 300);
       }
-      if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content.selector}, 提取类型: ${selector.content.extractType}, 内容长度: ${item.content.length} 字符`);
+      if (logs)
+        logs.push(
+          `[DEBUG] 内容选择器: ${selector.content.selector}, 提取类型: ${selector.content.extractType}, 内容长度: ${item.content.length} 字符`
+        );
     } else {
       if (logs) logs.push(`[DEBUG] 内容选择器: ${selector.content.selector}, 未找到匹配节点`);
     }
@@ -279,21 +334,29 @@ export function extractContentWithXPath(html: string, selector: WebsiteRssSelect
       const authorText = extractWithSelectorFieldXPath(containerNode as Node, selector.author);
       if (authorText) {
         item.author = authorText;
-        if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author.selector}, 提取类型: ${selector.author.extractType}, 提取结果: "${authorText}"`);
+        if (logs)
+          logs.push(
+            `[DEBUG] 作者选择器: ${selector.author.selector}, 提取类型: ${selector.author.extractType}, 提取结果: "${authorText}"`
+          );
       } else {
         if (logs) logs.push(`[DEBUG] 作者选择器: ${selector.author.selector}, 未找到匹配节点`);
       }
     }
 
-    if (logs) logs.push(`[INFO] 第 ${i + 1} 个项目提取完成: 标题="${title}", 链接="${absoluteLink}"`);
+    if (logs)
+      logs.push(`[INFO] 第 ${i + 1} 个项目提取完成: 标题="${title}", 链接="${absoluteLink}"`);
     items.push(item);
   }
 
   return items;
 }
 
-export function extractContentFromHtml(html: string, selector: WebsiteRssSelector, baseUrl?: string, logs?: string[]): any[] {
-
+export function extractContentFromHtml(
+  html: string,
+  selector: WebsiteRssSelector,
+  baseUrl?: string,
+  logs?: string[]
+): any[] {
   try {
     if (selector.selectorType === "xpath") {
       return extractContentWithXPath(html, selector, baseUrl, logs);

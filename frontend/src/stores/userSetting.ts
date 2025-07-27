@@ -35,7 +35,8 @@ export const useUserSettingStore = defineStore("user", {
       if (data) {
         this.globalSetting = data.globalSetting;
         this.userSettings = data.userSettings;
-        this.notificationSettings = data.notificationSettings || this.getDefaultNotificationSettings();
+        this.notificationSettings =
+          data.notificationSettings || this.getDefaultNotificationSettings();
       }
     },
 
@@ -60,10 +61,10 @@ export const useUserSettingStore = defineStore("user", {
           notificationSettings,
         });
         this.notificationSettings = notificationSettings;
-        ElMessage.success('通知设置保存成功');
+        ElMessage.success("通知设置保存成功");
       } catch (error) {
-        console.error('保存通知设置失败:', error);
-        ElMessage.error('保存通知设置失败');
+        console.error("保存通知设置失败:", error);
+        ElMessage.error("保存通知设置失败");
         throw error;
       }
     },
@@ -72,55 +73,55 @@ export const useUserSettingStore = defineStore("user", {
       return {
         bark: {
           enabled: false,
-          serverUrl: 'https://api.day.app',
-          deviceKey: '',
-          sound: '',
-          icon: '',
-          group: ''
+          serverUrl: "https://api.day.app",
+          deviceKey: "",
+          sound: "",
+          icon: "",
+          group: "",
         },
         email: {
           enabled: false,
-          smtpHost: '',
+          smtpHost: "",
           smtpPort: 587,
           smtpSecure: true,
-          username: '',
-          password: '',
-          fromEmail: '',
-          toEmail: ''
+          username: "",
+          password: "",
+          fromEmail: "",
+          toEmail: "",
         },
         gotify: {
           enabled: false,
-          serverUrl: '',
-          appToken: '',
-          priority: 5
+          serverUrl: "",
+          appToken: "",
+          priority: 5,
         },
         wechatWork: {
           enabled: false,
-          webhookUrl: '',
+          webhookUrl: "",
           mentionedList: [],
-          mentionedMobileList: []
+          mentionedMobileList: [],
         },
         dingtalk: {
           enabled: false,
-          webhookUrl: '',
-          secret: '',
+          webhookUrl: "",
+          secret: "",
           atMobiles: [],
           atUserIds: [],
-          isAtAll: false
+          isAtAll: false,
         },
         feishu: {
           enabled: false,
-          webhookUrl: '',
-          secret: '',
+          webhookUrl: "",
+          secret: "",
           atUserIds: [],
           atMobiles: [],
-          atAll: false
+          atAll: false,
         },
         triggers: {
           newFeedItems: true,
           feedUpdateErrors: true,
-          systemAlerts: true
-        }
+          systemAlerts: true,
+        },
       };
     },
 

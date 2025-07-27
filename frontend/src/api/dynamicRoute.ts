@@ -1,30 +1,13 @@
 import request from "@/utils/request";
+import type { DynamicRouteConfig } from "../../../shared/src/types/dynamicRoute";
 
-// 动态路由配置接口
-export interface DynamicRouteConfig {
-  id?: number;
-  name: string;
-  path: string;
-  method: string;
-  description?: string;
-  refreshInterval: number; // 刷新间隔（分钟）
-  params?: RouteParam[];
-  script: {
-    sourceType: 'inline' | 'url' | 'file';
-    content: string;
-    timeout?: number;
-  };
-  authCredentialId?: number; // 关联的授权信息ID
-}
-
-// 路由参数接口
-export interface RouteParam {
-  name: string;
-  type: `string` | `number` | `boolean`;
-  required: boolean;
-  defaultValue?: string | number | boolean;
-  description?: string;
-}
+// 重新导出共享类型以保持向后兼容
+export type {
+  DynamicRouteConfig,
+  RouteParam,
+  CustomRouteScript,
+  ScriptSourceType,
+} from "../../../shared/src/types/dynamicRoute";
 
 /**
  * 获取所有动态路由配置
@@ -76,7 +59,7 @@ export function debugDynamicRouteScript(
   params: Record<string, unknown>
 ) {
   return request.post("/api/dynamic-route/debug", {
-      routeConfig,
-      params,
-    });
+    routeConfig,
+    params,
+  });
 }

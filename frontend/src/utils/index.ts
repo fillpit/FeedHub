@@ -8,7 +8,6 @@ export const formattedFileSize = (size: number): string => {
   return `${(size / 1024 / 1024 / 1024).toFixed(2)}GB`;
 };
 
-
 export function throttle<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
   let lastTime = 0;
 
@@ -25,7 +24,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(fn: T, delay
 export const isMobileDevice = (): boolean => {
   if (typeof window === "undefined") return false;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
+};
 
 // 导出剪贴板工具函数
 export { copyToClipboard } from "./clipboard";

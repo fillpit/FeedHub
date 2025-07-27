@@ -8,7 +8,6 @@ interface Channel {
   name: string;
 }
 
-
 interface Config {
   jwtSecret: string;
   app: {
@@ -42,7 +41,10 @@ const getTeleChannels = (): Channel[] => {
 
 // 验证JWT密钥强度
 const validateJwtSecret = (secret: string): void => {
-  if (config.app.env === "production" && (secret === "your-secret-key" || secret === "your-jwt-secret" || secret.length < 32)) {
+  if (
+    config.app.env === "production" &&
+    (secret === "your-secret-key" || secret === "your-jwt-secret" || secret.length < 32)
+  ) {
     throw new Error("生产环境必须设置强JWT密钥（至少32位字符）");
   }
 };

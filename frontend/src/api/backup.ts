@@ -1,21 +1,21 @@
-import request from '@/utils/request';
+import request from "@/utils/request";
 
 /**
  * 导出分享配置
  */
 const exportShareConfig = () => {
-  return request.get<Blob>('/backup/export-share', {
-    responseType: 'blob' as any
+  return request.get<Blob>("/backup/export-share", {
+    responseType: "blob" as const,
   });
 };
 
 /**
  * 导入分享配置
  */
-const importShareConfig = (configData: any) => {
-  return request.post('/backup/import-share', configData, {
+const importShareConfig = (configData: Record<string, unknown>) => {
+  return request.post("/backup/import-share", configData, {
     showSuccessMessage: true,
-    successMessage: '分享配置导入成功！'
+    successMessage: "分享配置导入成功！",
   });
 };
 
@@ -24,8 +24,8 @@ export const backupApi = {
    * 导出数据备份
    */
   exportBackup: () => {
-    return request.get<Blob>('/api/backup/export', {
-      responseType: 'blob' as any // 设置响应类型为blob以处理文件下载
+    return request.get<Blob>("/api/backup/export", {
+      responseType: "blob" as const, // 设置响应类型为blob以处理文件下载
     });
   },
 
@@ -33,15 +33,15 @@ export const backupApi = {
    * 导入数据备份
    * @param backupData 备份数据
    */
-  importBackup: (backupData: any) => {
-    return request.post('/api/backup/import', backupData, {
+  importBackup: (backupData: Record<string, unknown>) => {
+    return request.post("/api/backup/import", backupData, {
       showSuccessMessage: true,
-      successMessage: '数据恢复成功！'
+      successMessage: "数据恢复成功！",
     });
   },
-  
+
   exportShareConfig,
-  importShareConfig
+  importShareConfig,
 };
 
 /**
@@ -51,15 +51,15 @@ export const backupApi = {
  */
 export function downloadBackupFile(data: Blob, filename?: string) {
   const url = window.URL.createObjectURL(data);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
-  
+
   // 如果没有提供文件名，生成一个默认的
   if (!filename) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     filename = `feedhub-backup-${timestamp}.json`;
   }
-  
+
   link.download = filename;
   document.body.appendChild(link);
   link.click();
@@ -72,24 +72,24 @@ export function downloadBackupFile(data: Blob, filename?: string) {
  * @param file 文件对象
  * @returns Promise<any> 解析后的JSON数据
  */
-export function readBackupFile(file: File): Promise<any> {
+export function readBackupFile(file: File): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const result = e.target?.result as string;
         const data = JSON.parse(result);
         resolve(data);
       } catch (error) {
-        reject(new Error('备份文件格式无效'));
+        reject(new Error("备份文件格式无效"));
       }
     };
-    
+
     reader.onerror = () => {
-      reject(new Error('文件读取失败'));
+      reject(new Error("文件读取失败"));
     };
-    
+
     reader.readAsText(file);
   });
 }

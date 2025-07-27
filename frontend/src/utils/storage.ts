@@ -1,18 +1,18 @@
 // 存储键常量
 const STORAGE_KEYS = {
-  TOKEN: 'token',
-  USER_INFO: 'userInfo',
-  THEME: 'theme',
-  LANGUAGE: 'language',
-  SIDEBAR_COLLAPSED: 'sidebarCollapsed',
-  RSS_CONFIGS: 'rssConfigs',
-  RECENT_SEARCHES: 'recentSearches',
-  FORM_DRAFTS: 'formDrafts'
+  TOKEN: "token",
+  USER_INFO: "userInfo",
+  THEME: "theme",
+  LANGUAGE: "language",
+  SIDEBAR_COLLAPSED: "sidebarCollapsed",
+  RSS_CONFIGS: "rssConfigs",
+  RECENT_SEARCHES: "recentSearches",
+  FORM_DRAFTS: "formDrafts",
 };
 
 // 存储值类型定义
 interface StorageValue {
-  data: any;
+  data: unknown;
   timestamp: number;
   expires?: number; // 过期时间（毫秒）
 }
@@ -38,7 +38,7 @@ const simpleDecrypt = (encrypted: string): string => {
 };
 
 // 压缩/解压缩函数（简单的JSON字符串压缩）
-const compress = (data: any): string => {
+const compress = (data: unknown): string => {
   const jsonString = JSON.stringify(data);
   // 简单的重复字符压缩
   return jsonString.replace(/"([^"]+)":/g, (match, key) => {
@@ -49,7 +49,7 @@ const compress = (data: any): string => {
   });
 };
 
-const decompress = (compressed: string): any => {
+const decompress = (compressed: string): unknown => {
   try {
     return JSON.parse(compressed);
   } catch {
@@ -62,7 +62,7 @@ class StorageManager {
   private storage: Storage;
   private prefix: string;
 
-  constructor(storage: Storage = localStorage.storage, prefix: string = 'feedhub_') {
+  constructor(storage: Storage = localStorage.storage, prefix: string = "feedhub_") {
     this.storage = storage;
     this.prefix = prefix;
   }
@@ -78,7 +78,7 @@ class StorageManager {
       const storageValue: StorageValue = {
         data: value,
         timestamp: Date.now(),
-        expires: config?.expires
+        expires: config?.expires,
       };
 
       let serialized = JSON.stringify(storageValue);
@@ -112,17 +112,18 @@ class StorageManager {
       }
 
       // 尝试解密
-      if (serialized.indexOf('{') !== 0) {
+      if (serialized.indexOf("{") !== 0) {
         serialized = simpleDecrypt(serialized);
       }
 
       // 尝试解压缩
       let storageValue: StorageValue;
       try {
-        storageValue = JSON.parse(serialized);
+        storageValue = JSON.parse(serialized) as StorageValue;
       } catch {
         // 如果解析失败，尝试解压缩后再解析
-        storageValue = decompress(serialized);
+        const decompressed = decompress(serialized);
+        storageValue = decompressed as StorageValue;
       }
 
       // 检查是否过期
@@ -167,11 +168,11 @@ class StorageManager {
           keysToRemove.push(key);
         }
       }
-      
-      keysToRemove.forEach(key => this.storage.removeItem(key));
+
+      keysToRemove.forEach((key) => this.storage.removeItem(key));
       return true;
     } catch (error) {
-      console.error('存储清除失败:', error);
+      console.error("存储清除失败:", error);
       return false;
     }
   }
@@ -187,7 +188,7 @@ class StorageManager {
         }
       }
     } catch (error) {
-      console.error('获取存储键失败:', error);
+      console.error("获取存储键失败:", error);
     }
     return keys;
   }
@@ -206,7 +207,7 @@ class StorageManager {
         }
       }
     } catch (error) {
-      console.error('计算存储大小失败:', error);
+      console.error("计算存储大小失败:", error);
     }
     return size;
   }
@@ -216,14 +217,14 @@ class StorageManager {
     let cleanedCount = 0;
     try {
       const keys = this.keys();
-      keys.forEach(key => {
+      keys.forEach((key) => {
         const value = this.get(key);
         if (value === undefined) {
           cleanedCount++;
         }
       });
     } catch (error) {
-      console.error('清理过期数据失败:', error);
+      console.error("清理过期数据失败:", error);
     }
     return cleanedCount;
   }
@@ -231,7 +232,7 @@ class StorageManager {
 
 // 创建默认实例
 const localStorage = new StorageManager(window.localStorage);
-const sessionStorage = new StorageManager(window.sessionStorage, 'feedhub_session_');
+const sessionStorage = new StorageManager(window.sessionStorage, "feedhub_session_");
 
 // 类型安全的存储接口
 interface TypedStorage {
@@ -242,18 +243,18 @@ interface TypedStorage {
     username: string;
     role: number;
   };
-  
+
   // 应用设置
-  theme: 'light' | 'dark' | 'auto';
-  language: 'zh-CN' | 'en-US';
+  theme: "light" | "dark" | "auto";
+  language: "zh-CN" | "en-US";
   sidebarCollapsed: boolean;
-  
+
   // 业务数据缓存
-  rssConfigs: any[];
+  rssConfigs: unknown[];
   recentSearches: string[];
-  
+
   // 临时数据
-  formDrafts: Record<string, any>;
+  formDrafts: Record<string, unknown>;
 }
 
 // 类型安全的存储操作
@@ -268,7 +269,7 @@ class TypedStorageManager {
   setToken(token: string): boolean {
     return this.storage.set(STORAGE_KEYS.TOKEN, token, {
       encrypt: true,
-      expires: 7 * 24 * 60 * 60 * 1000 // 7天
+      expires: 7 * 24 * 60 * 60 * 1000, // 7天
     });
   }
 
@@ -278,101 +279,102 @@ class TypedStorageManager {
   }
 
   // 设置用户信息
-  setUserInfo(userInfo: TypedStorage['userInfo']): boolean {
-    return this.storage.set('userInfo', userInfo, {
+  setUserInfo(userInfo: TypedStorage["userInfo"]): boolean {
+    return this.storage.set("userInfo", userInfo, {
       encrypt: true,
-      expires: 7 * 24 * 60 * 60 * 1000 // 7天
+      expires: 7 * 24 * 60 * 60 * 1000, // 7天
     });
   }
 
   // 获取用户信息
-  getUserInfo(): TypedStorage['userInfo'] | undefined {
-    return this.storage.get<TypedStorage['userInfo']>('userInfo');
+  getUserInfo(): TypedStorage["userInfo"] | undefined {
+    return this.storage.get<TypedStorage["userInfo"]>("userInfo");
   }
 
   // 设置主题
-  setTheme(theme: TypedStorage['theme']): boolean {
-    return this.storage.set('theme', theme);
+  setTheme(theme: TypedStorage["theme"]): boolean {
+    return this.storage.set("theme", theme);
   }
 
   // 获取主题
-  getTheme(): TypedStorage['theme'] {
-    const theme = this.storage.get<TypedStorage['theme']>('theme', 'auto');
-    return theme ?? 'auto';
+  getTheme(): TypedStorage["theme"] {
+    const theme = this.storage.get<TypedStorage["theme"]>("theme", "auto");
+    return theme ?? "auto";
   }
 
   // 设置语言
-  setLanguage(language: TypedStorage['language']): boolean {
-    return this.storage.set('language', language);
+  setLanguage(language: TypedStorage["language"]): boolean {
+    return this.storage.set("language", language);
   }
 
   // 获取语言
-  getLanguage(): TypedStorage['language'] {
-    const language = this.storage.get<TypedStorage['language']>('language', 'zh-CN');
-    return language ?? 'zh-CN';
+  getLanguage(): TypedStorage["language"] {
+    const language = this.storage.get<TypedStorage["language"]>("language", "zh-CN");
+    return language ?? "zh-CN";
   }
 
   // 设置侧边栏状态
   setSidebarCollapsed(collapsed: boolean): boolean {
-    return this.storage.set('sidebarCollapsed', collapsed);
+    return this.storage.set("sidebarCollapsed", collapsed);
   }
 
   // 获取侧边栏状态
   getSidebarCollapsed(): boolean {
-    const collapsed = this.storage.get<boolean>('sidebarCollapsed', false);
+    const collapsed = this.storage.get<boolean>("sidebarCollapsed", false);
     return collapsed ?? false;
   }
 
   // 缓存RSS配置
-  cacheRssConfigs(configs: any[]): boolean {
-    return this.storage.set('rssConfigs', configs, {
+  cacheRssConfigs(configs: unknown[]): boolean {
+    return this.storage.set("rssConfigs", configs, {
       compress: true,
-      expires: 30 * 60 * 1000 // 30分钟
+      expires: 30 * 60 * 1000, // 30分钟
     });
   }
 
   // 获取缓存的RSS配置
-  getCachedRssConfigs(): any[] {
-    const configs = this.storage.get<any[]>('rssConfigs', []);
+  getCachedRssConfigs(): unknown[] {
+    const configs = this.storage.get<unknown[]>("rssConfigs", []);
     return configs ?? [];
   }
 
   // 添加搜索历史
   addRecentSearch(search: string): boolean {
     const recent = this.getRecentSearches();
-    const filtered = recent.filter(item => item !== search);
+    const filtered = recent.filter((item) => item !== search);
     filtered.unshift(search);
     const limited = filtered.slice(0, 10); // 最多保存10条
-    return this.storage.set('recentSearches', limited);
+    return this.storage.set("recentSearches", limited);
   }
 
   // 获取搜索历史
   getRecentSearches(): string[] {
-    const recent = this.storage.get<string[]>('recentSearches', []);
+    const recent = this.storage.get<string[]>("recentSearches", []);
     return recent ?? [];
   }
 
   // 保存表单草稿
-  saveFormDraft(formId: string, data: any): boolean {
+  saveFormDraft(formId: string, data: unknown): boolean {
     const drafts = this.getFormDrafts();
     drafts[formId] = {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-    return this.storage.set('formDrafts', drafts, {
-      expires: 24 * 60 * 60 * 1000 // 24小时
+    return this.storage.set("formDrafts", drafts, {
+      expires: 24 * 60 * 60 * 1000, // 24小时
     });
   }
 
   // 获取表单草稿
-  getFormDraft(formId: string): any {
+  getFormDraft(formId: string): unknown {
     const drafts = this.getFormDrafts();
-    return drafts[formId]?.data;
+    const draft = drafts[formId] as { data: unknown; timestamp: number } | undefined;
+    return draft?.data;
   }
 
   // 获取所有表单草稿
-  getFormDrafts(): Record<string, any> {
-    const drafts = this.storage.get<Record<string, any>>('formDrafts', {});
+  getFormDrafts(): Record<string, unknown> {
+    const drafts = this.storage.get<Record<string, unknown>>("formDrafts", {});
     return drafts ?? {};
   }
 
@@ -380,7 +382,7 @@ class TypedStorageManager {
   removeFormDraft(formId: string): boolean {
     const drafts = this.getFormDrafts();
     delete drafts[formId];
-    return this.storage.set('formDrafts', drafts);
+    return this.storage.set("formDrafts", drafts);
   }
 
   // 清除所有数据
@@ -399,23 +401,26 @@ const typedLocalStorage = new TypedStorageManager(localStorage);
 const typedSessionStorage = new TypedStorageManager(sessionStorage);
 
 // 自动清理过期数据（每小时执行一次）
-setInterval(() => {
-  try {
-    const cleaned = typedLocalStorage.cleanup();
-    if (cleaned > 0) {
-      console.log(`已清理 ${cleaned} 条过期数据`);
+setInterval(
+  () => {
+    try {
+      const cleaned = typedLocalStorage.cleanup();
+      if (cleaned > 0) {
+        console.log(`已清理 ${cleaned} 条过期数据`);
+      }
+    } catch (error) {
+      console.error("自动清理失败:", error);
     }
-  } catch (error) {
-    console.error('自动清理失败:', error);
-  }
-}, 60 * 60 * 1000);
+  },
+  60 * 60 * 1000
+);
 
 // 导出
 export {
   StorageManager,
   TypedStorageManager,
   typedLocalStorage as localStorage,
-  typedSessionStorage as sessionStorage
+  typedSessionStorage as sessionStorage,
 };
 
 export default typedLocalStorage;

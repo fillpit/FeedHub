@@ -7,9 +7,7 @@ import { logger } from "../utils/logger";
 
 @injectable()
 export class NpmPackageController extends BaseController {
-  constructor(
-    @inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService
-  ) {
+  constructor(@inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService) {
     super();
   }
 
@@ -37,22 +35,22 @@ export class NpmPackageController extends BaseController {
   async installPackage(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const { packageName, version } = req.body;
-      
-      if (!packageName || typeof packageName !== 'string') {
-        throw new Error('包名不能为空');
+
+      if (!packageName || typeof packageName !== "string") {
+        throw new Error("包名不能为空");
       }
 
       // 验证包名格式
       const packageNameRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
       if (!packageNameRegex.test(packageName)) {
-        throw new Error('包名格式不正确');
+        throw new Error("包名格式不正确");
       }
 
       // 验证版本格式（如果提供）
-      if (version && typeof version === 'string') {
+      if (version && typeof version === "string") {
         const versionRegex = /^\d+\.\d+\.\d+(-[a-zA-Z0-9-]+)?(\+[a-zA-Z0-9-]+)?$/;
-        if (version !== 'latest' && !versionRegex.test(version)) {
-          throw new Error('版本号格式不正确');
+        if (version !== "latest" && !versionRegex.test(version)) {
+          throw new Error("版本号格式不正确");
         }
       }
 
@@ -66,9 +64,9 @@ export class NpmPackageController extends BaseController {
   async uninstallPackage(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const { name } = req.params;
-      
+
       if (!name) {
-        throw new Error('包名不能为空');
+        throw new Error("包名不能为空");
       }
 
       return await this.npmPackageService.uninstallPackage(name);
@@ -88,27 +86,27 @@ export class NpmPackageController extends BaseController {
       const packages = allPackages.data || [];
       const stats = {
         total: packages.length,
-        installed: packages.filter(pkg => pkg.status === 'installed').length,
-        installing: packages.filter(pkg => pkg.status === 'installing').length,
-        failed: packages.filter(pkg => pkg.status === 'failed').length,
+        installed: packages.filter((pkg) => pkg.status === "installed").length,
+        installing: packages.filter((pkg) => pkg.status === "installing").length,
+        failed: packages.filter((pkg) => pkg.status === "failed").length,
         totalSize: packages
-          .filter(pkg => pkg.status === 'installed' && pkg.size)
+          .filter((pkg) => pkg.status === "installed" && pkg.size)
           .reduce((sum, pkg) => sum + (pkg.size || 0), 0),
         mostUsed: packages
-          .filter(pkg => pkg.status === 'installed')
+          .filter((pkg) => pkg.status === "installed")
           .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
           .slice(0, 5)
-          .map(pkg => ({
+          .map((pkg) => ({
             name: pkg.name,
             usageCount: pkg.usageCount,
-            lastUsed: pkg.lastUsed
-          }))
+            lastUsed: pkg.lastUsed,
+          })),
       };
 
       return {
         success: true,
         data: stats,
-        message: '获取统计信息成功'
+        message: "获取统计信息成功",
       };
     });
   }

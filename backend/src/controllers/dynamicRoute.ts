@@ -78,30 +78,30 @@ export class DynamicRouteController extends BaseController {
    */
   async executeRouteScript(req: Request, res: Response): Promise<void> {
     const routePath = req.params[0]; // 使用通配符路由，获取完整路径
-    
+
     try {
       const rssXml = await this.dynamicRouteService.executeRouteScript(routePath, req.query);
-      
+
       // 设置正确的内容类型
-      res.setHeader('Content-Type', 'application/rss+xml');
+      res.setHeader("Content-Type", "application/rss+xml");
       res.send(rssXml);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
-      
+
       // 记录错误日志
       logger.error(`[DynamicRouteController] 动态路由执行失败: ${routePath}`, {
         error: errorMessage,
         routePath,
-        queryParams: req.query
+        queryParams: req.query,
       });
-      
+
       // 发送失败通知
       try {
         await this.sendDynamicRouteFailureNotification(routePath, errorMessage);
       } catch (notificationError) {
         logger.error(`[DynamicRouteController] 发送动态路由失败通知时出错:`, notificationError);
       }
-      
+
       res.status(404).send(`获取自定义路由RSS失败: ${errorMessage}`);
     }
   }
@@ -109,17 +109,20 @@ export class DynamicRouteController extends BaseController {
   /**
    * 发送动态路由失败通知
    */
-  private async sendDynamicRouteFailureNotification(routePath: string, errorMessage: string): Promise<void> {
+  private async sendDynamicRouteFailureNotification(
+    routePath: string,
+    errorMessage: string
+  ): Promise<void> {
     try {
       // 获取管理员用户ID（这里假设管理员用户ID为 'admin'，实际项目中可能需要从配置或数据库获取）
-      const adminUserId = 'admin';
-      
+      const adminUserId = "admin";
+
       await this.notificationService.sendDynamicRouteErrorNotification(
         adminUserId,
         routePath,
         errorMessage
       );
-      
+
       logger.info(`[DynamicRouteController] 已发送动态路由失败通知: ${routePath}`);
     } catch (error) {
       logger.error(`[DynamicRouteController] 发送动态路由失败通知失败:`, error);

@@ -1,5 +1,5 @@
 // 导入共享类型
-export * from '@feedhub/shared';
+export * from "@feedhub/shared";
 
 // 后端特有的配置类型
 export interface Config {

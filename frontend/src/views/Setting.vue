@@ -1,8 +1,7 @@
 <template>
   <div class="settings-page">
     <el-tabs v-model="activeTab" class="settings-tabs" type="border-card">
-
-            <!-- 项目配置标签页 -->
+      <!-- 项目配置标签页 -->
       <el-tab-pane label="基础配置" name="base">
         <template #label>
           <div class="tab-label">
@@ -11,7 +10,6 @@
           </div>
         </template>
         <div class="tab-content">
-
           <div class="settings-section">
             <!-- 代理配置组 -->
             <div class="settings-group">
@@ -61,26 +59,26 @@
               <div class="group-header">
                 <h3>数据备份与还原</h3>
               </div>
-              
+
               <div class="backup-restore-section">
                 <div class="backup-section">
                   <h4>完整数据备份</h4>
-                  <p class="section-description">导出所有配置数据，包括订阅源、用户设置、通知配置等</p>
-                  <el-button 
-                    type="primary" 
-                    @click="handleBackupData"
-                    :loading="backupLoading"
-                  >
+                  <p class="section-description">
+                    导出所有配置数据，包括订阅源、用户设置、通知配置等
+                  </p>
+                  <el-button type="primary" @click="handleBackupData" :loading="backupLoading">
                     <el-icon><Download /></el-icon>
                     导出备份文件
                   </el-button>
                 </div>
-                
+
                 <div class="backup-section">
                   <h4>分享配置导出</h4>
-                  <p class="section-description">导出动态路由和网站RSS配置（不包含授权信息），用于分享给他人</p>
-                  <el-button 
-                    type="success" 
+                  <p class="section-description">
+                    导出动态路由和网站RSS配置（不包含授权信息），用于分享给他人
+                  </p>
+                  <el-button
+                    type="success"
                     @click="handleShareConfigExport"
                     :loading="shareExportLoading"
                   >
@@ -88,7 +86,7 @@
                     导出分享配置
                   </el-button>
                 </div>
-                
+
                 <div class="restore-section">
                   <h4>数据还原</h4>
                   <p class="section-description">从备份文件中恢复配置数据（将覆盖当前设置）</p>
@@ -105,9 +103,9 @@
                         选择备份文件
                       </el-button>
                     </el-upload>
-                    
-                    <el-button 
-                      type="warning" 
+
+                    <el-button
+                      type="warning"
                       @click="handleRestoreData"
                       :loading="restoreLoading"
                       :disabled="!selectedFile"
@@ -116,19 +114,15 @@
                       开始还原
                     </el-button>
                   </div>
-                  
+
                   <div v-if="selectedFile" class="selected-file">
                     <span>已选择文件：{{ selectedFile.name }}</span>
-                    <el-button 
-                      type="text" 
-                      @click="clearSelectedFile"
-                      size="small"
-                    >
+                    <el-button type="text" @click="clearSelectedFile" size="small">
                       <el-icon><Close /></el-icon>
                     </el-button>
                   </div>
                 </div>
-                
+
                 <div class="restore-section">
                   <h4>分享配置导入</h4>
                   <p class="section-description">导入他人分享的动态路由和网站RSS配置</p>
@@ -145,9 +139,9 @@
                         选择分享配置文件
                       </el-button>
                     </el-upload>
-                    
-                    <el-button 
-                      type="success" 
+
+                    <el-button
+                      type="success"
                       @click="handleShareConfigImport"
                       :loading="shareImportLoading"
                       :disabled="!selectedShareFile"
@@ -156,14 +150,10 @@
                       导入分享配置
                     </el-button>
                   </div>
-                  
+
                   <div v-if="selectedShareFile" class="selected-file">
                     <span>已选择文件：{{ selectedShareFile.name }}</span>
-                    <el-button 
-                      type="text" 
-                      @click="clearSelectedShareFile"
-                      size="small"
-                    >
+                    <el-button type="text" @click="clearSelectedShareFile" size="small">
                       <el-icon><Close /></el-icon>
                     </el-button>
                   </div>
@@ -181,7 +171,6 @@
           </div>
         </div>
       </el-tab-pane>
-
 
       <!-- 通知设置标签页 -->
       <el-tab-pane label="通知设置" name="notification">
@@ -208,112 +197,108 @@
           </div>
         </template>
         <div class="tab-content">
-            <div class="settings-section">
-              <!-- 账户信息设置组 -->
-              <div class="settings-group">
-                <h3>账户信息</h3>
-                <div class="form-row">
-                  <div class="form-item">
-                    <label for="username">用户名</label>
-                    <el-input
-                      id="username"
-                      v-model="localUserSettings.username"
-                      placeholder="请输入用户名"
-                      clearable
-                    >
-                      <template #prefix>
-                        <el-icon><User /></el-icon>
-                      </template>
-                    </el-input>
-                  </div>
-                  <div class="form-item">
-                    <label for="email">邮箱地址</label>
-                    <el-input
-                      id="email"
-                      v-model="localUserSettings.email"
-                      placeholder="请输入邮箱地址"
-                      clearable
-                    >
-                      <template #prefix>
-                        <el-icon><Message /></el-icon>
-                      </template>
-                    </el-input>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 密码修改设置组 -->
-              <div class="settings-group">
-                <h3>密码修改</h3>
-                <div class="form-row">
-                  <div class="form-item">
-                    <label for="currentPassword">当前密码</label>
-                    <el-input
-                      id="currentPassword"
-                      v-model="passwordForm.currentPassword"
-                      type="password"
-                      placeholder="请输入当前密码"
-                      show-password
-                      clearable
-                    >
-                      <template #prefix>
-                        <el-icon><Lock /></el-icon>
-                      </template>
-                    </el-input>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-item">
-                    <label for="newPassword">新密码</label>
-                    <el-input
-                      id="newPassword"
-                      v-model="passwordForm.newPassword"
-                      type="password"
-                      placeholder="请输入新密码"
-                      show-password
-                      clearable
-                    >
-                      <template #prefix>
-                        <el-icon><Lock /></el-icon>
-                      </template>
-                    </el-input>
-                  </div>
-                  <div class="form-item">
-                    <label for="confirmPassword">确认新密码</label>
-                    <el-input
-                      id="confirmPassword"
-                      v-model="passwordForm.confirmPassword"
-                      type="password"
-                      placeholder="请再次输入新密码"
-                      show-password
-                      clearable
-                    >
-                      <template #prefix>
-                        <el-icon><Lock /></el-icon>
-                      </template>
-                    </el-input>
-                  </div>
-                </div>
-                <div class="password-actions">
-                  <el-button 
-                    type="primary" 
-                    @click="handlePasswordChange"
-                    :loading="passwordChanging"
+          <div class="settings-section">
+            <!-- 账户信息设置组 -->
+            <div class="settings-group">
+              <h3>账户信息</h3>
+              <div class="form-row">
+                <div class="form-item">
+                  <label for="username">用户名</label>
+                  <el-input
+                    id="username"
+                    v-model="localUserSettings.username"
+                    placeholder="请输入用户名"
+                    clearable
                   >
-                    <el-icon><Key /></el-icon>
-                    修改密码
-                  </el-button>
+                    <template #prefix>
+                      <el-icon><User /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
+                <div class="form-item">
+                  <label for="email">邮箱地址</label>
+                  <el-input
+                    id="email"
+                    v-model="localUserSettings.email"
+                    placeholder="请输入邮箱地址"
+                    clearable
+                  >
+                    <template #prefix>
+                      <el-icon><Message /></el-icon>
+                    </template>
+                  </el-input>
                 </div>
               </div>
             </div>
 
-            <!-- 用户设置保存按钮 -->
-            <div class="settings-actions">
-              <el-button type="primary" @click="handleUserSave" :loading="userSaving">
-                <el-icon><Check /></el-icon>
-                保存用户设置
-              </el-button>
+            <!-- 密码修改设置组 -->
+            <div class="settings-group">
+              <h3>密码修改</h3>
+              <div class="form-row">
+                <div class="form-item">
+                  <label for="currentPassword">当前密码</label>
+                  <el-input
+                    id="currentPassword"
+                    v-model="passwordForm.currentPassword"
+                    type="password"
+                    placeholder="请输入当前密码"
+                    show-password
+                    clearable
+                  >
+                    <template #prefix>
+                      <el-icon><Lock /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-item">
+                  <label for="newPassword">新密码</label>
+                  <el-input
+                    id="newPassword"
+                    v-model="passwordForm.newPassword"
+                    type="password"
+                    placeholder="请输入新密码"
+                    show-password
+                    clearable
+                  >
+                    <template #prefix>
+                      <el-icon><Lock /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
+                <div class="form-item">
+                  <label for="confirmPassword">确认新密码</label>
+                  <el-input
+                    id="confirmPassword"
+                    v-model="passwordForm.confirmPassword"
+                    type="password"
+                    placeholder="请再次输入新密码"
+                    show-password
+                    clearable
+                  >
+                    <template #prefix>
+                      <el-icon><Lock /></el-icon>
+                    </template>
+                  </el-input>
+                </div>
+              </div>
+              <div class="password-actions">
+                <el-button type="primary" @click="handlePasswordChange" :loading="passwordChanging">
+                  <el-icon><Key /></el-icon>
+                  修改密码
+                </el-button>
+              </div>
             </div>
+          </div>
+
+          <!-- 用户设置保存按钮 -->
+          <div class="settings-actions">
+            <el-button type="primary" @click="handleUserSave" :loading="userSaving">
+              <el-icon><Check /></el-icon>
+              保存用户设置
+            </el-button>
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -324,7 +309,11 @@
 import { useUserSettingStore } from "@/stores/userSetting";
 import { ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import type { GlobalSettingAttributes, UserSettingAttributes, NotificationSettings } from "@feedhub/shared";
+import type {
+  GlobalSettingAttributes,
+  UserSettingAttributes,
+  NotificationSettings,
+} from "@feedhub/shared";
 import NotificationSettingsComponent from "@/components/NotificationSettings.vue";
 import { backupApi, downloadBackupFile, readBackupFile } from "@/api/backup";
 import {
@@ -340,13 +329,13 @@ import {
   Download,
   Upload,
   RefreshRight,
-  Close
+  Close,
 } from "@element-plus/icons-vue";
 
 const settingStore = useUserSettingStore();
 
 // 当前激活的标签页
-const activeTab = ref('notification');
+const activeTab = ref("notification");
 
 // 本地状态
 const localGlobalSetting = ref<GlobalSettingAttributes>({
@@ -386,7 +375,9 @@ const shareImportLoading = ref(false);
 const selectedShareFile = ref<File | null>(null);
 const shareUploadRef = ref();
 
-const localNotificationSettings = ref<NotificationSettings>(settingStore.getDefaultNotificationSettings());
+const localNotificationSettings = ref<NotificationSettings>(
+  settingStore.getDefaultNotificationSettings()
+);
 
 // 监听 store 变化,更新本地状态
 watch(
@@ -467,25 +458,23 @@ const handleNotificationSave = async () => {
   }
 };
 
-
-
 // 处理密码修改
 const handlePasswordChange = async () => {
   // 验证表单
   if (!passwordForm.value.currentPassword) {
-    ElMessage.error('请输入当前密码');
+    ElMessage.error("请输入当前密码");
     return;
   }
   if (!passwordForm.value.newPassword) {
-    ElMessage.error('请输入新密码');
+    ElMessage.error("请输入新密码");
     return;
   }
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    ElMessage.error('两次输入的密码不一致');
+    ElMessage.error("两次输入的密码不一致");
     return;
   }
   if (passwordForm.value.newPassword.length < 6) {
-    ElMessage.error('新密码长度不能少于6位');
+    ElMessage.error("新密码长度不能少于6位");
     return;
   }
 
@@ -496,8 +485,8 @@ const handlePasswordChange = async () => {
     //   currentPassword: passwordForm.value.currentPassword,
     //   newPassword: passwordForm.value.newPassword
     // });
-    
-    ElMessage.success('密码修改成功');
+
+    ElMessage.success("密码修改成功");
     // 清空表单
     passwordForm.value = {
       currentPassword: "",
@@ -505,7 +494,7 @@ const handlePasswordChange = async () => {
       confirmPassword: "",
     };
   } catch (error) {
-    ElMessage.error('密码修改失败，请检查当前密码是否正确');
+    ElMessage.error("密码修改失败，请检查当前密码是否正确");
   } finally {
     passwordChanging.value = false;
   }
@@ -519,10 +508,10 @@ const handleUserSave = async () => {
       globalSetting: localGlobalSetting.value,
       userSettings: localUserSettings.value,
     });
-    ElMessage.success('用户设置保存成功');
+    ElMessage.success("用户设置保存成功");
   } catch (error) {
-    ElMessage.error('用户设置保存失败');
-    console.error('保存用户设置失败:', error);
+    ElMessage.error("用户设置保存失败");
+    console.error("保存用户设置失败:", error);
   } finally {
     userSaving.value = false;
   }
@@ -536,13 +525,13 @@ const handleBackupData = async () => {
     // 下载备份文件
     if (response.data) {
       downloadBackupFile(response.data);
-      ElMessage.success('数据备份成功！');
+      ElMessage.success("数据备份成功！");
     } else {
-      throw new Error('备份数据为空');
+      throw new Error("备份数据为空");
     }
   } catch (error) {
-    console.error('备份失败:', error);
-    ElMessage.error('数据备份失败！');
+    console.error("备份失败:", error);
+    ElMessage.error("数据备份失败！");
   } finally {
     backupLoading.value = false;
   }
@@ -565,42 +554,42 @@ const clearSelectedFile = () => {
 // 处理数据还原
 const handleRestoreData = async () => {
   if (!selectedFile.value) {
-    ElMessage.warning('请先选择备份文件！');
+    ElMessage.warning("请先选择备份文件！");
     return;
   }
 
   try {
     const result = await ElMessageBox.confirm(
-      '恢复数据将覆盖当前所有设置，是否继续？',
-      '确认恢复',
+      "恢复数据将覆盖当前所有设置，是否继续？",
+      "确认恢复",
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
       }
     );
 
-    if (result === 'confirm') {
+    if (result === "confirm") {
       restoreLoading.value = true;
-      
+
       // 读取备份文件
       const backupData = await readBackupFile(selectedFile.value);
-      
+
       // 调用恢复API
       await backupApi.importBackup(backupData);
-      
-      ElMessage.success('数据恢复成功！');
+
+      ElMessage.success("数据恢复成功！");
       clearSelectedFile();
-      
+
       // 刷新页面以加载新数据
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('恢复失败:', error);
-      ElMessage.error(error instanceof Error ? error.message : '数据恢复失败！');
+    if (error !== "cancel") {
+      console.error("恢复失败:", error);
+      ElMessage.error(error instanceof Error ? error.message : "数据恢复失败！");
     }
   } finally {
     restoreLoading.value = false;
@@ -614,16 +603,16 @@ const handleShareConfigExport = async () => {
     const response = await backupApi.exportShareConfig();
     // 下载分享配置文件
     if (response.data) {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `feedhub-share-config-${timestamp}.json`;
       downloadBackupFile(response.data, filename);
-      ElMessage.success('分享配置导出成功！');
+      ElMessage.success("分享配置导出成功！");
     } else {
-      throw new Error('分享配置数据为空');
+      throw new Error("分享配置数据为空");
     }
   } catch (error) {
-    console.error('分享配置导出失败:', error);
-    ElMessage.error('分享配置导出失败！');
+    console.error("分享配置导出失败:", error);
+    ElMessage.error("分享配置导出失败！");
   } finally {
     shareExportLoading.value = false;
   }
@@ -646,42 +635,42 @@ const clearSelectedShareFile = () => {
 // 处理分享配置导入
 const handleShareConfigImport = async () => {
   if (!selectedShareFile.value) {
-    ElMessage.warning('请先选择分享配置文件！');
+    ElMessage.warning("请先选择分享配置文件！");
     return;
   }
 
   try {
     const result = await ElMessageBox.confirm(
-      '导入分享配置将添加新的动态路由和网站RSS配置，是否继续？',
-      '确认导入',
+      "导入分享配置将添加新的动态路由和网站RSS配置，是否继续？",
+      "确认导入",
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info',
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "info",
       }
     );
 
-    if (result === 'confirm') {
+    if (result === "confirm") {
       shareImportLoading.value = true;
-      
+
       // 读取分享配置文件
       const shareData = await readBackupFile(selectedShareFile.value);
-      
+
       // 调用导入API
       await backupApi.importShareConfig(shareData);
-      
-      ElMessage.success('分享配置导入成功！');
+
+      ElMessage.success("分享配置导入成功！");
       clearSelectedShareFile();
-      
+
       // 刷新页面以加载新数据
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('分享配置导入失败:', error);
-      ElMessage.error(error instanceof Error ? error.message : '分享配置导入失败！');
+    if (error !== "cancel") {
+      console.error("分享配置导入失败:", error);
+      ElMessage.error(error instanceof Error ? error.message : "分享配置导入失败！");
     }
   } finally {
     shareImportLoading.value = false;
@@ -970,22 +959,22 @@ const handleShareConfigImport = async () => {
   .settings-page {
     padding: 16px;
   }
-  
+
   .tab-content {
     padding: 16px;
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .group-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .settings-tabs :deep(.el-tabs__nav-wrap) {
     padding: 0 10px;
   }

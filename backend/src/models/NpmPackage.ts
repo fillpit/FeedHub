@@ -6,7 +6,7 @@ export interface NpmPackageAttributes {
   name: string; // 包名
   version: string; // 版本号
   description?: string; // 包描述
-  status: 'installing' | 'installed' | 'failed' | 'uninstalling'; // 安装状态
+  status: "installing" | "installed" | "failed" | "uninstalling"; // 安装状态
   installPath?: string; // 安装路径
   size?: number; // 包大小（字节）
   dependencies?: string; // 依赖包列表（JSON字符串）
@@ -18,14 +18,18 @@ export interface NpmPackageAttributes {
   updatedAt?: Date;
 }
 
-export interface NpmPackageCreationAttributes extends Optional<NpmPackageAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+export interface NpmPackageCreationAttributes
+  extends Optional<NpmPackageAttributes, "id" | "createdAt" | "updatedAt"> {}
 
-class NpmPackage extends Model<NpmPackageAttributes, NpmPackageCreationAttributes> implements NpmPackageAttributes {
+class NpmPackage
+  extends Model<NpmPackageAttributes, NpmPackageCreationAttributes>
+  implements NpmPackageAttributes
+{
   public id!: number;
   public name!: string;
   public version!: string;
   public description?: string;
-  public status!: 'installing' | 'installed' | 'failed' | 'uninstalling';
+  public status!: "installing" | "installed" | "failed" | "uninstalling";
   public installPath?: string;
   public size?: number;
   public dependencies?: string;
@@ -51,8 +55,8 @@ NpmPackage.init(
       validate: {
         notEmpty: true,
         // 验证npm包名格式
-        is: /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/
-      }
+        is: /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/,
+      },
     },
     version: {
       type: DataTypes.STRING,
@@ -60,17 +64,17 @@ NpmPackage.init(
       validate: {
         notEmpty: true,
         // 验证语义化版本格式
-        is: /^\d+\.\d+\.\d+(-[a-zA-Z0-9-]+)?(\+[a-zA-Z0-9-]+)?$/
-      }
+        is: /^\d+\.\d+\.\d+(-[a-zA-Z0-9-]+)?(\+[a-zA-Z0-9-]+)?$/,
+      },
     },
     description: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('installing', 'installed', 'failed', 'uninstalling'),
+      type: DataTypes.ENUM("installing", "installed", "failed", "uninstalling"),
       allowNull: false,
-      defaultValue: 'installing',
+      defaultValue: "installing",
     },
     installPath: {
       type: DataTypes.STRING,
@@ -80,13 +84,13 @@ NpmPackage.init(
       type: DataTypes.INTEGER,
       allowNull: true,
       validate: {
-        min: 0
-      }
+        min: 0,
+      },
     },
     dependencies: {
       type: DataTypes.TEXT,
       allowNull: true,
-      comment: 'JSON string of package dependencies'
+      comment: "JSON string of package dependencies",
     },
     installTime: {
       type: DataTypes.DATE,
@@ -101,14 +105,14 @@ NpmPackage.init(
       allowNull: false,
       defaultValue: 0,
       validate: {
-        min: 0
-      }
+        min: 0,
+      },
     },
     isWhitelisted: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-      comment: 'Whether the package is in the security whitelist'
+      comment: "Whether the package is in the security whitelist",
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -127,15 +131,15 @@ NpmPackage.init(
     timestamps: true,
     indexes: [
       {
-        fields: ['name']
+        fields: ["name"],
       },
       {
-        fields: ['status']
+        fields: ["status"],
       },
       {
-        fields: ['isWhitelisted']
-      }
-    ]
+        fields: ["isWhitelisted"],
+      },
+    ],
   }
 );
 

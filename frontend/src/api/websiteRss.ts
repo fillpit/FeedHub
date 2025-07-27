@@ -1,7 +1,7 @@
-import request from '@/utils/request'
-import type { WebsiteRssConfig, WebsiteRssConfigList } from '@/types/websiteRss'
+import request from "@/utils/request";
+import type { WebsiteRssConfig, WebsiteRssConfigList } from "@/types/websiteRss";
 
-const baseUrl = '/api/website-rss';
+const baseUrl = "/api/website-rss";
 
 // 获取所有网站RSS配置
 export const getAllConfigs = () => {
@@ -39,33 +39,42 @@ export const getRssLink = (key: string) => {
 };
 
 export const getWebsiteRssList = () => {
-  return request.get<WebsiteRssConfigList>('/api/website-rss')
-}
+  return request.get<WebsiteRssConfigList>("/api/website-rss");
+};
 
 export const createWebsiteRss = (data: Partial<WebsiteRssConfig>) => {
-  return request.post('/api/website-rss', data, { showSuccessMessage: true, successMessage: '网站 RSS 创建成功！' })
-}
+  return request.post("/api/website-rss", data, {
+    showSuccessMessage: true,
+    successMessage: "网站 RSS 创建成功！",
+  });
+};
 
 export const updateWebsiteRss = (id: number, data: Partial<WebsiteRssConfig>) => {
-  return request.put(`/api/website-rss/${id}`, data, { showSuccessMessage: true, successMessage: '网站 RSS 更新成功！' })
-}
+  return request.put(`/api/website-rss/${id}`, data, {
+    showSuccessMessage: true,
+    successMessage: "网站 RSS 更新成功！",
+  });
+};
 
 export const deleteWebsiteRss = (id: number) => {
-  return request.delete(`/api/website-rss/${id}`, { showSuccessMessage: true, successMessage: '网站 RSS 删除成功！' })
-}
+  return request.delete(`/api/website-rss/${id}`, {
+    showSuccessMessage: true,
+    successMessage: "网站 RSS 删除成功！",
+  });
+};
 
 export const refreshWebsiteRss = (id: number) => {
-  return request.post(`/api/website-rss/${id}/refresh`, {})
-}
+  return request.post(`/api/website-rss/${id}/refresh`, {});
+};
 
 export const getRssUrl = (key: string) => {
-  return `${window.location.origin}/api/rss/${key}`
-}
+  return `${window.location.origin}/api/rss/${key}`;
+};
 
 export const getJsonUrl = (key: string) => {
-  return `${window.location.origin}/api/json/${key}`
-}
+  return `${window.location.origin}/api/json/${key}`;
+};
 
 export const debugSelector = (data: Partial<WebsiteRssConfig>) => {
-  return request.post('/api/website-rss/debug-selector', data)
-}
+  return request.post("/api/website-rss/debug-selector", data);
+};

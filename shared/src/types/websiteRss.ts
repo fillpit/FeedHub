@@ -1,20 +1,20 @@
 // 字段抓取配置
 export interface SelectorField {
-  selector: string;    // 选择器表达式
+  selector: string; // 选择器表达式
   extractType: "text" | "attr"; // 抓取类型：文本值或属性值
-  attrName?: string;   // 当extractType为attr时，指定属性名
+  attrName?: string; // 当extractType为attr时，指定属性名
 }
 
 export interface WebsiteRssSelector {
   selectorType: "css" | "xpath"; // 选择器类型：CSS 或 XPath
-  container: string;  // 文章容器选择器（必填）
-  title: SelectorField;       // 标题选择器配置
-  date?: SelectorField;       // 日期选择器配置（可选）
-  content: SelectorField;     // 内容选择器配置
-  link?: SelectorField;       // 链接选择器配置（可选）
+  container: string; // 文章容器选择器（必填）
+  title: SelectorField; // 标题选择器配置
+  date?: SelectorField; // 日期选择器配置（可选）
+  content: SelectorField; // 内容选择器配置
+  link?: SelectorField; // 链接选择器配置（可选）
   dateFormat?: string; // 日期格式（可选）
-  author?: SelectorField;     // 作者选择器配置（可选）
-  image?: SelectorField;      // 文章封面图片选择器配置（可选）
+  author?: SelectorField; // 作者选择器配置（可选）
+  image?: SelectorField; // 文章封面图片选择器配置（可选）
 }
 
 // 授权配置接口
@@ -30,9 +30,6 @@ export interface WebsiteRssAuth {
   customHeaders?: Record<string, string>; // 自定义请求头
 }
 
-// 抓取模式
-export type FetchMode = "selector" | "script";
-
 // 脚本抓取配置
 export interface WebsiteRssScript {
   enabled: boolean; // 是否启用脚本抓取
@@ -47,9 +44,7 @@ export interface WebsiteRssConfigBase {
   key: string;
   title: string;
   url: string;
-  fetchMode: FetchMode; // 抓取模式：selector 或 script
   selector: WebsiteRssSelector; // 包含各种选择器
-  script: WebsiteRssScript; // 脚本抓取配置
   auth: WebsiteRssAuth; // 授权配置
   authCredentialId?: number; // 授权信息ID
   lastContent?: string; // 上次抓取的内容
@@ -68,7 +63,8 @@ export interface WebsiteRssConfigAttributes extends WebsiteRssConfigBase {
 }
 
 // 前端使用的配置接口（字段可选且类型适配前端）
-export interface WebsiteRssConfig extends Omit<WebsiteRssConfigBase, 'userId' | 'lastFetchTime' | 'createdAt' | 'updatedAt'> {
+export interface WebsiteRssConfig
+  extends Omit<WebsiteRssConfigBase, "userId" | "lastFetchTime" | "createdAt" | "updatedAt"> {
   userId?: number; // 前端可能使用数字类型
   description?: string; // 前端别名
   feedUrl?: string; // 前端额外字段
@@ -92,7 +88,7 @@ export interface WebsiteRssFeed {
   contentSnippet: string;
   author: string;
   pubDate: string;
-  image?: string;      // 文章封面图片URL
+  image?: string; // 文章封面图片URL
   createdAt: string;
   updatedAt: string;
 }
@@ -115,7 +111,8 @@ export interface WebsiteRssStore {
 }
 
 // 创建配置时的可选属性
-export interface WebsiteRssConfigCreationAttributes extends Omit<WebsiteRssConfigAttributes, 'id' | 'lastContent' | 'lastFetchTime'> {
+export interface WebsiteRssConfigCreationAttributes
+  extends Omit<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime"> {
   lastContent?: string;
   lastFetchTime?: Date;
 }

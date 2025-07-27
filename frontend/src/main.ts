@@ -10,8 +10,8 @@ import "@/styles/common.scss";
 import SimpleIcon from "./components/SimpleIcon.vue";
 
 import router from "./router/index";
-import { StorageManager } from './utils/storage';
-import loadingManager from './utils/loading';
+import { StorageManager } from "./utils/storage";
+import loadingManager from "./utils/loading";
 
 const app = createApp(App);
 
@@ -21,15 +21,13 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 // 注册自定义图标组件
-app.component('SimpleIcon', SimpleIcon);
+app.component("SimpleIcon", SimpleIcon);
 
 // 初始化并挂载全局工具
 const storageManager = new StorageManager();
 
-
 app.config.globalProperties.$storage = storageManager;
 app.config.globalProperties.$loading = loadingManager; // Ensure loading manager is correctly assigned
-
 
 app.use(createPinia());
 app.use(router);

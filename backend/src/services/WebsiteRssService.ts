@@ -1,5 +1,8 @@
 import { injectable, inject } from "inversify";
-import WebsiteRssConfig, { WebsiteRssConfigAttributes, WebsiteRssSelector } from "../models/WebsiteRssConfig";
+import WebsiteRssConfig, {
+  WebsiteRssConfigAttributes,
+  WebsiteRssSelector,
+} from "../models/WebsiteRssConfig";
 import axios from "axios";
 import { AxiosInstance } from "axios";
 import { ApiResponseData } from "../utils/apiResponse";
@@ -39,7 +42,8 @@ export class WebsiteRssService {
     this.axiosInstance = axios.create({
       timeout: 30000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       },
     });
     this.npmPackageService = npmPackageService;
@@ -68,17 +72,18 @@ export class WebsiteRssService {
   /**
    * 添加新配置
    */
-  async addConfig(configData: Omit<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime">): Promise<ApiResponseData<WebsiteRssConfigAttributes>> {
+  async addConfig(
+    configData: Omit<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime">
+  ): Promise<ApiResponseData<WebsiteRssConfigAttributes>> {
     // 检查是否已存在相同的URL
     const existingConfig = await WebsiteRssConfig.findOne({ where: { url: configData.url } });
     if (existingConfig) throw new Error("该网站URL已存在配置");
     // 自动生成 key
-    if (!configData.key) configData.key = uuidv4().replace(/-/g, '').slice(0, 8);
+    if (!configData.key) configData.key = uuidv4().replace(/-/g, "").slice(0, 8);
     // 移除 id 字段，确保数据库自增
-    if ('id' in configData) delete (configData as any).id;
+    if ("id" in configData) delete (configData as any).id;
     // 仅在非脚本模式下校验 selector
-    const isScriptMode = configData.script && configData.script.enabled;
-    if (!isScriptMode) validateselector(configData.selector);
+    validateselector(configData.selector);
     // 如果没有提供favicon，尝试从网站获取
     if (!configData.favicon) {
       try {
@@ -98,17 +103,17 @@ export class WebsiteRssService {
   /**
    * 更新配置
    */
-  async updateConfig(id: number, configData: Partial<WebsiteRssConfigAttributes>): Promise<ApiResponseData<WebsiteRssConfigAttributes>> {
+  async updateConfig(
+    id: number,
+    configData: Partial<WebsiteRssConfigAttributes>
+  ): Promise<ApiResponseData<WebsiteRssConfigAttributes>> {
     // 查找原配置
     const config = await WebsiteRssConfig.findByPk(id);
     if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
     // 仅在非脚本模式下校验 selector
-    const isScriptMode = configData.script && configData.script.enabled;
-    if (!isScriptMode) validateselector(configData.selector as WebsiteRssSelector);
+    validateselector(configData.selector as WebsiteRssSelector);
     // 更新数据库
     await WebsiteRssConfig.update(configData, { where: { id } });
-    // 移除立即抓取内容的逻辑，只进行必要的语法检查
-    // if (configData.url || configData.selector) await this.fetchAndUpdateContent(id);
     // 返回最新配置
     const updatedConfig = await WebsiteRssConfig.findByPk(id);
     return { success: true, data: updatedConfig!, message: "网站RSS配置更新成功" };
@@ -191,7 +196,7 @@ export class WebsiteRssService {
       // 查找配置
       config = await WebsiteRssConfig.findByPk(id);
       if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
-      
+
       // 兼容性处理：确保 auth 字段存在
       let auth = config.auth || { enabled: false, authType: "none" };
       // 新增：如有authCredentialId，查库组装
@@ -199,7 +204,7 @@ export class WebsiteRssService {
         const authObj = await AuthCredential.findByPk(config.authCredentialId);
         if (!authObj) throw new Error("未找到授权信息");
         let customHeaders: Record<string, string> | undefined = undefined;
-        if (authObj.customHeaders && typeof authObj.customHeaders === 'object') {
+        if (authObj.customHeaders && typeof authObj.customHeaders === "object") {
           try {
             customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
           } catch {
@@ -209,24 +214,27 @@ export class WebsiteRssService {
         auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
         config.auth = auth;
       }
-      
+
       // 创建带有授权信息的请求配置
       const requestConfig = createRequestConfig(auth);
       let extractedContent: any[] = [];
-      
+
       // 选择器抓取模式（默认）
       const response = await this.axiosInstance.get(config.url, requestConfig);
       const html = response.data;
-      
-      // 提取内容并格式化日期
-      extractedContent = extractContentFromHtml(html, config.selector as WebsiteRssSelector, config.url)
-        .map(item => ({
-          ...item,
-          pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat)
-        }));
 
-      console.log('extractedContent', extractedContent)
-      
+      // 提取内容并格式化日期
+      extractedContent = extractContentFromHtml(
+        html,
+        config.selector as WebsiteRssSelector,
+        config.url
+      ).map((item) => ({
+        ...item,
+        pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat),
+      }));
+
+      console.log("extractedContent", extractedContent);
+
       // 更新配置
       await WebsiteRssConfig.update(
         {
@@ -235,10 +243,9 @@ export class WebsiteRssService {
         },
         { where: { id } }
       );
-      
     } catch (error: any) {
       console.error(`RSS订阅更新失败 [ID: ${id}]:`, error.message);
-      
+
       // 发送错误通知
       if (config && config.userId) {
         try {
@@ -248,10 +255,10 @@ export class WebsiteRssService {
             error.message
           );
         } catch (notificationError: any) {
-          console.error('发送通知失败:', notificationError.message);
+          console.error("发送通知失败:", notificationError.message);
         }
       }
-      
+
       // 重新抛出错误，保持原有的错误处理逻辑
       throw error;
     }
@@ -265,10 +272,10 @@ export class WebsiteRssService {
     const feed = new RSS({
       title: config.title,
       description: config.rssDescription || config.title,
-      feed_url: `${process.env.API_BASE_URL || ''}/api/website-rss/${config.key}`,
+      feed_url: `${process.env.API_BASE_URL || ""}/api/website-rss/${config.key}`,
       site_url: config.url,
       image_url: config.favicon,
-      generator: 'FeedHub WebsiteRSS',
+      generator: "FeedHub WebsiteRSS",
       pubDate: new Date(),
     });
     // 添加项目
@@ -277,22 +284,22 @@ export class WebsiteRssService {
       items.forEach((item: any) => {
         const itemOptions: any = {
           title: item.title,
-          description: item.content || item.contentSnippet || '',
+          description: item.content || item.contentSnippet || "",
           url: item.link,
           guid: item.guid,
           date: item.pubDate,
           author: item.author,
         };
-        
+
         // 添加封面图片作为enclosure（如果存在）
         if (item.image || item.coverImage || item.thumbnail) {
           const imageUrl = item.image || item.coverImage || item.thumbnail;
           itemOptions.enclosure = {
             url: imageUrl,
-            type: 'image/jpeg' // 默认类型，实际应用中可根据图片URL后缀判断
+            type: "image/jpeg", // 默认类型，实际应用中可根据图片URL后缀判断
           };
         }
-        
+
         feed.item(itemOptions);
       });
     }
@@ -307,36 +314,36 @@ export class WebsiteRssService {
     const feedJson: any = {
       title: config.title,
       description: config.rssDescription || config.title,
-      feed_url: `${process.env.API_BASE_URL || ''}/api/json/${config.key}`,
+      feed_url: `${process.env.API_BASE_URL || ""}/api/json/${config.key}`,
       site_url: config.url,
       image_url: config.favicon,
-      generator: 'FeedHub WebsiteRSS',
+      generator: "FeedHub WebsiteRSS",
       pubDate: new Date().toISOString(),
-      items: []
+      items: [],
     };
-    
+
     // 添加项目
     if (config.lastContent) {
       const items = JSON.parse(config.lastContent);
       feedJson.items = items.map((item: any) => {
         const jsonItem: any = {
           title: item.title,
-          description: item.content || item.contentSnippet || '',
+          description: item.content || item.contentSnippet || "",
           url: item.link,
           guid: item.guid,
           date: item.pubDate,
           author: item.author,
         };
-        
+
         // 添加封面图片（如果存在）
         if (item.image || item.coverImage || item.thumbnail) {
           jsonItem.image = item.image || item.coverImage || item.thumbnail;
         }
-        
+
         return jsonItem;
       });
     }
-    
+
     return feedJson;
   }
 
@@ -358,7 +365,7 @@ export class WebsiteRssService {
         const authObj = await AuthCredential.findByPk(configData.authCredentialId);
         if (authObj) {
           let customHeaders: Record<string, string> | undefined = undefined;
-          if (authObj.customHeaders && typeof authObj.customHeaders === 'object') {
+          if (authObj.customHeaders && typeof authObj.customHeaders === "object") {
             try {
               customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
             } catch {
@@ -381,19 +388,24 @@ export class WebsiteRssService {
       const response = await this.axiosInstance.get(configData.url, requestConfig);
       logs.push(`[INFO] 网页获取成功，状态码: ${response.status}`);
       logs.push(`[INFO] 响应头: ${JSON.stringify(response.headers, null, 2)}`);
-      
+
       const html = response.data;
       logs.push(`[INFO] 网页内容长度: ${html.length} 字符`);
 
       // 使用选择器提取内容
       logs.push(`[INFO] 开始使用选择器提取内容...`);
-      const extractedContent = extractContentFromHtml(html, configData.selector as WebsiteRssSelector, configData.url, logs);
+      const extractedContent = extractContentFromHtml(
+        html,
+        configData.selector as WebsiteRssSelector,
+        configData.url,
+        logs
+      );
       logs.push(`[INFO] 提取完成，共找到 ${extractedContent.length} 个项目`);
 
       // 格式化日期
-      const formattedContent = extractedContent.map(item => ({
+      const formattedContent = extractedContent.map((item) => ({
         ...item,
-        pubDate: formatDate(item.pubDate, (configData.selector as WebsiteRssSelector).dateFormat)
+        pubDate: formatDate(item.pubDate, (configData.selector as WebsiteRssSelector).dateFormat),
       }));
 
       const executionTime = Date.now() - startTime;
@@ -406,9 +418,9 @@ export class WebsiteRssService {
           result: formattedContent,
           logs,
           executionTime,
-          totalItems: formattedContent.length
+          totalItems: formattedContent.length,
         },
-        message: "选择器调试成功"
+        message: "选择器调试成功",
       };
     } catch (error: any) {
       const executionTime = Date.now() - startTime;
@@ -424,11 +436,10 @@ export class WebsiteRssService {
           error: error.message,
           stack: error.stack,
           logs,
-          executionTime
+          executionTime,
         },
-        message: "选择器调试失败"
+        message: "选择器调试失败",
       };
     }
   }
-
 }

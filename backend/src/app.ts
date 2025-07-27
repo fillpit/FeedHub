@@ -1,4 +1,3 @@
-
 import "./types/express";
 import express from "express";
 
@@ -27,16 +26,16 @@ class App {
 
     // 设置路由
     this.app.use("/", routes);
-    
+
     // 404处理
-    this.app.use('*', (req, res) => {
+    this.app.use("*", (req, res) => {
       logger.warn(`404 - 未找到路由: ${req.method} ${req.originalUrl}`);
       res.status(404).json({
         success: false,
-        message: '请求的资源不存在'
+        message: "请求的资源不存在",
       });
     });
-    
+
     // 错误处理中间件必须在最后注册
     setupErrorHandling(this.app);
   }
@@ -73,31 +72,31 @@ class App {
   private setupGracefulShutdown(server: any): void {
     const gracefulShutdown = async (signal: string) => {
       logger.info(`收到 ${signal} 信号，开始优雅关闭...`);
-      
+
       // 关闭HTTP服务器
       server.close(async () => {
-        logger.info('HTTP服务器已关闭');
-        
+        logger.info("HTTP服务器已关闭");
+
         try {
           // 关闭缓存服务
           await CacheFactory.closeCacheService();
-          logger.info('缓存服务已关闭');
-          
+          logger.info("缓存服务已关闭");
+
           // 关闭数据库连接
           // 这里可以添加数据库关闭逻辑
-          
-          logger.info('应用程序已优雅关闭');
+
+          logger.info("应用程序已优雅关闭");
           process.exit(0);
         } catch (error) {
-          logger.error('关闭过程中发生错误:', error);
+          logger.error("关闭过程中发生错误:", error);
           process.exit(1);
         }
       });
     };
 
     // 监听关闭信号
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   }
 }
 

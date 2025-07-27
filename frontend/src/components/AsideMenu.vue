@@ -78,7 +78,13 @@ import pkg from "../../package.json";
 interface MenuItem {
   index: string;
   title: string;
-  icon?: typeof Search | typeof Film | typeof Setting | typeof Link | typeof Collection | typeof Key;
+  icon?:
+    | typeof Search
+    | typeof Film
+    | typeof Setting
+    | typeof Link
+    | typeof Collection
+    | typeof Key;
   router?: string;
   children?: MenuItem[];
   disabled?: boolean;
@@ -96,14 +102,14 @@ const menuList: MenuItem[] = [
     icon: Document,
     router: "/website-rss",
   },
-    {
-      index: "2",
-      title: "动态路由",
-      icon: Link,
-      router: "/dynamic-route",
-    },
+  {
+    index: "2",
+    title: "动态路由",
+    icon: Link,
+    router: "/dynamic-route",
+  },
 
-    {
+  {
     index: "5",
     title: "NPM包管理",
     icon: Collection,
@@ -122,7 +128,7 @@ const menuList: MenuItem[] = [
     icon: Setting,
     router: "/setting",
     disabled: false,
-  }
+  },
 ];
 
 // 计算当前激活的菜单

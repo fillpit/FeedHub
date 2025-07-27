@@ -1,7 +1,7 @@
-import { ICacheService } from './ICacheService';
-import { MemoryCacheService } from './MemoryCacheService';
-import { RedisCacheService } from './RedisCacheService';
-import { logger } from '../../utils/logger';
+import { ICacheService } from "./ICacheService";
+import { MemoryCacheService } from "./MemoryCacheService";
+import { RedisCacheService } from "./RedisCacheService";
+import { logger } from "../../utils/logger";
 
 /**
  * 缓存工厂类
@@ -20,26 +20,29 @@ export class CacheFactory {
     }
 
     const redisUrl = process.env.REDIS_URL;
-    
+
     if (redisUrl) {
-      logger.info('Redis URL detected, initializing Redis cache service');
+      logger.info("Redis URL detected, initializing Redis cache service");
       try {
         const redisCacheService = new RedisCacheService(redisUrl);
         await redisCacheService.connect();
         this.instance = redisCacheService;
-        logger.info('Redis cache service initialized successfully');
+        logger.info("Redis cache service initialized successfully");
         return this.instance;
       } catch (error) {
-        logger.error('Failed to initialize Redis cache service, falling back to memory cache:', error);
+        logger.error(
+          "Failed to initialize Redis cache service, falling back to memory cache:",
+          error
+        );
         // 如果Redis连接失败，回退到内存缓存
       }
     } else {
-      logger.info('No Redis URL found in environment variables');
+      logger.info("No Redis URL found in environment variables");
     }
 
-    logger.info('Initializing memory cache service');
+    logger.info("Initializing memory cache service");
     this.instance = new MemoryCacheService();
-    logger.info('Memory cache service initialized successfully');
+    logger.info("Memory cache service initialized successfully");
     return this.instance;
   }
 
@@ -58,7 +61,7 @@ export class CacheFactory {
     if (this.instance) {
       await this.instance.close();
       this.instance = null;
-      logger.info('Cache service closed');
+      logger.info("Cache service closed");
     }
   }
 

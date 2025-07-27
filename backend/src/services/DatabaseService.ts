@@ -55,22 +55,22 @@ export class DatabaseService {
     try {
       // 检查是否存在管理员用户
       const adminUser = await User.findOne({ where: { role: 1 } });
-      
+
       if (!adminUser) {
         // 从环境变量读取用户名和密码，如果未设置则使用默认值
         const username = process.env.BASIC_AUTH_USERNAME || "admin";
         const password = process.env.BASIC_AUTH_PASSWORD || "admin@123";
-        
+
         // 对密码进行哈希处理
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         // 创建管理员用户
         await User.create({
           username,
           password: hashedPassword,
           role: 1, // 管理员角色
         });
-        
+
         console.log(`✅ Admin user initialized with username: ${username}`);
       }
     } catch (error) {
@@ -83,7 +83,7 @@ export class DatabaseService {
     try {
       // 检查数据库连接是否正常
       await this.sequelize.authenticate();
-      
+
       const backupTables = await this.sequelize.query<{ name: string }>(
         "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_backup%'",
         { type: QueryTypes.SELECT }
@@ -101,7 +101,7 @@ export class DatabaseService {
       }
     } catch (error) {
       // 忽略清理备份表时的错误，不影响主要初始化流程
-      console.warn('清理备份表时出现警告:', (error as Error).message);
+      console.warn("清理备份表时出现警告:", (error as Error).message);
     }
   }
 

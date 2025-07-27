@@ -15,14 +15,14 @@ const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5分钟清理一次
 setInterval(() => {
   const now = Date.now();
   let cleanedCount = 0;
-  
+
   for (const [key, record] of requestCounts.entries()) {
     if (now - record.timestamp > WINDOW_MS) {
       requestCounts.delete(key);
       cleanedCount++;
     }
   }
-  
+
   if (cleanedCount > 0) {
     logger.debug(`清理了 ${cleanedCount} 个过期的限流记录`);
   }
@@ -44,10 +44,10 @@ export const rateLimiter = () => {
 
     if (record.count > MAX_REQUESTS) {
       logger.warn(`IP ${ip} 触发限流，当前请求数: ${record.count}`);
-      return res.status(429).json({ 
+      return res.status(429).json({
         success: false,
         message: "请求过于频繁，请稍后再试",
-        retryAfter: Math.ceil(WINDOW_MS / 1000)
+        retryAfter: Math.ceil(WINDOW_MS / 1000),
       });
     }
 

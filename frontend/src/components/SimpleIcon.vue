@@ -6,25 +6,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineProps, h } from 'vue';
-import * as SimpleIcons from 'simple-icons';
+import { computed, defineProps, h } from "vue";
+import * as SimpleIcons from "simple-icons";
 
 const props = defineProps({
   // 图标名称，如 'siTwitter', 'siBilibili' 等
   name: {
     type: String,
-    required: true
+    required: true,
   },
   // 图标颜色，默认继承父元素颜色
   color: {
     type: String,
-    default: 'currentColor'
+    default: "currentColor",
   },
   // 图标大小，单位为像素
   size: {
     type: [Number, String],
-    default: 24
-  }
+    default: 24,
+  },
 });
 
 // 计算图标组件
@@ -35,15 +35,15 @@ const iconComponent = computed(() => {
     return {
       render() {
         const icon = SimpleIcons[props.name as keyof typeof SimpleIcons];
-        return h('svg', {
-          xmlns: 'http://www.w3.org/2000/svg',
+        return h("svg", {
+          xmlns: "http://www.w3.org/2000/svg",
           width: props.size,
           height: props.size,
-          viewBox: '0 0 24 24',
-          fill: 'currentColor',
-          innerHTML: `<path d="${(icon as any).path}"/>`
+          viewBox: "0 0 24 24",
+          fill: "currentColor",
+          innerHTML: `<path d="${(icon as any).path}"/>`,
         });
-      }
+      },
     };
   }
   return null;

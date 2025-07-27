@@ -16,22 +16,26 @@ export class SettingService {
     const globalSetting = await GlobalSetting.findOne();
     const userSetting = await UserSetting.findOne({ where: { userId } });
     const notificationSetting = await NotificationSetting.findOne({ where: { userId } });
-    
+
     return {
       data: {
         globalSetting: role === 1 ? globalSetting : null,
-        userSettings: userSetting ? {
-          cloud115Cookie: userSetting.cloud115Cookie,
-          quarkCookie: userSetting.quarkCookie,
-          username: userSetting.username,
-          email: userSetting.email,
-        } : {
-          cloud115Cookie: "",
-          quarkCookie: "",
-          username: "",
-          email: "",
-        },
-        notificationSettings: notificationSetting ? this.convertToNotificationSettings(notificationSetting) : null,
+        userSettings: userSetting
+          ? {
+              cloud115Cookie: userSetting.cloud115Cookie,
+              quarkCookie: userSetting.quarkCookie,
+              username: userSetting.username,
+              email: userSetting.email,
+            }
+          : {
+              cloud115Cookie: "",
+              quarkCookie: "",
+              username: "",
+              email: "",
+            },
+        notificationSettings: notificationSetting
+          ? this.convertToNotificationSettings(notificationSetting)
+          : null,
       },
     };
   }
@@ -47,7 +51,7 @@ export class SettingService {
     if (role === 1 && globalSetting) {
       await GlobalSetting.update(globalSetting, { where: {} });
     }
-    
+
     // 保存用户设置
     if (userSettings) {
       await UserSetting.upsert({
@@ -58,13 +62,13 @@ export class SettingService {
         email: userSettings.email,
       });
     }
-    
+
     // 保存通知设置
     if (notificationSettings) {
       const notificationData = this.convertFromNotificationSettings(userId, notificationSettings);
       await NotificationSetting.upsert(notificationData);
     }
-    
+
     await this.updateSettings();
     return { message: "保存成功" };
   }
@@ -98,8 +102,12 @@ export class SettingService {
       wechatWork: {
         enabled: setting.wechatWorkEnabled,
         webhookUrl: setting.wechatWorkWebhookUrl,
-        mentionedList: setting.wechatWorkMentionedList ? JSON.parse(setting.wechatWorkMentionedList) : [],
-        mentionedMobileList: setting.wechatWorkMentionedMobileList ? JSON.parse(setting.wechatWorkMentionedMobileList) : [],
+        mentionedList: setting.wechatWorkMentionedList
+          ? JSON.parse(setting.wechatWorkMentionedList)
+          : [],
+        mentionedMobileList: setting.wechatWorkMentionedMobileList
+          ? JSON.parse(setting.wechatWorkMentionedMobileList)
+          : [],
       },
       dingtalk: {
         enabled: setting.dingtalkEnabled,
@@ -135,7 +143,7 @@ export class SettingService {
       barkSound: settings.bark.sound,
       barkIcon: settings.bark.icon,
       barkGroup: settings.bark.group,
-      
+
       // 邮件通知设置
       emailEnabled: settings.email.enabled,
       emailSmtpHost: settings.email.smtpHost,
@@ -145,19 +153,19 @@ export class SettingService {
       emailPassword: settings.email.password,
       emailFromEmail: settings.email.fromEmail,
       emailToEmail: settings.email.toEmail,
-      
+
       // Gotify 通知设置
       gotifyEnabled: settings.gotify.enabled,
       gotifyServerUrl: settings.gotify.serverUrl,
       gotifyAppToken: settings.gotify.appToken,
       gotifyPriority: settings.gotify.priority,
-      
+
       // 企业微信通知设置
       wechatWorkEnabled: settings.wechatWork.enabled,
       wechatWorkWebhookUrl: settings.wechatWork.webhookUrl,
       wechatWorkMentionedList: JSON.stringify(settings.wechatWork.mentionedList || []),
       wechatWorkMentionedMobileList: JSON.stringify(settings.wechatWork.mentionedMobileList || []),
-      
+
       // 钉钉通知设置
       dingtalkEnabled: settings.dingtalk.enabled,
       dingtalkWebhookUrl: settings.dingtalk.webhookUrl,
@@ -165,7 +173,7 @@ export class SettingService {
       dingtalkAtMobiles: JSON.stringify(settings.dingtalk.atMobiles || []),
       dingtalkAtUserIds: JSON.stringify(settings.dingtalk.atUserIds || []),
       dingtalkIsAtAll: settings.dingtalk.isAtAll,
-      
+
       // 飞书通知设置
       feishuEnabled: settings.feishu.enabled,
       feishuWebhookUrl: settings.feishu.webhookUrl,
@@ -173,7 +181,7 @@ export class SettingService {
       feishuAtUserIds: JSON.stringify(settings.feishu.atUserIds || []),
       feishuAtMobiles: JSON.stringify(settings.feishu.atMobiles || []),
       feishuAtAll: settings.feishu.atAll,
-      
+
       // 通知触发条件
       triggerNewFeedItems: settings.triggers.newFeedItems,
       triggerFeedUpdateErrors: settings.triggers.feedUpdateErrors,
@@ -183,7 +191,6 @@ export class SettingService {
 
   async updateSettings(/* 参数 */): Promise<void> {
     // ... 其他代码 ...
-
     // ... 其他代码 ...
   }
 }

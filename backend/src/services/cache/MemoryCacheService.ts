@@ -1,5 +1,5 @@
-import { ICacheService, CacheEntry } from './ICacheService';
-import { logger } from '../../utils/logger';
+import { ICacheService, CacheEntry } from "./ICacheService";
+import { logger } from "../../utils/logger";
 
 /**
  * 内存缓存服务实现
@@ -10,9 +10,12 @@ export class MemoryCacheService implements ICacheService {
 
   constructor() {
     // 每10分钟清理一次过期缓存
-    this.cleanupInterval = setInterval(() => {
-      this.cleanExpired();
-    }, 10 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanExpired();
+      },
+      10 * 60 * 1000
+    );
   }
 
   async get(key: string): Promise<string | null> {
@@ -35,7 +38,7 @@ export class MemoryCacheService implements ICacheService {
     const entry: CacheEntry = {
       data: value,
       timestamp: now,
-      expiresAt: now + ttlSeconds * 1000
+      expiresAt: now + ttlSeconds * 1000,
     };
     this.cache.set(key, entry);
   }
@@ -46,15 +49,15 @@ export class MemoryCacheService implements ICacheService {
 
   async deletePattern(pattern: string): Promise<void> {
     let deletedCount = 0;
-    const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-    
+    const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+
     for (const key of this.cache.keys()) {
       if (regex.test(key)) {
         this.cache.delete(key);
         deletedCount++;
       }
     }
-    
+
     if (deletedCount > 0) {
       logger.info(`Memory cache: Deleted ${deletedCount} entries matching pattern: ${pattern}`);
     }
@@ -63,14 +66,14 @@ export class MemoryCacheService implements ICacheService {
   async cleanExpired(): Promise<void> {
     const now = Date.now();
     let cleanedCount = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiresAt) {
         this.cache.delete(key);
         cleanedCount++;
       }
     }
-    
+
     if (cleanedCount > 0) {
       logger.info(`Memory cache: Cleaned ${cleanedCount} expired entries`);
     }
@@ -89,7 +92,7 @@ export class MemoryCacheService implements ICacheService {
   getStats() {
     return {
       size: this.cache.size,
-      type: 'memory'
+      type: "memory",
     };
   }
 }

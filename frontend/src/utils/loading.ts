@@ -1,5 +1,5 @@
-import { ElLoading } from 'element-plus';
-import type { LoadingInstance } from 'element-plus/es/components/loading/src/loading';
+import { ElLoading } from "element-plus";
+import type { LoadingInstance } from "element-plus/es/components/loading/src/loading";
 
 // 加载状态管理类
 class LoadingManager {
@@ -8,7 +8,7 @@ class LoadingManager {
   private loadingStates = new Map<string, boolean>();
 
   // 显示全局加载
-  showGlobal(text: string = '加载中...', background: string = 'rgba(0, 0, 0, 0.7)') {
+  showGlobal(text: string = "加载中...", background: string = "rgba(0, 0, 0, 0.7)") {
     if (this.loadingInstance) {
       return;
     }
@@ -17,8 +17,8 @@ class LoadingManager {
       lock: true,
       text,
       background,
-      spinner: 'el-icon-loading',
-      customClass: 'global-loading'
+      spinner: "el-icon-loading",
+      customClass: "global-loading",
     });
   }
 
@@ -81,14 +81,14 @@ export const withLoading = async <T>(
     componentId?: string;
   }
 ): Promise<T> => {
-  const { showGlobal = true, text = '加载中...', componentId } = options || {};
-  console.log(text)
+  const { showGlobal = true, text = "加载中...", componentId } = options || {};
+  console.log(text);
 
   try {
     if (showGlobal) {
       loadingManager.increment();
     }
-    
+
     if (componentId) {
       loadingManager.setComponentLoading(componentId, true);
     }
@@ -99,7 +99,7 @@ export const withLoading = async <T>(
     if (showGlobal) {
       loadingManager.decrement();
     }
-    
+
     if (componentId) {
       loadingManager.setComponentLoading(componentId, false);
     }
@@ -111,7 +111,7 @@ export interface SkeletonConfig {
   rows?: number;
   animated?: boolean;
   avatar?: boolean;
-  avatarSize?: 'large' | 'default' | 'small';
+  avatarSize?: "large" | "default" | "small";
   title?: boolean;
   loading?: boolean;
 }
@@ -122,7 +122,7 @@ export const defaultSkeletonConfig: SkeletonConfig = {
   animated: true,
   avatar: false,
   title: true,
-  loading: true
+  loading: true,
 };
 
 // 预定义的骨架屏配置
@@ -132,65 +132,62 @@ export const skeletonPresets = {
     rows: 2,
     animated: true,
     avatar: true,
-    avatarSize: 'default' as const,
-    title: true
+    avatarSize: "default" as const,
+    title: true,
   },
   // 卡片骨架屏
   card: {
     rows: 4,
     animated: true,
     avatar: false,
-    title: true
+    title: true,
   },
   // 表格骨架屏
   table: {
     rows: 5,
     animated: true,
     avatar: false,
-    title: false
+    title: false,
   },
   // 表单骨架屏
   form: {
     rows: 6,
     animated: true,
     avatar: false,
-    title: true
-  }
+    title: true,
+  },
 };
 
 // 延迟加载工具
 export const delayedLoading = {
   // 延迟显示加载状态（避免闪烁）
   show: (delay: number = 200): Promise<void> => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       setTimeout(() => {
         loadingManager.increment();
         resolve();
       }, delay);
     });
   },
-  
+
   // 最小显示时间（确保用户能看到加载状态）
-  withMinDuration: async <T>(
-    asyncFn: () => Promise<T>,
-    minDuration: number = 500
-  ): Promise<T> => {
+  withMinDuration: async <T>(asyncFn: () => Promise<T>, minDuration: number = 500): Promise<T> => {
     const startTime = Date.now();
     loadingManager.increment();
-    
+
     try {
       const result = await asyncFn();
       const elapsed = Date.now() - startTime;
-      
+
       if (elapsed < minDuration) {
-        await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
+        await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
       }
-      
+
       return result;
     } finally {
       loadingManager.decrement();
     }
-  }
+  },
 };
 
 // 导出加载管理器和工具函数
@@ -198,18 +195,18 @@ export { loadingManager };
 export default loadingManager;
 
 // Vue 3 Composition API 支持
-import { ref, computed } from 'vue';
+import { ref, computed } from "vue";
 
 export const useLoading = (componentId?: string) => {
   const localLoading = ref(false);
-  
+
   const isLoading = computed(() => {
     if (componentId) {
       return loadingManager.getComponentLoading(componentId) || localLoading.value;
     }
     return localLoading.value;
   });
-  
+
   const setLoading = (loading: boolean) => {
     if (componentId) {
       loadingManager.setComponentLoading(componentId, loading);
@@ -217,7 +214,7 @@ export const useLoading = (componentId?: string) => {
       localLoading.value = loading;
     }
   };
-  
+
   const withLocalLoading = async <T>(asyncFn: () => Promise<T>): Promise<T> => {
     setLoading(true);
     try {
@@ -226,22 +223,22 @@ export const useLoading = (componentId?: string) => {
       setLoading(false);
     }
   };
-  
+
   return {
     isLoading,
     setLoading,
-    withLoading: withLocalLoading
+    withLoading: withLocalLoading,
   };
 };
 
 // 全局加载状态的响应式引用
 export const useGlobalLoading = () => {
   const isGlobalLoading = computed(() => loadingManager.isLoading);
-  
+
   return {
     isGlobalLoading,
     showGlobalLoading: (text?: string) => loadingManager.showGlobal(text),
     hideGlobalLoading: () => loadingManager.hideGlobal(),
-    withGlobalLoading: (asyncFn: () => Promise<any>) => withLoading(asyncFn)
+    withGlobalLoading: <T>(asyncFn: () => Promise<T>) => withLoading(asyncFn),
   };
 };

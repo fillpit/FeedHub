@@ -1,6 +1,5 @@
 // 统一的API响应格式
 export interface ApiResponse<T = unknown> {
-  success: boolean;
   data?: T;
   message?: string;
   error?: string;

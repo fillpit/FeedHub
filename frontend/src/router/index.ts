@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
- import pcRoutes from "./pc-routes";
-import { Validator } from '../utils/validation';
-import { showErrorMessage } from '../utils/request';
+import pcRoutes from "./pc-routes";
+import { Validator, ValidationSchema } from "../utils/validation";
+import { showErrorMessage } from "../utils/request";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,8 +10,8 @@ const router = createRouter({
 
 // 全局前置守卫，应用验证逻辑
 router.beforeEach(async (to, from, next) => {
-  console.log(from)
-  const validationSchema = to.meta.validationSchema as Record<string, any>;
+  console.log(from);
+  const validationSchema = to.meta.validationSchema as ValidationSchema;
   if (validationSchema) {
     const validator = new Validator(validationSchema);
     const formData = to.params; // 或者根据实际情况从 to.query 或其他地方获取

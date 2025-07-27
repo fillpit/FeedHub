@@ -1,6 +1,6 @@
 // 共享的错误处理工具函数
-import { ERROR_CODES, HTTP_STATUS } from '../constants';
-import type { ApiResponse, ValidationError as ApiValidationError, DetailedErrorResponse } from '../types/api';
+import { ERROR_CODES, HTTP_STATUS } from "../constants";
+import type { ValidationError as ApiValidationError, DetailedErrorResponse } from "../types/api";
 
 /**
  * 自定义错误类
@@ -19,7 +19,7 @@ export class AppError extends Error {
     details?: any
   ) {
     super(message);
-    this.name = 'AppError';
+    this.name = "AppError";
     this.code = code;
     this.statusCode = statusCode;
     this.isOperational = isOperational;
@@ -38,7 +38,7 @@ export class ValidationError extends AppError {
 
   constructor(message: string, validationErrors: ApiValidationError[] = []) {
     super(message, ERROR_CODES.VALIDATION_ERROR, HTTP_STATUS.BAD_REQUEST);
-    this.name = 'ValidationError';
+    this.name = "ValidationError";
     this.validationErrors = validationErrors;
   }
 }
@@ -47,9 +47,9 @@ export class ValidationError extends AppError {
  * 认证错误类
  */
 export class AuthenticationError extends AppError {
-  constructor(message: string = '认证失败') {
+  constructor(message: string = "认证失败") {
     super(message, ERROR_CODES.AUTHENTICATION_ERROR, HTTP_STATUS.UNAUTHORIZED);
-    this.name = 'AuthenticationError';
+    this.name = "AuthenticationError";
   }
 }
 
@@ -57,9 +57,9 @@ export class AuthenticationError extends AppError {
  * 授权错误类
  */
 export class AuthorizationError extends AppError {
-  constructor(message: string = '权限不足') {
+  constructor(message: string = "权限不足") {
     super(message, ERROR_CODES.AUTHORIZATION_ERROR, HTTP_STATUS.FORBIDDEN);
-    this.name = 'AuthorizationError';
+    this.name = "AuthorizationError";
   }
 }
 
@@ -67,9 +67,9 @@ export class AuthorizationError extends AppError {
  * 资源未找到错误类
  */
 export class NotFoundError extends AppError {
-  constructor(message: string = '资源未找到') {
+  constructor(message: string = "资源未找到") {
     super(message, ERROR_CODES.RESOURCE_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
-    this.name = 'NotFoundError';
+    this.name = "NotFoundError";
   }
 }
 
@@ -77,9 +77,9 @@ export class NotFoundError extends AppError {
  * 资源冲突错误类
  */
 export class ConflictError extends AppError {
-  constructor(message: string = '资源冲突') {
+  constructor(message: string = "资源冲突") {
     super(message, ERROR_CODES.RESOURCE_CONFLICT, HTTP_STATUS.CONFLICT);
-    this.name = 'ConflictError';
+    this.name = "ConflictError";
   }
 }
 
@@ -87,9 +87,9 @@ export class ConflictError extends AppError {
  * 限流错误类
  */
 export class RateLimitError extends AppError {
-  constructor(message: string = '请求过于频繁') {
+  constructor(message: string = "请求过于频繁") {
     super(message, ERROR_CODES.RATE_LIMIT_EXCEEDED, HTTP_STATUS.BAD_REQUEST);
-    this.name = 'RateLimitError';
+    this.name = "RateLimitError";
   }
 }
 
@@ -97,9 +97,9 @@ export class RateLimitError extends AppError {
  * 网络错误类
  */
 export class NetworkError extends AppError {
-  constructor(message: string = '网络错误') {
+  constructor(message: string = "网络错误") {
     super(message, ERROR_CODES.NETWORK_ERROR, HTTP_STATUS.BAD_GATEWAY);
-    this.name = 'NetworkError';
+    this.name = "NetworkError";
   }
 }
 
@@ -107,9 +107,9 @@ export class NetworkError extends AppError {
  * 数据库错误类
  */
 export class DatabaseError extends AppError {
-  constructor(message: string = '数据库错误') {
+  constructor(message: string = "数据库错误") {
     super(message, ERROR_CODES.DATABASE_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
-    this.name = 'DatabaseError';
+    this.name = "DatabaseError";
   }
 }
 
@@ -117,9 +117,9 @@ export class DatabaseError extends AppError {
  * 外部API错误类
  */
 export class ExternalApiError extends AppError {
-  constructor(message: string = '外部API错误') {
+  constructor(message: string = "外部API错误") {
     super(message, ERROR_CODES.EXTERNAL_API_ERROR, HTTP_STATUS.BAD_GATEWAY);
-    this.name = 'ExternalApiError';
+    this.name = "ExternalApiError";
   }
 }
 
@@ -146,29 +146,31 @@ export class ErrorHandler {
         success: false,
         message: error.message,
         details: error.details,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
 
     // 未知错误
     return {
       success: false,
-      message: '服务器内部错误',
-      timestamp: new Date().toISOString()
+      message: "服务器内部错误",
+      timestamp: new Date().toISOString(),
     };
   }
 
   /**
    * 格式化验证错误响应
    */
-  static formatValidationErrorResponse(validationErrors: ApiValidationError[]): DetailedErrorResponse {
+  static formatValidationErrorResponse(
+    validationErrors: ApiValidationError[]
+  ): DetailedErrorResponse {
     return {
       success: false,
-      message: '数据验证失败',
+      message: "数据验证失败",
       details: {
-        validationErrors
+        validationErrors,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -178,7 +180,7 @@ export class ErrorHandler {
   static fromHttpStatus(statusCode: number, message?: string): AppError {
     switch (statusCode) {
       case HTTP_STATUS.BAD_REQUEST:
-        return new AppError(message || '请求参数错误', ERROR_CODES.VALIDATION_ERROR, statusCode);
+        return new AppError(message || "请求参数错误", ERROR_CODES.VALIDATION_ERROR, statusCode);
       case HTTP_STATUS.UNAUTHORIZED:
         return new AuthenticationError(message);
       case HTTP_STATUS.FORBIDDEN:
@@ -188,15 +190,15 @@ export class ErrorHandler {
       case HTTP_STATUS.CONFLICT:
         return new ConflictError(message);
       case HTTP_STATUS.UNPROCESSABLE_ENTITY:
-        return new ValidationError(message || '数据验证失败');
+        return new ValidationError(message || "数据验证失败");
       case HTTP_STATUS.INTERNAL_SERVER_ERROR:
-        return new AppError(message || '服务器内部错误', ERROR_CODES.UNKNOWN_ERROR, statusCode);
+        return new AppError(message || "服务器内部错误", ERROR_CODES.UNKNOWN_ERROR, statusCode);
       case HTTP_STATUS.BAD_GATEWAY:
         return new NetworkError(message);
       case HTTP_STATUS.SERVICE_UNAVAILABLE:
-        return new AppError(message || '服务不可用', ERROR_CODES.SERVICE_UNAVAILABLE, statusCode);
+        return new AppError(message || "服务不可用", ERROR_CODES.SERVICE_UNAVAILABLE, statusCode);
       default:
-        return new AppError(message || '未知错误', ERROR_CODES.UNKNOWN_ERROR, statusCode);
+        return new AppError(message || "未知错误", ERROR_CODES.UNKNOWN_ERROR, statusCode);
     }
   }
 
@@ -207,10 +209,10 @@ export class ErrorHandler {
     if (error instanceof Error) {
       return error.message;
     }
-    if (typeof error === 'string') {
+    if (typeof error === "string") {
       return error;
     }
-    return '未知错误';
+    return "未知错误";
   }
 
   /**
@@ -232,7 +234,7 @@ export class ErrorHandler {
       message: error.message,
       stack: error.stack,
       context,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     if (error instanceof AppError) {
@@ -243,15 +245,13 @@ export class ErrorHandler {
     }
 
     // 这里可以集成具体的日志系统
-    console.error('Error logged:', errorInfo);
+    console.error("Error logged:", errorInfo);
   }
 
   /**
    * 包装异步函数，自动处理错误
    */
-  static wrapAsync<T extends any[], R>(
-    fn: (...args: T) => Promise<R>
-  ): (...args: T) => Promise<R> {
+  static wrapAsync<T extends any[], R>(fn: (...args: T) => Promise<R>): (...args: T) => Promise<R> {
     return async (...args: T): Promise<R> => {
       try {
         return await fn(...args);
@@ -275,41 +275,41 @@ export class ErrorHandler {
  * 重试装饰器
  */
 export function retry(maxRetries: number = 3, delay: number = 1000) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
       let lastError: Error;
-      
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           return await originalMethod.apply(this, args);
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          
+
           // 如果是最后一次尝试，直接抛出错误
           if (attempt === maxRetries) {
             throw lastError;
           }
-          
+
           // 如果是操作性错误且不应重试，直接抛出
           if (error instanceof AppError && error.isOperational) {
             const nonRetryableCodes = [
               ERROR_CODES.AUTHENTICATION_ERROR,
               ERROR_CODES.AUTHORIZATION_ERROR,
               ERROR_CODES.VALIDATION_ERROR,
-              ERROR_CODES.RESOURCE_NOT_FOUND
+              ERROR_CODES.RESOURCE_NOT_FOUND,
             ] as const;
             if (nonRetryableCodes.includes(error.code as any)) {
               throw error;
             }
           }
-          
+
           // 等待后重试
-          await new Promise(resolve => setTimeout(resolve, delay * attempt));
+          await new Promise((resolve) => setTimeout(resolve, delay * attempt));
         }
       }
-      
+
       throw lastError!;
     };
 
@@ -321,7 +321,7 @@ export function retry(maxRetries: number = 3, delay: number = 1000) {
  * 超时装饰器
  */
 export function timeout(ms: number) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
@@ -329,13 +329,15 @@ export function timeout(ms: number) {
         originalMethod.apply(this, args),
         new Promise((_, reject) => {
           setTimeout(() => {
-            reject(new AppError(
-              `操作超时 (${ms}ms)`,
-              ERROR_CODES.UNKNOWN_ERROR,
-              HTTP_STATUS.INTERNAL_SERVER_ERROR
-            ));
+            reject(
+              new AppError(
+                `操作超时 (${ms}ms)`,
+                ERROR_CODES.UNKNOWN_ERROR,
+                HTTP_STATUS.INTERNAL_SERVER_ERROR
+              )
+            );
           }, ms);
-        })
+        }),
       ]);
     };
 

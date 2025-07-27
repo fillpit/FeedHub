@@ -1,16 +1,11 @@
 <template>
   <div class="icon-selector">
-    <el-input
-      v-model="searchQuery"
-      placeholder="搜索图标"
-      clearable
-      @input="filterIcons"
-    >
+    <el-input v-model="searchQuery" placeholder="搜索图标" clearable @input="filterIcons">
       <template #prefix>
         <el-icon><Search /></el-icon>
       </template>
     </el-input>
-    
+
     <div class="icon-grid">
       <div
         v-for="icon in filteredSocialIcons"
@@ -27,34 +22,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { Search } from '@element-plus/icons-vue';
-import * as SimpleIcons from 'simple-icons';
+import { ref, computed, onMounted } from "vue";
+import { Search } from "@element-plus/icons-vue";
+import * as SimpleIcons from "simple-icons";
 
 defineProps({
   modelValue: {
     type: String,
-    default: ''
-  }
+    default: "",
+  },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 // 状态变量
-const searchQuery = ref('');
+const searchQuery = ref("");
 
 // 图标集合
-const socialIcons = ref<{name: string, title: string}[]>([]);
+const socialIcons = ref<{ name: string; title: string }[]>([]);
 
 // 初始化图标列表
 onMounted(() => {
   // Simple Icons (社交媒体图标)
   const siKeys = Object.keys(SimpleIcons);
   socialIcons.value = siKeys
-    .filter(key => key.startsWith('si'))
-    .map(key => ({
+    .filter((key) => key.startsWith("si"))
+    .map((key) => ({
       name: key,
-      title: (SimpleIcons as any)[key].title
+      title: (SimpleIcons as any)[key].title,
     }));
 });
 
@@ -66,20 +61,24 @@ const filterIcons = () => {
 // 格式化图标名称
 const formatIconName = (name: string) => {
   // 移除'si'前缀，并添加空格
-  return name.replace('si', '').replace(/([A-Z])/g, ' $1').trim();
+  return name
+    .replace("si", "")
+    .replace(/([A-Z])/g, " $1")
+    .trim();
 };
 
 // 选择图标
 const selectIcon = (iconName: string) => {
-  emit('update:modelValue', iconName);
+  emit("update:modelValue", iconName);
 };
 
 // 过滤后的图标列表
 const filteredSocialIcons = computed(() => {
   if (!searchQuery.value) return socialIcons.value;
-  return socialIcons.value.filter(icon => 
-    icon.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    icon.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+  return socialIcons.value.filter(
+    (icon) =>
+      icon.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      icon.title.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
 </script>

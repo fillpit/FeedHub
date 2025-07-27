@@ -8,10 +8,10 @@ export type {
   RequestConfig,
   FileUploadResponse,
   BatchOperationResponse,
-  
+
   // 资源相关
   WebsiteRssConfig,
-  
+
   // 用户相关
   UserInfo,
   UserRole,
@@ -22,10 +22,10 @@ export type {
   GlobalSettingAttributes,
   NotificationSettings,
   SaveSettingsRequest,
-  
+
   // 认证相关
-  AuthCredential
-} from '@feedhub/shared';
+  AuthCredential,
+} from "@feedhub/shared";
 
 // 重新导出常量
 export {
@@ -46,8 +46,8 @@ export {
   LOG_LEVELS,
   TIMEOUTS,
   DEFAULT_TAG_COLORS,
-  SYSTEM_CONFIG
-} from '@feedhub/shared';
+  SYSTEM_CONFIG,
+} from "@feedhub/shared";
 
 // 重新导出工具函数
 export {
@@ -65,8 +65,8 @@ export {
   ErrorHandler,
   HttpStatusUtils,
   RequestCache,
-  RateLimiter
-} from '@feedhub/shared';
+  RateLimiter,
+} from "@feedhub/shared";
 
 // 本地特有的类型定义（如果有特殊需求）
 // 注意：ShareInfo 和 Folder 在共享代码库中已有定义，这里保留是为了兼容性

@@ -11,7 +11,7 @@ export abstract class BaseController {
     try {
       const result = await action();
       if (result) {
-        if (typeof result === 'object' && result !== null) {
+        if (typeof result === "object" && result !== null) {
           res.json(ApiResponse.success(result.data, result.message));
         } else {
           res.json(result);

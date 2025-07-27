@@ -8,12 +8,7 @@
         <p class="subtitle">登录您的账户以继续</p>
       </div>
 
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="loginRules"
-        @keyup.enter="handleLogin"
-      >
+      <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" @keyup.enter="handleLogin">
         <el-form-item prop="username">
           <el-input
             v-model="loginForm.username"
@@ -108,7 +103,7 @@ const handleLogin = async () => {
             localStorage.removeItem(STORAGE_KEYS.PASSWORD);
           }
 
-          localStorage.setItem(STORAGE_KEYS.TOKEN, res.data?.token || '');
+          localStorage.setItem(STORAGE_KEYS.TOKEN, res.data?.token || "");
           ElMessage.success("登录成功");
           router.push("/");
         } else {
@@ -122,8 +117,6 @@ const handleLogin = async () => {
     }
   });
 };
-
-
 </script>
 
 <style scoped lang="scss">

@@ -5,7 +5,7 @@ export interface NpmPackage {
   name: string;
   version: string;
   description: string;
-  status: 'installing' | 'installed';
+  status: "installing" | "installed";
   installPath?: string;
   size?: number;
   dependencies?: string[];
@@ -37,7 +37,7 @@ export const npmPackageApi = {
   installPackage: (data: { packageName: string; version?: string }) => {
     return request.post("/api/npm-package/install", data, {
       showSuccessMessage: true,
-      successMessage: `包 ${data.packageName} 安装成功！`
+      successMessage: `包 ${data.packageName} 安装成功！`,
     });
   },
 
@@ -45,7 +45,7 @@ export const npmPackageApi = {
   uninstallPackage: (packageName: string) => {
     return request.delete(`/api/npm-package/uninstall/${encodeURIComponent(packageName)}`, {
       showSuccessMessage: true,
-      successMessage: `包 ${packageName} 卸载成功！`
+      successMessage: `包 ${packageName} 卸载成功！`,
     });
   },
 
@@ -57,5 +57,5 @@ export const npmPackageApi = {
   // 获取包统计信息
   getStats: () => {
     return request.get<PackageStats>("/api/npm-package/stats");
-  }
+  },
 };

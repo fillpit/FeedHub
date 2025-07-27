@@ -6,7 +6,7 @@
         <ScriptHelpContent />
       </div>
     </el-dialog>
-    
+
     <!-- 弹出框模式 -->
     <el-popover
       v-else
@@ -21,7 +21,7 @@
           脚本工具说明
         </el-button>
       </template>
-      
+
       <div class="help-content">
         <ScriptHelpContent :compact="true" />
       </div>
@@ -30,29 +30,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineProps, defineEmits } from 'vue';
-import { QuestionFilled } from '@element-plus/icons-vue';
-import ScriptHelpContent from './ScriptHelpContent.vue';
+import { computed, defineProps, defineEmits } from "vue";
+import { QuestionFilled } from "@element-plus/icons-vue";
+import ScriptHelpContent from "./ScriptHelpContent.vue";
 
 interface Props {
-  mode?: 'dialog' | 'popover';
+  mode?: "dialog" | "popover";
   modelValue?: boolean;
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: boolean): void;
+  (e: "update:modelValue", value: boolean): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'popover',
-  modelValue: false
+  mode: "popover",
+  modelValue: false,
 });
 
 const emit = defineEmits<Emits>();
 
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit("update:modelValue", value),
 });
 </script>
 
@@ -75,7 +75,7 @@ const visible = computed({
 .tool-item h5 {
   font-weight: bold;
   margin-bottom: 5px;
-  color: #409EFF;
+  color: #409eff;
 }
 
 .code-example {
@@ -91,7 +91,7 @@ const visible = computed({
 }
 
 .code-example code {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
   white-space: pre;
 }
 </style>
@@ -100,7 +100,7 @@ const visible = computed({
 /* 全局样式，确保弹出框有足够的宽度和高度 */
 .script-help-popover .el-popover__title {
   font-weight: bold;
-  color: #409EFF;
+  color: #409eff;
 }
 
 .script-help-popover {

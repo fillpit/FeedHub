@@ -7,7 +7,8 @@
 
     <h4>1. 获取路由参数</h4>
     <p>路由参数包括查询参数和路径参数（动态参数）：</p>
-    <pre class="code-block">// 获取所有路由参数（包括查询参数和路径参数）
+    <pre class="code-block">
+// 获取所有路由参数（包括查询参数和路径参数）
 const params = routeParams;
 console.log('路由参数:', params);
 
@@ -15,10 +16,12 @@ console.log('路由参数:', params);
 const { keyword, limit = 10, uid } = routeParams;
 
 // 示例：对于路由 /bilibili/:uid 和请求 /custom/bilibili/123?limit=20
-// routeParams 将包含: { uid: '123', limit: '20' }</pre>
+// routeParams 将包含: { uid: '123', limit: '20' }</pre
+    >
 
     <h4>2. 发起HTTP请求</h4>
-    <pre class="code-block">// 使用 utils.fetchApi 发起GET请求
+    <pre class="code-block">
+// 使用 utils.fetchApi 发起GET请求
 const response = await utils.fetchApi('https://jsonplaceholder.typicode.com/posts/1');
 console.log(response.status); // 输出: 200
 console.log(response.data.title); // 输出: 文章标题
@@ -38,11 +41,13 @@ console.log(postResponse.status); // 输出: 201 (创建成功)
 
 // 使用 axios 实例（也支持自动授权）
 const axiosResponse = await axios.get('https://api.example.com/users');
-console.log(axiosResponse.data.length); // 输出: 用户数量</pre>
+console.log(axiosResponse.data.length); // 输出: 用户数量</pre
+    >
 
     <h4>3. 获取授权信息</h4>
     <p>如果路由配置了授权信息，可以通过 utils.getAuthInfo() 或 auth 对象获取：</p>
-    <pre class="code-block">// 获取当前路由的授权信息
+    <pre class="code-block">
+// 获取当前路由的授权信息
 const authInfo = utils.getAuthInfo();
 // 或者直接使用 auth 对象
 const authInfo = auth;
@@ -71,18 +76,22 @@ if (authInfo.type === 'cookie' && authInfo.cookie) {
 if (authInfo.type === 'custom' && authInfo.customHeaders) {
   console.log('自定义请求头:', authInfo.customHeaders);
   // 输出: { 'X-API-Key': 'your-api-key', 'X-Client-ID': 'client123' }
-}</pre>
+}</pre
+    >
 
     <h4>4. 日志输出</h4>
-    <pre class="code-block">// 输出不同级别的日志
+    <pre class="code-block">
+// 输出不同级别的日志
 console.log('这是一条信息日志');
 console.warn('这是一条警告日志');
 console.error('这是一条错误日志');
 
-// 注意：console 对象已经过特殊处理，会自动记录到调试日志中</pre>
+// 注意：console 对象已经过特殊处理，会自动记录到调试日志中</pre
+    >
 
     <h4>5. 日期处理工具</h4>
-    <pre class="code-block">// 使用 utils.parseDate 解析日期字符串
+    <pre class="code-block">
+// 使用 utils.parseDate 解析日期字符串
 const isoDate = utils.parseDate('2023-01-01 12:00:00');
 console.log(isoDate); // 输出: 2023-01-01T12:00:00.000Z
 
@@ -106,7 +115,8 @@ console.log(formatted2); // 输出: 2023-01-01 00:00:00
 
 // 计算日期差
 const diff = dayjs().diff(dayjs('2023-01-01'), 'days');
-console.log(diff); // 输出: 距离2023年1月1日的天数</pre>
+console.log(diff); // 输出: 距离2023年1月1日的天数</pre
+    >
 
     <h4>6. HTML解析工具</h4>
     <pre class="code-block">// 使用 $ (jQuery-like) 解析当前页面HTML
@@ -143,7 +153,8 @@ const textOnly = utils.extractText(complexHtml);
 console.log(textOnly); // 输出: 标题段落1段落2</pre>
 
     <h4>7. 数据处理工具</h4>
-    <pre class="code-block">// JSON 解析
+    <pre class="code-block">
+// JSON 解析
 const jsonString = '{"name": "张三", "age": 25}';
 const data = utils.parseJson(jsonString);
 console.log(data.name); // 输出: 张三
@@ -180,10 +191,12 @@ console.log(chunks); // 输出: [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
 // 生成查询参数字符串
 const params = { name: 'test', page: 1, tags: ['tech', 'news'] };
 const queryString = utils.queryParams(params);
-console.log(queryString); // 输出: name=test&page=1&tags=tech&tags=news</pre>
+console.log(queryString); // 输出: name=test&page=1&tags=tech&tags=news</pre
+    >
 
     <h4>8. 其他实用工具</h4>
-    <pre class="code-block">// 生成UUID
+    <pre class="code-block">
+// 生成UUID
 const id = utils.uuid();
 console.log(id); // 输出: 类似 '550e8400-e29b-41d4-a716-446655440000'
 
@@ -214,14 +227,16 @@ try {
   console.log(uniqueArray); // 输出: [1, 2, 3, 4]
 } catch (error) {
   console.log('lodash 包未在白名单中或未安装');
-}</pre>
+}</pre
+    >
 
     <el-divider />
 
     <h3>脚本返回格式</h3>
     <p>脚本支持两种返回格式：</p>
     <h4>新格式（推荐）- 完整RSS对象：</h4>
-    <pre class="code-block">return {
+    <pre class="code-block">
+return {
   title: "RSS频道标题",
   description: "RSS频道描述",
   site_url: "网站地址",
@@ -237,11 +252,13 @@ try {
       guid: "唯一标识符" // 可选，默认使用link
     }
   ]
-};</pre>
+};</pre
+    >
     <h4>旧格式（向后兼容）- 仅文章数组：</h4>
     <p>脚本直接返回文章数组，RSS其他字段使用路由配置：</p>
 
-    <pre class="code-block">[
+    <pre class="code-block">
+[
   {
     title: '文章标题',
     link: 'https://example.com/article/1',
@@ -252,14 +269,16 @@ try {
     image: 'https://example.com/image.jpg' // 可选，封面图片URL
   },
   // 更多项目...
-]</pre>
+]</pre
+    >
 
     <el-divider />
 
     <h3>完整示例</h3>
     <h4>示例1：使用查询参数</h4>
     <p>路由路径：<code>/search</code>，请求：<code>/custom/search?keyword=技术&limit=10</code></p>
-    <pre class="code-block">// 获取路由参数
+    <pre class="code-block">
+// 获取路由参数
 const { keyword, limit = 10 } = routeParams;
 
 // 构建API URL
@@ -281,11 +300,15 @@ const items = data.items.map(item => ({
 }));
 
 // 返回结果
-return items;</pre>
+return items;</pre
+    >
 
     <h4>示例2：使用动态路径参数</h4>
-    <p>路由路径：<code>/bilibili/:uid</code>，请求：<code>/custom/bilibili/123456?limit=20</code></p>
-    <pre class="code-block">// 获取路由参数（包括路径参数uid和查询参数limit）
+    <p>
+      路由路径：<code>/bilibili/:uid</code>，请求：<code>/custom/bilibili/123456?limit=20</code>
+    </p>
+    <pre class="code-block">
+// 获取路由参数（包括路径参数uid和查询参数limit）
 const { uid, limit = 10 } = routeParams;
 
 // 构建API URL，使用路径参数
@@ -307,11 +330,13 @@ const items = data.data.list.vlist.map(item => ({
 }));
 
 // 返回结果
-return items;</pre>
+return items;</pre
+    >
 
     <h4>示例3：使用授权信息</h4>
     <p>配置了API Key授权的路由示例：</p>
-    <pre class="code-block">// 获取授权信息
+    <pre class="code-block">
+// 获取授权信息
 const authInfo = utils.getAuthInfo();
 const { keyword, limit = 10 } = routeParams;
 
@@ -337,11 +362,13 @@ return data.articles.map(article => ({
   pubDate: utils.parseDate(article.publishedAt),
   author: article.author,
   image: article.thumbnail
-}));</pre>
+}));</pre
+    >
 
     <h4>示例4：网页抓取示例</h4>
     <p>抓取网页内容并解析：</p>
-    <pre class="code-block">// 获取网页内容
+    <pre class="code-block">
+// 获取网页内容
 const response = await utils.fetchApi('https://example.com/blog');
 const htmlContent = response.data;
 
@@ -375,13 +402,16 @@ items.each((index, element) => {
 });
 
 // 按日期排序并返回
-return articles.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());</pre>
+return articles.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());</pre
+    >
 
     <div v-if="!compact" class="additional-info">
       <el-divider />
       <h3>性能优化建议</h3>
       <ul>
-        <li>使用 <code>utils.fetchApi</code> 而不是原生 <code>fetch</code>，可以自动应用授权信息</li>
+        <li>
+          使用 <code>utils.fetchApi</code> 而不是原生 <code>fetch</code>，可以自动应用授权信息
+        </li>
         <li>合理设置脚本超时时间，避免长时间运行</li>
         <li>使用数组的 <code>filter</code> 和 <code>Map</code> 去重，避免重复内容</li>
         <li>使用字符串的 <code>substring</code> 方法截取过长的内容</li>
@@ -407,7 +437,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  compact: false
+  compact: false,
 });
 </script>
 
@@ -419,7 +449,7 @@ withDefaults(defineProps<Props>(), {
 }
 
 .script-help-content h3 {
-  color: #409EFF;
+  color: #409eff;
   margin-bottom: 10px;
 }
 
@@ -442,7 +472,7 @@ withDefaults(defineProps<Props>(), {
   padding: 12px;
   margin: 10px 0;
   overflow-x: auto;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 13px;
   line-height: 1.5;
   color: #2c3e50;
@@ -469,7 +499,7 @@ withDefaults(defineProps<Props>(), {
   background-color: #f0f2f5;
   padding: 2px 4px;
   border-radius: 3px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 12px;
 }
 </style>

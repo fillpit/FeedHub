@@ -1,11 +1,11 @@
 // 共享的日期工具函数
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import isBetween from 'dayjs/plugin/isBetween';
-import 'dayjs/locale/zh-cn';
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import isBetween from "dayjs/plugin/isBetween";
+import "dayjs/locale/zh-cn";
 
 // 扩展dayjs插件
 dayjs.extend(relativeTime);
@@ -13,20 +13,20 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
-dayjs.locale('zh-cn');
+dayjs.locale("zh-cn");
 
 // 常用日期格式
 export const DATE_FORMATS = {
-  DATE: 'YYYY-MM-DD',
-  TIME: 'HH:mm:ss',
-  DATETIME: 'YYYY-MM-DD HH:mm:ss',
-  DATETIME_MINUTE: 'YYYY-MM-DD HH:mm',
-  ISO: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
-  TIMESTAMP: 'x',
-  CHINESE_DATE: 'YYYY年MM月DD日',
-  CHINESE_DATETIME: 'YYYY年MM月DD日 HH:mm:ss',
-  MONTH_DAY: 'MM-DD',
-  YEAR_MONTH: 'YYYY-MM'
+  DATE: "YYYY-MM-DD",
+  TIME: "HH:mm:ss",
+  DATETIME: "YYYY-MM-DD HH:mm:ss",
+  DATETIME_MINUTE: "YYYY-MM-DD HH:mm",
+  ISO: "YYYY-MM-DDTHH:mm:ss.SSSZ",
+  TIMESTAMP: "x",
+  CHINESE_DATE: "YYYY年MM月DD日",
+  CHINESE_DATETIME: "YYYY年MM月DD日 HH:mm:ss",
+  MONTH_DAY: "MM-DD",
+  YEAR_MONTH: "YYYY-MM",
 };
 
 // 日期工具类
@@ -57,7 +57,11 @@ export class DateUtils {
    * @param unit 单位
    * @returns 差值
    */
-  static diff(date1: dayjs.ConfigType, date2: dayjs.ConfigType, unit: dayjs.UnitType = 'millisecond'): number {
+  static diff(
+    date1: dayjs.ConfigType,
+    date2: dayjs.ConfigType,
+    unit: dayjs.UnitType = "millisecond"
+  ): number {
     return dayjs(date1).diff(dayjs(date2), unit);
   }
 
@@ -110,7 +114,11 @@ export class DateUtils {
    * @param end 结束日期
    * @returns 是否在范围内
    */
-  static isBetween(date: dayjs.ConfigType, start: dayjs.ConfigType, end: dayjs.ConfigType): boolean {
+  static isBetween(
+    date: dayjs.ConfigType,
+    start: dayjs.ConfigType,
+    end: dayjs.ConfigType
+  ): boolean {
     return dayjs(date).isBetween(start, end);
   }
 
@@ -120,7 +128,7 @@ export class DateUtils {
    * @returns 是否是今天
    */
   static isToday(date: dayjs.ConfigType): boolean {
-    return dayjs(date).isSame(dayjs(), 'day');
+    return dayjs(date).isSame(dayjs(), "day");
   }
 
   /**
@@ -129,7 +137,7 @@ export class DateUtils {
    * @returns 是否是昨天
    */
   static isYesterday(date: dayjs.ConfigType): boolean {
-    return dayjs(date).isSame(dayjs().subtract(1, 'day'), 'day');
+    return dayjs(date).isSame(dayjs().subtract(1, "day"), "day");
   }
 
   /**
@@ -138,7 +146,7 @@ export class DateUtils {
    * @returns 是否是本周
    */
   static isThisWeek(date: dayjs.ConfigType): boolean {
-    return dayjs(date).isSame(dayjs(), 'week');
+    return dayjs(date).isSame(dayjs(), "week");
   }
 
   /**
@@ -147,7 +155,7 @@ export class DateUtils {
    * @returns 是否是本月
    */
   static isThisMonth(date: dayjs.ConfigType): boolean {
-    return dayjs(date).isSame(dayjs(), 'month');
+    return dayjs(date).isSame(dayjs(), "month");
   }
 
   /**
@@ -156,7 +164,7 @@ export class DateUtils {
    * @returns 是否是本年
    */
   static isThisYear(date: dayjs.ConfigType): boolean {
-    return dayjs(date).isSame(dayjs(), 'year');
+    return dayjs(date).isSame(dayjs(), "year");
   }
 
   /**
@@ -226,22 +234,22 @@ export class DateUtils {
   static friendly(date: dayjs.ConfigType): string {
     const now = dayjs();
     const target = dayjs(date);
-    const diffMinutes = now.diff(target, 'minute');
-    const diffHours = now.diff(target, 'hour');
-    const diffDays = now.diff(target, 'day');
+    const diffMinutes = now.diff(target, "minute");
+    const diffHours = now.diff(target, "hour");
+    const diffDays = now.diff(target, "day");
 
     if (diffMinutes < 1) {
-      return '刚刚';
+      return "刚刚";
     } else if (diffMinutes < 60) {
       return `${diffMinutes}分钟前`;
     } else if (diffHours < 24) {
       return `${diffHours}小时前`;
     } else if (diffDays < 7) {
       return `${diffDays}天前`;
-    } else if (target.isSame(now, 'year')) {
-      return target.format('MM-DD HH:mm');
+    } else if (target.isSame(now, "year")) {
+      return target.format("MM-DD HH:mm");
     } else {
-      return target.format('YYYY-MM-DD');
+      return target.format("YYYY-MM-DD");
     }
   }
 
@@ -252,7 +260,11 @@ export class DateUtils {
    * @param unit 单位
    * @returns 日期数组
    */
-  static range(start: dayjs.ConfigType, end: dayjs.ConfigType, unit: dayjs.ManipulateType = 'day'): dayjs.Dayjs[] {
+  static range(
+    start: dayjs.ConfigType,
+    end: dayjs.ConfigType,
+    unit: dayjs.ManipulateType = "day"
+  ): dayjs.Dayjs[] {
     const startDate = dayjs(start);
     const endDate = dayjs(end);
     const dates: dayjs.Dayjs[] = [];
@@ -273,7 +285,7 @@ export class DateUtils {
    * @returns 工作日数组
    */
   static getWorkdays(start: dayjs.ConfigType, end: dayjs.ConfigType): dayjs.Dayjs[] {
-    return this.range(start, end).filter(date => {
+    return this.range(start, end).filter((date) => {
       const day = date.day();
       return day !== 0 && day !== 6; // 排除周日(0)和周六(6)
     });
@@ -286,7 +298,7 @@ export class DateUtils {
    * @returns 周末数组
    */
   static getWeekends(start: dayjs.ConfigType, end: dayjs.ConfigType): dayjs.Dayjs[] {
-    return this.range(start, end).filter(date => {
+    return this.range(start, end).filter((date) => {
       const day = date.day();
       return day === 0 || day === 6; // 周日(0)和周六(6)
     });

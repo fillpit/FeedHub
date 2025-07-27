@@ -2,7 +2,7 @@ import request from "@/utils/request";
 
 export interface TestNotificationRequest {
   service: string;
-  config: any;
+  config: Record<string, unknown>;
 }
 
 export interface TestNotificationResponse {
@@ -12,7 +12,7 @@ export interface TestNotificationResponse {
 
 export const notificationApi = {
   // 测试通知
-  test: (service: string, config: any) => {
+  test: (service: string, config: Record<string, unknown>) => {
     return request.post<TestNotificationResponse>("/api/notification/test", {
       service,
       config,
@@ -20,20 +20,12 @@ export const notificationApi = {
   },
 
   // 发送通知
-  send: (data: {
-    title: string;
-    content: string;
-    services?: string[];
-  }) => {
+  send: (data: { title: string; content: string; services?: string[] }) => {
     return request.post("/api/notification/send", data);
   },
 
   // 获取通知历史
-  getHistory: (params?: {
-    page?: number;
-    limit?: number;
-    service?: string;
-  }) => {
+  getHistory: (params?: { page?: number; limit?: number; service?: string }) => {
     return request.get("/api/notification/history", { params });
   },
 };

@@ -12,7 +12,10 @@ export interface UserSettingAttributes {
 
 interface UserSettingCreationAttributes extends Optional<UserSettingAttributes, "id"> {}
 
-class UserSetting extends Model<UserSettingAttributes, UserSettingCreationAttributes> implements UserSettingAttributes {
+class UserSetting
+  extends Model<UserSettingAttributes, UserSettingCreationAttributes>
+  implements UserSettingAttributes
+{
   public id!: number;
   public userId!: string;
   public cloud115Cookie!: string;
@@ -34,9 +37,9 @@ UserSetting.init(
       allowNull: false,
       unique: true,
       references: {
-        model: 'users',
-        key: 'userId'
-      }
+        model: "users",
+        key: "userId",
+      },
     },
     cloud115Cookie: {
       type: DataTypes.TEXT,

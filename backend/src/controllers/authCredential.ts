@@ -36,4 +36,4 @@ class AuthCredentialController {
   }
 }
 
-export default new AuthCredentialController(); 
+export default new AuthCredentialController();

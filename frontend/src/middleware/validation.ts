@@ -1,5 +1,5 @@
-import { ValidationRule, ValidationSchema, VALIDATION_RULES } from '@/utils/validation';
-import { showErrorMessage } from '@/utils/request';
+import { ValidationRule, ValidationSchema, VALIDATION_RULES } from "@/utils/validation";
+import { showErrorMessage } from "@/utils/request";
 
 // 验证中间件配置
 interface ValidationMiddlewareConfig {
@@ -25,7 +25,7 @@ class FormValidationMiddleware {
       validateOnBlur: true,
       validateOnInput: true,
       debounceTime: 300,
-      ...config
+      ...config,
     };
   }
 
@@ -35,12 +35,12 @@ class FormValidationMiddleware {
   createFormMiddleware() {
     return {
       // 表单提交验证
-      onSubmit: (formData: Record<string, any>) => {
+      onSubmit: (formData: Record<string, unknown>) => {
         return this.validateForm(formData);
       },
 
       // 字段失焦验证
-      onBlur: (fieldName: string, value: any) => {
+      onBlur: (fieldName: string, value: unknown) => {
         if (this.config.validateOnBlur) {
           return this.validateField(fieldName, value);
         }
@@ -48,7 +48,7 @@ class FormValidationMiddleware {
       },
 
       // 字段输入验证（防抖）
-      onInput: (fieldName: string, value: any) => {
+      onInput: (fieldName: string, value: unknown) => {
         if (this.config.validateOnInput) {
           return this.debouncedValidateField(fieldName, value);
         }
@@ -63,14 +63,14 @@ class FormValidationMiddleware {
       // 清除验证缓存
       clearCache: () => {
         this.validationCache.clear();
-      }
+      },
     };
   }
 
   /**
    * 验证整个表单
    */
-  private validateForm(formData: Record<string, any>) {
+  private validateForm(formData: Record<string, unknown>) {
     const errors: Record<string, string[]> = {};
     let isValid = true;
     let firstError: string | undefined;
@@ -79,15 +79,15 @@ class FormValidationMiddleware {
     for (const [fieldName] of Object.entries(this.schema)) {
       const fieldValue = formData[fieldName];
       const fieldResult = this.validateField(fieldName, fieldValue);
-      
+
       if (!fieldResult.isValid) {
         errors[fieldName] = fieldResult.errors;
         isValid = false;
-        
+
         if (!firstError) {
           firstError = fieldResult.errors[0];
         }
-        
+
         if (this.config.stopOnFirstError) {
           break;
         }
@@ -102,14 +102,14 @@ class FormValidationMiddleware {
     return {
       isValid,
       errors,
-      firstError
+      firstError,
     };
   }
 
   /**
    * 验证单个字段
    */
-  private validateField(fieldName: string, value: any) {
+  private validateField(fieldName: string, value: unknown) {
     const rules = this.schema[fieldName];
     if (!rules) {
       return { isValid: true, errors: [] };
@@ -129,7 +129,7 @@ class FormValidationMiddleware {
     }
 
     const isValid = errors.length === 0;
-    
+
     // 更新缓存
     this.validationCache.set(fieldName, isValid);
 
@@ -139,7 +139,10 @@ class FormValidationMiddleware {
   /**
    * 防抖验证字段
    */
-  private debouncedValidateField(fieldName: string, value: any): Promise<{ isValid: boolean; errors: string[] }> {
+  private debouncedValidateField(
+    fieldName: string,
+    value: unknown
+  ): Promise<{ isValid: boolean; errors: string[] }> {
     return new Promise((resolve) => {
       // 清除之前的定时器
       const existingTimer = this.debounceTimers.get(fieldName);
@@ -161,41 +164,41 @@ class FormValidationMiddleware {
   /**
    * 应用验证规则
    */
-  private applyRule(value: any, rule: ValidationRule): string | null {
+  private applyRule(value: unknown, rule: ValidationRule): string | null {
     // 如果值为空且不是必填，跳过验证
-    if ((value === undefined || value === null || value === '') && !rule.required) {
+    if ((value === undefined || value === null || value === "") && !rule.required) {
       return null;
     }
 
     // 必填验证
-    if (rule.required && (value === undefined || value === null || value === '')) {
-      return rule.message || '此字段为必填项';
+    if (rule.required && (value === undefined || value === null || value === "")) {
+      return rule.message || "此字段为必填项";
     }
 
     // 如果值为空，跳过其他验证
-    if (value === undefined || value === null || value === '') {
+    if (value === undefined || value === null || value === "") {
       return null;
     }
 
     // 长度/数值验证
     if (rule.min !== undefined) {
-      const length = typeof value === 'string' ? value.length : Number(value);
+      const length = typeof value === "string" ? value.length : Number(value);
       if (length < rule.min) {
         return rule.message || `值不能小于 ${rule.min}`;
       }
     }
 
     if (rule.max !== undefined) {
-      const length = typeof value === 'string' ? value.length : Number(value);
+      const length = typeof value === "string" ? value.length : Number(value);
       if (length > rule.max) {
         return rule.message || `值不能大于 ${rule.max}`;
       }
     }
 
     // 正则验证
-    if (rule.pattern && typeof value === 'string') {
+    if (rule.pattern && typeof value === "string") {
       if (!rule.pattern.test(value)) {
-        return rule.message || '格式不正确';
+        return rule.message || "格式不正确";
       }
     }
 
@@ -203,9 +206,9 @@ class FormValidationMiddleware {
     if (rule.custom) {
       const result = rule.custom(value, {});
       if (result === false) {
-        return rule.message || '验证失败';
+        return rule.message || "验证失败";
       }
-      if (typeof result === 'string') {
+      if (typeof result === "string") {
         return result;
       }
     }
@@ -233,7 +236,7 @@ class FormValidationMiddleware {
    */
   destroy(): void {
     // 清除所有定时器
-    this.debounceTimers.forEach(timer => clearTimeout(timer));
+    this.debounceTimers.forEach((timer) => clearTimeout(timer));
     this.debounceTimers.clear();
     this.validationCache.clear();
   }
@@ -244,85 +247,65 @@ export const VALIDATION_SCHEMAS = {
   // 用户登录
   login: {
     username: [
-      VALIDATION_RULES.required('请输入用户名'),
-      VALIDATION_RULES.minLength(3, '用户名至少3个字符')
+      VALIDATION_RULES.required("请输入用户名"),
+      VALIDATION_RULES.minLength(3, "用户名至少3个字符"),
     ],
     password: [
-      VALIDATION_RULES.required('请输入密码'),
-      VALIDATION_RULES.minLength(6, '密码至少6个字符')
-    ]
+      VALIDATION_RULES.required("请输入密码"),
+      VALIDATION_RULES.minLength(6, "密码至少6个字符"),
+    ],
   },
 
   // 用户注册
   register: {
-    username: [
-      VALIDATION_RULES.required('请输入用户名'),
-      VALIDATION_RULES.username()
-    ],
-    email: [
-      VALIDATION_RULES.required('请输入邮箱'),
-      VALIDATION_RULES.email()
-    ],
-    password: [
-      VALIDATION_RULES.required('请输入密码'),
-      VALIDATION_RULES.password()
-    ],
+    username: [VALIDATION_RULES.required("请输入用户名"), VALIDATION_RULES.username()],
+    email: [VALIDATION_RULES.required("请输入邮箱"), VALIDATION_RULES.email()],
+    password: [VALIDATION_RULES.required("请输入密码"), VALIDATION_RULES.password()],
     confirmPassword: [
-      VALIDATION_RULES.required('请确认密码'),
+      VALIDATION_RULES.required("请确认密码"),
       VALIDATION_RULES.custom((value, formData) => {
-        return value === formData?.password || '两次密码输入不一致';
-      })
-    ]
+        return value === formData?.password || "两次密码输入不一致";
+      }),
+    ],
   },
 
   // RSS 配置
   rssConfig: {
     name: [
-      VALIDATION_RULES.required('请输入配置名称'),
-      VALIDATION_RULES.maxLength(50, '名称不能超过50个字符')
+      VALIDATION_RULES.required("请输入配置名称"),
+      VALIDATION_RULES.maxLength(50, "名称不能超过50个字符"),
     ],
-    url: [
-      VALIDATION_RULES.required('请输入RSS地址'),
-      VALIDATION_RULES.url('请输入有效的URL地址')
-    ],
-    description: [
-      VALIDATION_RULES.maxLength(200, '描述不能超过200个字符')
-    ]
+    url: [VALIDATION_RULES.required("请输入RSS地址"), VALIDATION_RULES.url("请输入有效的URL地址")],
+    description: [VALIDATION_RULES.maxLength(200, "描述不能超过200个字符")],
   },
 
   // 网站RSS配置
   websiteRss: {
     websiteName: [
-      VALIDATION_RULES.required('请输入网站名称'),
-      VALIDATION_RULES.maxLength(100, '网站名称不能超过100个字符')
+      VALIDATION_RULES.required("请输入网站名称"),
+      VALIDATION_RULES.maxLength(100, "网站名称不能超过100个字符"),
     ],
     websiteUrl: [
-      VALIDATION_RULES.required('请输入网站地址'),
-      VALIDATION_RULES.url('请输入有效的网站地址')
+      VALIDATION_RULES.required("请输入网站地址"),
+      VALIDATION_RULES.url("请输入有效的网站地址"),
     ],
     rssUrl: [
-      VALIDATION_RULES.required('请输入RSS地址'),
-      VALIDATION_RULES.url('请输入有效的RSS地址')
-    ]
+      VALIDATION_RULES.required("请输入RSS地址"),
+      VALIDATION_RULES.url("请输入有效的RSS地址"),
+    ],
   },
 
   // 设置
   settings: {
-    theme: [
-      VALIDATION_RULES.required('请选择主题')
-    ],
-    language: [
-      VALIDATION_RULES.required('请选择语言')
-    ],
-    autoRefresh: [
-      VALIDATION_RULES.required('请设置自动刷新')
-    ],
+    theme: [VALIDATION_RULES.required("请选择主题")],
+    language: [VALIDATION_RULES.required("请选择语言")],
+    autoRefresh: [VALIDATION_RULES.required("请设置自动刷新")],
     refreshInterval: [
-      VALIDATION_RULES.required('请设置刷新间隔'),
-      VALIDATION_RULES.minValue(1, '刷新间隔至少1分钟'),
-      VALIDATION_RULES.maxValue(1440, '刷新间隔最多24小时')
-    ]
-  }
+      VALIDATION_RULES.required("请设置刷新间隔"),
+      VALIDATION_RULES.minValue(1, "刷新间隔至少1分钟"),
+      VALIDATION_RULES.maxValue(1440, "刷新间隔最多24小时"),
+    ],
+  },
 };
 
 // 创建验证中间件的工厂函数
@@ -330,10 +313,8 @@ export const createValidationMiddleware = (
   schema: ValidationSchema | keyof typeof VALIDATION_SCHEMAS,
   config?: ValidationMiddlewareConfig
 ) => {
-  const validationSchema = typeof schema === 'string' 
-    ? VALIDATION_SCHEMAS[schema] 
-    : schema;
-  
+  const validationSchema = typeof schema === "string" ? VALIDATION_SCHEMAS[schema] : schema;
+
   return new FormValidationMiddleware(validationSchema, config);
 };
 
@@ -344,22 +325,20 @@ export const useValidationMiddleware = (
 ) => {
   const middleware = createValidationMiddleware(schema, config);
   const formMiddleware = middleware.createFormMiddleware();
-  
+
   // 在组件卸载时清理
-  if (typeof window !== 'undefined' && 'onUnmounted' in window) {
-    (window as any).onUnmounted(() => {
+  if (typeof window !== "undefined" && "onUnmounted" in window) {
+    (window as { onUnmounted: (fn: () => void) => void }).onUnmounted(() => {
       middleware.destroy();
     });
   }
-  
+
   return {
     ...formMiddleware,
     middleware,
-    getFieldValidationStatus: (fieldName: string) => 
-      middleware.getFieldValidationStatus(fieldName),
-    updateSchema: (newSchema: ValidationSchema) => 
-      middleware.updateSchema(newSchema),
-    destroy: () => middleware.destroy()
+    getFieldValidationStatus: (fieldName: string) => middleware.getFieldValidationStatus(fieldName),
+    updateSchema: (newSchema: ValidationSchema) => middleware.updateSchema(newSchema),
+    destroy: () => middleware.destroy(),
   };
 };
 
@@ -376,27 +355,27 @@ export const withRealTimeValidation = (
   const config = {
     showErrors: true,
     debounceTime: 300,
-    ...options
+    ...options,
   };
-  
+
   const ruleArray = Array.isArray(rules) ? rules : [rules];
   let debounceTimer: number;
-  
+
   const validate = (value: string) => {
     const errors: string[] = [];
-    
+
     for (const rule of ruleArray) {
       // 简化的规则应用逻辑
       if (rule.required && !value.trim()) {
-        errors.push(rule.message || '此字段为必填项');
+        errors.push(rule.message || "此字段为必填项");
         break;
       }
-      
+
       if (value && rule.pattern && !rule.pattern.test(value)) {
-        errors.push(rule.message || '格式不正确');
+        errors.push(rule.message || "格式不正确");
         break;
       }
-      
+
       if (value && rule.min !== undefined) {
         const length = value.length;
         if (length < rule.min) {
@@ -404,7 +383,7 @@ export const withRealTimeValidation = (
           break;
         }
       }
-      
+
       if (value && rule.max !== undefined) {
         const length = value.length;
         if (length > rule.max) {
@@ -412,67 +391,65 @@ export const withRealTimeValidation = (
           break;
         }
       }
-      
+
       if (rule.custom) {
         const result = rule.custom(value, {});
         if (result === false) {
-          errors.push(rule.message || '验证失败');
+          errors.push(rule.message || "验证失败");
           break;
         }
-        if (typeof result === 'string') {
+        if (typeof result === "string") {
           errors.push(result);
           break;
         }
       }
     }
-    
+
     const isValid = errors.length === 0;
-    
+
     // 更新元素样式
-    element.classList.toggle('is-invalid', !isValid);
-    element.classList.toggle('is-valid', isValid && value.trim() !== '');
-    
+    element.classList.toggle("is-invalid", !isValid);
+    element.classList.toggle("is-valid", isValid && value.trim() !== "");
+
     // 显示错误信息
     if (config.showErrors && errors.length > 0) {
       showErrorMessage(errors[0]);
     }
-    
+
     // 回调
     if (config.onValidation) {
       config.onValidation(isValid, errors);
     }
-    
+
     return { isValid, errors };
   };
-  
+
   const debouncedValidate = (value: string) => {
     clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(() => {
       validate(value);
     }, config.debounceTime);
   };
-  
+
   // 绑定事件
-  element.addEventListener('input', (e) => {
+  element.addEventListener("input", (e) => {
     debouncedValidate((e.target as HTMLInputElement).value);
   });
-  
-  element.addEventListener('blur', (e) => {
+
+  element.addEventListener("blur", (e) => {
     clearTimeout(debounceTimer);
     validate((e.target as HTMLInputElement).value);
   });
-  
+
   // 返回清理函数
   return () => {
     clearTimeout(debounceTimer);
-    element.classList.remove('is-invalid', 'is-valid');
+    element.classList.remove("is-invalid", "is-valid");
   };
 };
 
 // 导出
-export {
-  FormValidationMiddleware
-};
-export type { ValidationMiddlewareConfig }
+export { FormValidationMiddleware };
+export type { ValidationMiddlewareConfig };
 
 export default createValidationMiddleware;

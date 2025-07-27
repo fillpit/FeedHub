@@ -24,14 +24,15 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern: /\/api\//,
-            handler: 'NetworkOnly',
+            handler: "NetworkOnly",
           },
         ],
       },
       manifest: {
         name: "FeedHub",
         short_name: "FeedHub",
-        description: "FeedHub 是一个聚合 RSS 订阅的工具，支持自定义 RSS 订阅源，自动聚合订阅源的内容，支持搜索、分类、标记已读等功能。",
+        description:
+          "FeedHub 是一个聚合 RSS 订阅的工具，支持自定义 RSS 订阅源，自动聚合订阅源的内容，支持搜索、分类、标记已读等功能。",
         theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
@@ -89,7 +90,7 @@ export default defineConfig({
             console.log("Received Response:", proxyRes.statusCode, req.url);
           });
         },
-      }
+      },
     },
   },
   build: {

@@ -1,11 +1,16 @@
 <template>
   <el-config-provider>
-    <router-view v-loading.fullscreen.lock="isGlobalLoading" element-loading-text="加载中..." element-loading-spinner="el-icon-loading" element-loading-background="rgba(0, 0, 0, 0.8)" />
+    <router-view
+      v-loading.fullscreen.lock="isGlobalLoading"
+      element-loading-text="加载中..."
+      element-loading-spinner="el-icon-loading"
+      element-loading-background="rgba(0, 0, 0, 0.8)"
+    />
   </el-config-provider>
 </template>
 
 <script setup lang="ts">
-import { useGlobalLoading } from './utils/loading';
+import { useGlobalLoading } from "./utils/loading";
 
 const { isGlobalLoading } = useGlobalLoading();
 </script>

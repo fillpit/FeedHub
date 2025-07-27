@@ -1,5 +1,8 @@
 import { injectable, inject } from "inversify";
-import DynamicRouteConfig, { DynamicRouteConfigAttributes, RouteParam } from "../models/DynamicRouteConfig";
+import DynamicRouteConfig, {
+  DynamicRouteConfigAttributes,
+  RouteParam,
+} from "../models/DynamicRouteConfig";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import axios from "axios";
@@ -19,15 +22,14 @@ export class DynamicRouteService {
   private axiosInstance = axios.create({
     timeout: 30000,
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
     },
   });
 
   private cacheService: ICacheService | null = null;
 
-  constructor(
-    @inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService
-  ) {
+  constructor(@inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService) {
     this.initializeCacheService();
   }
 
@@ -37,9 +39,9 @@ export class DynamicRouteService {
   private async initializeCacheService(): Promise<void> {
     try {
       this.cacheService = await getCacheService();
-      logger.info('[DynamicRouteService] 缓存服务初始化成功');
+      logger.info("[DynamicRouteService] 缓存服务初始化成功");
     } catch (error) {
-      logger.error('[DynamicRouteService] 缓存服务初始化失败:', error);
+      logger.error("[DynamicRouteService] 缓存服务初始化失败:", error);
     }
   }
 
@@ -58,7 +60,7 @@ export class DynamicRouteService {
    */
   private generateCacheKey(routePath: string, queryParams: any): string {
     const paramsStr = JSON.stringify(queryParams, Object.keys(queryParams).sort());
-    return `route:${routePath}:${Buffer.from(paramsStr).toString('base64')}`;
+    return `route:${routePath}:${Buffer.from(paramsStr).toString("base64")}`;
   }
 
   /**
@@ -73,7 +75,7 @@ export class DynamicRouteService {
       }
       return result;
     } catch (error) {
-      logger.error('[DynamicRouteService] 获取缓存失败:', error);
+      logger.error("[DynamicRouteService] 获取缓存失败:", error);
       return null;
     }
   }
@@ -87,7 +89,7 @@ export class DynamicRouteService {
       await cacheService.set(key, data, ttlMinutes * 60); // 转换为秒
       logger.info(`[DynamicRouteService] 缓存设置: ${key}, TTL: ${ttlMinutes}分钟`);
     } catch (error) {
-      logger.error('[DynamicRouteService] 设置缓存失败:', error);
+      logger.error("[DynamicRouteService] 设置缓存失败:", error);
     }
   }
 
@@ -101,7 +103,7 @@ export class DynamicRouteService {
       await cacheService.deletePattern(pattern);
       logger.info(`[DynamicRouteService] 清除路由缓存: ${routePath}`);
     } catch (error) {
-      logger.error('[DynamicRouteService] 清除路由缓存失败:', error);
+      logger.error("[DynamicRouteService] 清除路由缓存失败:", error);
     }
   }
 
@@ -132,7 +134,9 @@ export class DynamicRouteService {
   /**
    * 根据路径模式匹配获取动态路由配置
    */
-  async getRouteByPathPattern(requestPath: string): Promise<{ route: DynamicRouteConfigAttributes; pathParams: Record<string, string> } | null> {
+  async getRouteByPathPattern(
+    requestPath: string
+  ): Promise<{ route: DynamicRouteConfigAttributes; pathParams: Record<string, string> } | null> {
     // 先尝试精确匹配
     const exactMatch = await this.getRouteByPath(requestPath);
     if (exactMatch) {
@@ -141,7 +145,7 @@ export class DynamicRouteService {
 
     // 获取所有路由配置进行模式匹配
     const allRoutes = await DynamicRouteConfig.findAll();
-    
+
     for (const route of allRoutes) {
       const matchResult = this.matchRoutePattern(route.path, requestPath);
       if (matchResult) {
@@ -160,7 +164,7 @@ export class DynamicRouteService {
     const paramNames: string[] = [];
     const regexPattern = pattern.replace(/:([^/]+)/g, (match, paramName) => {
       paramNames.push(paramName);
-      return '([^/]+)';
+      return "([^/]+)";
     });
 
     const regex = new RegExp(`^${regexPattern}$`);
@@ -182,26 +186,31 @@ export class DynamicRouteService {
   /**
    * 添加新的动态路由配置
    */
-  async addRoute(routeData: Omit<DynamicRouteConfigAttributes, "id" | "createdAt" | "updatedAt">): Promise<ApiResponseData<DynamicRouteConfigAttributes>> {
+  async addRoute(
+    routeData: Omit<DynamicRouteConfigAttributes, "id" | "createdAt" | "updatedAt">
+  ): Promise<ApiResponseData<DynamicRouteConfigAttributes>> {
     // 检查路径是否已存在
     const existingRoute = await DynamicRouteConfig.findOne({ where: { path: routeData.path } });
     if (existingRoute) throw new Error("该路由路径已存在");
 
     // 验证脚本配置
-    console.log('开始验证脚本配置')
+    console.log("开始验证脚本配置");
     this.validateScriptConfig(routeData.script);
-    console.log('验证脚本配置通过')
+    console.log("验证脚本配置通过");
 
     // 创建新配置
     const newRoute = await DynamicRouteConfig.create(routeData);
-    console.log("newRoute", newRoute)
+    console.log("newRoute", newRoute);
     return { success: true, data: newRoute, message: "动态路由配置添加成功" };
   }
 
   /**
    * 更新动态路由配置
    */
-  async updateRoute(id: number, routeData: Partial<DynamicRouteConfigAttributes>): Promise<ApiResponseData<DynamicRouteConfigAttributes>> {
+  async updateRoute(
+    id: number,
+    routeData: Partial<DynamicRouteConfigAttributes>
+  ): Promise<ApiResponseData<DynamicRouteConfigAttributes>> {
     // 查找原配置
     const route = await DynamicRouteConfig.findByPk(id);
     if (!route) throw new Error(`未找到ID为${id}的动态路由配置`);
@@ -242,7 +251,7 @@ export class DynamicRouteService {
 
     // 清除相关缓存
     await this.clearRouteCache(route.path);
-    
+
     // 删除
     await DynamicRouteConfig.destroy({ where: { id } });
     return { success: true, data: undefined, message: "动态路由配置删除成功" };
@@ -255,26 +264,25 @@ export class DynamicRouteService {
     logger.info(`[DynamicRouteService] 开始执行动态路由脚本`);
     logger.info(`[DynamicRouteService] 请求路径: ${routePath}`);
     logger.info(`[DynamicRouteService] 查询参数:`, queryParams);
-    
+
     // 生成缓存键
     const cacheKey = this.generateCacheKey(routePath, queryParams);
-    
+
     // 尝试从缓存获取结果
     const cachedResult = await this.getCache(cacheKey);
     if (cachedResult) {
       logger.info(`[DynamicRouteService] 返回缓存结果`);
       return cachedResult;
     }
-    
+
     // 尝试不同的路径格式进行模式匹配
-    const pathsToTry = [
-      routePath,
-      `/${routePath}`,
-      `/custom/${routePath}`
-    ];
-    
-    let matchResult: { route: DynamicRouteConfigAttributes; pathParams: Record<string, string> } | null = null;
-    
+    const pathsToTry = [routePath, `/${routePath}`, `/custom/${routePath}`];
+
+    let matchResult: {
+      route: DynamicRouteConfigAttributes;
+      pathParams: Record<string, string>;
+    } | null = null;
+
     for (const pathToTry of pathsToTry) {
       logger.info(`[DynamicRouteService] 尝试匹配路径: ${pathToTry}`);
       matchResult = await this.getRouteByPathPattern(pathToTry);
@@ -284,12 +292,12 @@ export class DynamicRouteService {
         break;
       }
     }
-    
+
     if (!matchResult) {
       // 记录调试信息
       logger.warn(`路径查找失败: ${routePath}`);
-      const allRoutes = await DynamicRouteConfig.findAll({ attributes: ['path'] });
-      logger.warn(`现有路径: ${allRoutes.map(r => r.path).join(', ')}`);
+      const allRoutes = await DynamicRouteConfig.findAll({ attributes: ["path"] });
+      logger.warn(`现有路径: ${allRoutes.map((r) => r.path).join(", ")}`);
       throw new Error(`未找到路径为${routePath}的动态路由配置`);
     }
 
@@ -309,7 +317,9 @@ export class DynamicRouteService {
         const authResult = await AuthCredentialService.getById(route.authCredentialId);
         if (authResult.success && authResult.data) {
           authInfo = authResult.data;
-          logger.info(`[DynamicRouteService] 获取到授权信息: ${authInfo.name} (${authInfo.authType})`);
+          logger.info(
+            `[DynamicRouteService] 获取到授权信息: ${authInfo.name} (${authInfo.authType})`
+          );
         } else {
           logger.warn(`[DynamicRouteService] 未找到授权信息，ID: ${route.authCredentialId}`);
         }
@@ -345,20 +355,23 @@ export class DynamicRouteService {
 
     // 生成RSS
     const rssXml = this.generateRssXml(route, validatedResult);
-    
+
     // 将结果存入缓存，使用refreshInterval作为缓存时间
     const refreshInterval = route.refreshInterval || 60; // 默认60分钟
     await this.setCache(cacheKey, rssXml, refreshInterval);
-    
+
     logger.info(`[DynamicRouteService] 脚本执行完成，结果已缓存 ${refreshInterval} 分钟`);
-    
+
     return rssXml;
   }
 
   /**
    * 调试动态路由脚本
    */
-  async debugRouteScript(routeData: DynamicRouteConfigAttributes, testParams: any): Promise<ApiResponseData<any>> {
+  async debugRouteScript(
+    routeData: DynamicRouteConfigAttributes,
+    testParams: any
+  ): Promise<ApiResponseData<any>> {
     const startTime = Date.now();
     const logs: string[] = [];
 
@@ -404,23 +417,23 @@ export class DynamicRouteService {
 
       // 添加路由参数到上下文
       (context as any).routeParams = processedParams;
-      
+
       // 添加调试信息
       logs.push(`[DEBUG] 路由参数: ${JSON.stringify(processedParams, null, 2)}`);
       logs.push(`[DEBUG] 脚本内容长度: ${scriptContent.length} 字符`);
       logs.push(`[DEBUG] 脚本来源类型: ${routeData.script.sourceType}`);
-      
+
       // 添加常用的辅助函数到上下文
       (context as any).helpers = {
         // 提供guid生成函数，防止用户脚本中访问undefined的uid属性
-        generateGuid: () => require('uuid').v4(),
+        generateGuid: () => uuidv4(),
         // 安全访问对象属性
         safeGet: (obj: any, path: string, defaultValue: any = null) => {
           try {
-            const keys = path.split('.');
+            const keys = path.split(".");
             let current = obj;
             for (const key of keys) {
-              if (current && typeof current === 'object' && key in current) {
+              if (current && typeof current === "object" && key in current) {
                 current = current[key];
               } else {
                 return defaultValue;
@@ -431,12 +444,18 @@ export class DynamicRouteService {
             logs.push(`[WARN] 安全访问失败: ${path}, 错误: ${(error as Error).message}`);
             return defaultValue;
           }
-        }
+        },
       };
 
       // 执行脚本
       const result = await executeScript(
-        { script: { enabled: true, script: scriptContent, timeout: routeData.script.timeout || 30000 } },
+        {
+          script: {
+            enabled: true,
+            script: scriptContent,
+            timeout: routeData.script.timeout || 30000,
+          },
+        },
         context,
         this.axiosInstance,
         logs,
@@ -457,7 +476,7 @@ export class DynamicRouteService {
           result: validatedResult,
           executionTime,
         },
-        message: "脚本调试成功"
+        message: "脚本调试成功",
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
@@ -472,7 +491,7 @@ export class DynamicRouteService {
           stack: (error as Error).stack,
           executionTime,
         },
-        message: "脚本调试失败"
+        message: "脚本调试失败",
       };
     }
   }
@@ -590,9 +609,9 @@ export class DynamicRouteService {
       const feed = new RSS({
         title: route.name,
         description: route.description || route.name,
-        feed_url: `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
-        site_url: `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
-        generator: 'FeedHub DynamicRoute',
+        feed_url: `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
+        site_url: `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
+        generator: "FeedHub DynamicRoute",
         pubDate: new Date(),
       });
 
@@ -600,21 +619,21 @@ export class DynamicRouteService {
       scriptResult.items.forEach((item: any) => {
         const itemOptions: any = {
           title: item.title,
-          description: item.content || item.contentSnippet || '',
+          description: item.content || item.contentSnippet || "",
           url: item.link,
           guid: item.guid || item.link || uuidv4(),
           date: item.pubDate,
           author: item.author,
         };
-        
+
         // 添加封面图片作为enclosure（如果存在）
         if (item.image) {
           itemOptions.enclosure = {
             url: item.image,
-            type: 'image/jpeg' // 默认类型，实际应用中可根据图片URL后缀判断
+            type: "image/jpeg", // 默认类型，实际应用中可根据图片URL后缀判断
           };
         }
-        
+
         feed.item(itemOptions);
       });
 
@@ -625,9 +644,11 @@ export class DynamicRouteService {
     const feedOptions: any = {
       title: scriptResult.title || route.name,
       description: scriptResult.description || route.description || route.name,
-      feed_url: scriptResult.feed_url || `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
-      site_url: scriptResult.site_url || `${process.env.API_BASE_URL || ''}/api/dynamic-route${route.path}`,
-      generator: scriptResult.generator || 'FeedHub DynamicRoute',
+      feed_url:
+        scriptResult.feed_url || `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
+      site_url:
+        scriptResult.site_url || `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
+      generator: scriptResult.generator || "FeedHub DynamicRoute",
       pubDate: scriptResult.pubDate ? new Date(scriptResult.pubDate) : new Date(),
     };
 
@@ -645,21 +666,21 @@ export class DynamicRouteService {
     scriptResult.items.forEach((item: any) => {
       const itemOptions: any = {
         title: item.title,
-        description: item.content || item.contentSnippet || '',
+        description: item.content || item.contentSnippet || "",
         url: item.link,
         guid: item.guid || item.link || uuidv4(),
         date: item.pubDate,
         author: item.author,
       };
-      
+
       // 添加封面图片作为enclosure（如果存在）
       if (item.image) {
         itemOptions.enclosure = {
           url: item.image,
-          type: 'image/jpeg' // 默认类型，实际应用中可根据图片URL后缀判断
+          type: "image/jpeg", // 默认类型，实际应用中可根据图片URL后缀判断
         };
       }
-      
+
       feed.item(itemOptions);
     });
 

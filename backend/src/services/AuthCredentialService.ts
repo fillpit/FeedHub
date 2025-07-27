@@ -35,7 +35,9 @@ class AuthCredentialService {
   }
 
   /** 创建授权信息 */
-  async create(data: Omit<AuthCredentialAttributes, "id" | "createdAt" | "updatedAt">): Promise<ApiResponseData<AuthCredentialAttributes>> {
+  async create(
+    data: Omit<AuthCredentialAttributes, "id" | "createdAt" | "updatedAt">
+  ): Promise<ApiResponseData<AuthCredentialAttributes>> {
     try {
       const item = await AuthCredential.create(data as any);
       return { data: item, success: true, message: "创建成功" };
@@ -46,7 +48,10 @@ class AuthCredentialService {
   }
 
   /** 更新授权信息 */
-  async update(id: number, data: Partial<AuthCredentialAttributes>): Promise<ApiResponseData<AuthCredentialAttributes>> {
+  async update(
+    id: number,
+    data: Partial<AuthCredentialAttributes>
+  ): Promise<ApiResponseData<AuthCredentialAttributes>> {
     try {
       const item = await AuthCredential.findByPk(id);
       if (!item) return { success: false, message: "未找到授权信息" };
@@ -72,4 +77,4 @@ class AuthCredentialService {
   }
 }
 
-export default new AuthCredentialService(); 
+export default new AuthCredentialService();

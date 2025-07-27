@@ -13,7 +13,7 @@ export interface UserInfo {
 // 用户角色枚举
 export enum UserRole {
   NORMAL_USER = 0,
-  ADMIN = 1
+  ADMIN = 1,
 }
 
 // 登录请求参数
@@ -66,7 +66,7 @@ export interface NotificationSettings {
     icon?: string;
     group?: string;
   };
-  
+
   // 邮件通知设置
   email: {
     enabled: boolean;
@@ -78,7 +78,7 @@ export interface NotificationSettings {
     fromEmail: string;
     toEmail: string;
   };
-  
+
   // Gotify 通知设置
   gotify: {
     enabled: boolean;
@@ -86,7 +86,7 @@ export interface NotificationSettings {
     appToken: string;
     priority?: number;
   };
-  
+
   // 企业微信通知设置
   wechatWork: {
     enabled: boolean;
@@ -94,7 +94,7 @@ export interface NotificationSettings {
     mentionedList?: string[];
     mentionedMobileList?: string[];
   };
-  
+
   // 钉钉通知设置
   dingtalk: {
     enabled: boolean;
@@ -104,7 +104,7 @@ export interface NotificationSettings {
     atUserIds?: string[];
     isAtAll?: boolean;
   };
-  
+
   // 飞书通知设置
   feishu: {
     enabled: boolean;
@@ -114,12 +114,12 @@ export interface NotificationSettings {
     atMobiles?: string[];
     atAll?: boolean;
   };
-  
+
   // 通知触发条件
   triggers: {
-    newFeedItems: boolean;  // 新的订阅内容
-    feedUpdateErrors: boolean;  // 订阅更新错误
-    systemAlerts: boolean;  // 系统警告
+    newFeedItems: boolean; // 新的订阅内容
+    feedUpdateErrors: boolean; // 订阅更新错误
+    systemAlerts: boolean; // 系统警告
   };
 }
 

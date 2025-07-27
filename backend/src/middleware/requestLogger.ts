@@ -11,12 +11,7 @@ export const requestLogger = () => {
         return;
       }
       const duration = Date.now() - start;
-      logger.info({
-        method: req.method,
-        path: req.path,
-        status: res.statusCode,
-        duration: `${duration}ms`,
-      });
+      logger.info(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
     });
     next();
   };

@@ -6,7 +6,7 @@ import { UserController } from "../controllers/user";
 import { WebsiteRssController } from "../controllers/websiteRss";
 import { DynamicRouteController } from "../controllers/dynamicRoute";
 import { BackupController } from "../controllers/backup";
-import AuthCredentialController from '../controllers/authCredential';
+import AuthCredentialController from "../controllers/authCredential";
 import websiteRssRoutes from "./websiteRss";
 import dynamicRouteRoutes from "./dynamicRoute";
 import npmPackageRoutes from "./npmPackage";
@@ -24,39 +24,52 @@ const dynamicRouteController = container.get<DynamicRouteController>(TYPES.Dynam
 const backupController = container.get<BackupController>(TYPES.BackupController);
 
 // 用户相关路由
-router.post("/user/login", 
-  createValidationMiddleware([
-    commonValidationRules.username,
-    commonValidationRules.password
-  ]),
+router.post(
+  "/user/login",
+  createValidationMiddleware([commonValidationRules.username, commonValidationRules.password]),
   asyncHandler((req: Request, res: Response) => userController.login(req, res))
 );
 
-router.post("/user/register", 
-  createValidationMiddleware([
-    commonValidationRules.username,
-    commonValidationRules.password
-  ]),
+router.post(
+  "/user/register",
+  createValidationMiddleware([commonValidationRules.username, commonValidationRules.password]),
   asyncHandler((req: Request, res: Response) => userController.register(req, res))
 );
 
 // 设置相关路由
-router.get("/setting/get", asyncHandler((req: Request, res: Response) => settingController.get(req, res)));
-router.post("/setting/save", asyncHandler((req: Request, res: Response) => settingController.save(req, res)));
+router.get(
+  "/setting/get",
+  asyncHandler((req: Request, res: Response) => settingController.get(req, res))
+);
+router.post(
+  "/setting/save",
+  asyncHandler((req: Request, res: Response) => settingController.save(req, res))
+);
 
 // 备份还原相关路由
-router.get("/backup/export", asyncHandler((req: Request, res: Response) => backupController.exportBackup(req, res)));
-router.post("/backup/import", asyncHandler((req: Request, res: Response) => backupController.importBackup(req, res)));
+router.get(
+  "/backup/export",
+  asyncHandler((req: Request, res: Response) => backupController.exportBackup(req, res))
+);
+router.post(
+  "/backup/import",
+  asyncHandler((req: Request, res: Response) => backupController.importBackup(req, res))
+);
 
 // 分享配置相关路由
-router.get("/backup/export-share", asyncHandler((req: Request, res: Response) => backupController.exportShareConfig(req, res)));
-router.post("/backup/import-share", asyncHandler((req: Request, res: Response) => backupController.importShareConfig(req, res)));
+router.get(
+  "/backup/export-share",
+  asyncHandler((req: Request, res: Response) => backupController.exportShareConfig(req, res))
+);
+router.post(
+  "/backup/import-share",
+  asyncHandler((req: Request, res: Response) => backupController.importShareConfig(req, res))
+);
 
 // 网站RSS相关路由
 router.use("/website-rss", websiteRssRoutes);
 
 // RSS模板相关路由
-
 
 // 自定义路由相关路由
 router.use("/dynamic-route", dynamicRouteRoutes);
@@ -74,17 +87,26 @@ router.get("/rss/:key", (req, res) => websiteRssController.getRssFeed(req, res))
 router.get("/json/:key", (req, res) => websiteRssController.getRssFeedJson(req, res));
 
 // 授权信息管理
-router.get('/auth-credential', asyncHandler(AuthCredentialController.getAll.bind(AuthCredentialController)));
-router.get('/auth-credential/:id', 
+router.get(
+  "/auth-credential",
+  asyncHandler(AuthCredentialController.getAll.bind(AuthCredentialController))
+);
+router.get(
+  "/auth-credential/:id",
   createValidationMiddleware([commonValidationRules.id]),
   asyncHandler(AuthCredentialController.getById.bind(AuthCredentialController))
 );
-router.post('/auth-credential', asyncHandler(AuthCredentialController.create.bind(AuthCredentialController)));
-router.put('/auth-credential/:id', 
+router.post(
+  "/auth-credential",
+  asyncHandler(AuthCredentialController.create.bind(AuthCredentialController))
+);
+router.put(
+  "/auth-credential/:id",
   createValidationMiddleware([commonValidationRules.id]),
   asyncHandler(AuthCredentialController.update.bind(AuthCredentialController))
 );
-router.delete('/auth-credential/:id', 
+router.delete(
+  "/auth-credential/:id",
   createValidationMiddleware([commonValidationRules.id]),
   asyncHandler(AuthCredentialController.delete.bind(AuthCredentialController))
 );

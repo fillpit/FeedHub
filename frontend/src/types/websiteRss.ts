@@ -3,7 +3,6 @@ export type {
   SelectorField,
   WebsiteRssSelector,
   WebsiteRssAuth,
-  FetchMode,
   WebsiteRssScript,
   WebsiteRssConfig,
   WebsiteRssConfigList,
@@ -12,5 +11,5 @@ export type {
   WebsiteRssStore,
   WebsiteRssConfigBase,
   WebsiteRssConfigAttributes,
-  WebsiteRssConfigCreationAttributes
-} from '@feedhub/shared';
+  WebsiteRssConfigCreationAttributes,
+} from "@feedhub/shared";

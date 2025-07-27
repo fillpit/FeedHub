@@ -3,7 +3,7 @@ import { Response } from "express";
 interface ResponseData {
   code?: number; // 业务状态码
   message?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export const sendSuccess = (res: Response, response: ResponseData, businessCode: number = 0) => {

@@ -45,9 +45,15 @@
       <el-empty v-if="filteredRoutes.length === 0" description="暂无动态路由配置" />
 
       <!-- 路由列表 -->
-      <el-table v-else :data="filteredRoutes" border style="width: 100%" @selection-change="handleSelectionChange">
+      <el-table
+        v-else
+        :data="filteredRoutes"
+        border
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+      >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="name" label="名称"  min-width="100">
+        <el-table-column prop="name" label="名称" min-width="100">
           <template #default="{ row }">
             <div class="route-name">
               <span>{{ row.name }}</span>
@@ -86,7 +92,7 @@
 
         <el-table-column prop="description" label="描述" min-width="200">
           <template #default="{ row }">
-            <span class="description-text">{{ row.description || '无描述' }}</span>
+            <span class="description-text">{{ row.description || "无描述" }}</span>
           </template>
         </el-table-column>
 
@@ -119,23 +125,21 @@
       size="50%"
       :before-close="closeDrawer"
     >
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-width="100px"
-        class="route-form"
-      >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" class="route-form">
         <el-form-item label="路由名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入路由名称" />
         </el-form-item>
 
         <el-form-item label="路由路径" prop="path">
-          <el-input v-model="form.path" placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid">
+          <el-input
+            v-model="form.path"
+            placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid"
+          >
             <template #prepend>/dynamic</template>
           </el-input>
-          <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-            路由路径格式说明：路径以 / 开头，支持动态参数（如 :uid、:id），动态参数会自动传递给脚本的 routeParams 对象
+          <div style="font-size: 12px; color: #909399; margin-top: 4px">
+            路由路径格式说明：路径以 / 开头，支持动态参数（如
+            :uid、:id），动态参数会自动传递给脚本的 routeParams 对象
           </div>
         </el-form-item>
 
@@ -157,7 +161,7 @@
 
         <el-form-item label="刷新间隔(分钟)" prop="refreshInterval">
           <el-input-number v-model="form.refreshInterval" :min="1" :max="1440" />
-          <div style="font-size: 12px; color: #909399; margin-top: 4px;">
+          <div style="font-size: 12px; color: #909399; margin-top: 4px">
             设置路由缓存刷新间隔，减少对目标网站的请求压力（1-1440分钟）
           </div>
         </el-form-item>
@@ -172,8 +176,9 @@
               :value="auth.id"
             />
           </el-select>
-          <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-            选择授权信息后，脚本中可以通过 utils.getAuthInfo() 获取授权信息，utils.fetchApi() 会自动应用授权
+          <div style="font-size: 12px; color: #909399; margin-top: 4px">
+            选择授权信息后，脚本中可以通过 utils.getAuthInfo() 获取授权信息，utils.fetchApi()
+            会自动应用授权
           </div>
         </el-form-item>
 
@@ -251,13 +256,13 @@
                 suggest: {
                   showKeywords: true,
                   showSnippets: true,
-                  showFunctions: true
+                  showFunctions: true,
                 },
                 quickSuggestions: {
                   other: true,
                   comments: true,
-                  strings: true
-                }
+                  strings: true,
+                },
               }"
             />
             <div class="script-help">
@@ -310,12 +315,7 @@
     </el-drawer>
 
     <!-- 调试抽屉 -->
-    <el-drawer
-      v-model="debugDrawerVisible"
-      title="调试动态路由脚本"
-      direction="rtl"
-      size="50%"
-    >
+    <el-drawer v-model="debugDrawerVisible" title="调试动态路由脚本" direction="rtl" size="50%">
       <div class="debug-container">
         <div class="debug-form">
           <h3>测试参数</h3>
@@ -343,7 +343,9 @@
           <el-alert
             :type="debugResult.success ? 'success' : 'error'"
             :title="debugResult.success ? '脚本执行成功' : '脚本执行失败'"
-            :description="debugResult.success ? `耗时: ${debugResult.executionTime}ms` : debugResult.error"
+            :description="
+              debugResult.success ? `耗时: ${debugResult.executionTime}ms` : debugResult.error
+            "
             show-icon
           />
 
@@ -354,7 +356,9 @@
                   <el-table-column prop="title" label="标题" min-width="150" />
                   <el-table-column prop="link" label="链接" min-width="200">
                     <template #default="{ row }">
-                      <el-link :href="row.link" target="_blank" type="primary">{{ row.link }}</el-link>
+                      <el-link :href="row.link" target="_blank" type="primary">{{
+                        row.link
+                      }}</el-link>
                     </template>
                   </el-table-column>
                   <el-table-column prop="pubDate" label="发布日期" width="180" />
@@ -464,36 +468,40 @@ const rules = {
   path: [
     { required: true, message: "请输入路由路径", trigger: "blur" },
     { max: 100, message: "路由路径不能超过100个字符", trigger: "blur" },
-    { pattern: /^\/[\w\-\/\:]*$/, message: "路由路径格式不正确，应以/开头，支持动态参数（如 :id），只能包含字母、数字、下划线、连字符、冒号和斜杠", trigger: "blur" },
+    {
+      pattern: /^\/[\w\-\/\:]*$/,
+      message:
+        "路由路径格式不正确，应以/开头，支持动态参数（如 :id），只能包含字母、数字、下划线、连字符、冒号和斜杠",
+      trigger: "blur",
+    },
   ],
-  method: [
-    { required: true, message: "请选择HTTP方法", trigger: "change" },
-  ],
+  method: [{ required: true, message: "请选择HTTP方法", trigger: "change" }],
   refreshInterval: [
     { required: true, message: "请设置刷新间隔", trigger: "blur" },
     { type: "number", min: 1, max: 1440, message: "刷新间隔必须在1-1440分钟之间", trigger: "blur" },
   ],
-  "script.sourceType": [
-    { required: true, message: "请选择脚本来源类型", trigger: "change" },
-  ],
-  "script.content": [
-    { required: true, message: "请输入脚本内容", trigger: "blur" },
-  ],
+  "script.sourceType": [{ required: true, message: "请选择脚本来源类型", trigger: "change" }],
+  "script.content": [{ required: true, message: "请输入脚本内容", trigger: "blur" }],
   "script.timeout": [
     { required: true, message: "请输入超时时间", trigger: "blur" },
-    { type: "number", min: 1000, max: 60000, message: "超时时间必须在1000-60000毫秒之间", trigger: "blur" },
+    {
+      type: "number",
+      min: 1000,
+      max: 60000,
+      message: "超时时间必须在1000-60000毫秒之间",
+      trigger: "blur",
+    },
   ],
 };
 
 // 过滤后的路由列表
 const filteredRoutes = computed(() => {
   if (!searchKeyword.value) return routes.value;
-  
+
   const keyword = searchKeyword.value.toLowerCase();
   return routes.value.filter(
     (route: DynamicRouteConfig) =>
-      route.name.toLowerCase().includes(keyword) ||
-      route.path.toLowerCase().includes(keyword)
+      route.name.toLowerCase().includes(keyword) || route.path.toLowerCase().includes(keyword)
   );
 });
 
@@ -502,7 +510,7 @@ const fetchRoutes = async () => {
   loading.value = true;
   try {
     const res = await getAllDynamicRoutes();
-    if (res.success) {
+    if (res.code === 0) {
       routes.value = res.data as DynamicRouteConfig[];
     } else {
       ElMessage.error(res.message || "获取动态路由列表失败");
@@ -554,7 +562,7 @@ const closeDrawer = () => {
 const fetchAuthCredentials = async () => {
   try {
     const res = await authCredentialApi.getAll();
-    if (res.success) {
+    if (res.code === 0) {
       authCredentials.value = res.data as AuthCredential[];
     } else {
       console.error("获取授权凭证列表失败:", res.message);
@@ -600,7 +608,7 @@ const removeParam = (index: number) => {
 // 提交表单
 const submitForm = async () => {
   if (!formRef.value) return;
-  
+
   await formRef.value.validate(async (valid: boolean): Promise<void> => {
     if (valid) {
       try {
@@ -608,17 +616,17 @@ const submitForm = async () => {
         if (!form.path.startsWith("/")) {
           form.path = "/" + form.path;
         }
-        
+
         const data = { ...form };
         let res;
-        
+
         if (isEdit.value) {
           res = await updateDynamicRoute(form.id!, data);
         } else {
           res = await addDynamicRoute(data);
         }
-        
-        if (res.success) {
+
+        if (res.code === 0) {
           ElMessage.success(isEdit.value ? "更新成功" : "添加成功");
           drawerVisible.value = false;
           fetchRoutes();
@@ -637,7 +645,7 @@ const submitForm = async () => {
 const deleteRoute = async (id: number) => {
   try {
     const res = await deleteDynamicRoute(id);
-    if (res.success) {
+    if (res.code === 0) {
       ElMessage.success("删除成功");
       fetchRoutes();
     } else {
@@ -728,8 +736,8 @@ const debugScript = async () => {
   debugging.value = true;
   try {
     const res = await debugDynamicRouteScript(debugForm.value!, testParams.value);
-    if (res.success) {
-      debugResult.value = (res.data as Record<string, unknown> | undefined) ;
+    if (res.code === 0) {
+      debugResult.value = res.data as Record<string, unknown> | undefined;
       activeDebugTab.value = "result";
     } else {
       ElMessage.error(res.message || "脚本调试失败");
@@ -752,40 +760,40 @@ const exportRoutes = () => {
   try {
     // 检查是否有选择的路由
     if (selectedRoutes.value.length === 0) {
-      ElMessage.warning('请先选择要导出的路由配置');
+      ElMessage.warning("请先选择要导出的路由配置");
       return;
     }
 
     const exportData = {
       version: "1.0",
       exportTime: new Date().toISOString(),
-      routes: selectedRoutes.value.map(route => ({
+      routes: selectedRoutes.value.map((route) => ({
         name: route.name,
         path: route.path,
         method: route.method,
         description: route.description,
         authCredentialId: route.authCredentialId,
         params: route.params,
-        script: route.script
-      }))
+        script: route.script,
+      })),
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
+
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `dynamic-routes-selected-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `dynamic-routes-selected-${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
+
     ElMessage.success(`成功导出 ${selectedRoutes.value.length} 个选中的路由配置`);
   } catch (error) {
-    console.error('导出路由配置失败:', error);
-    ElMessage.error('导出路由配置失败');
+    console.error("导出路由配置失败:", error);
+    ElMessage.error("导出路由配置失败");
   }
 };
 
@@ -798,32 +806,32 @@ const triggerImport = () => {
 const handleFileImport = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  
+
   if (!file) return;
-  
+
   try {
     const text = await file.text();
     const importData = JSON.parse(text);
-    
+
     // 验证导入数据格式
     if (!importData.routes || !Array.isArray(importData.routes)) {
-      ElMessage.error('导入文件格式不正确，缺少routes数组');
+      ElMessage.error("导入文件格式不正确，缺少routes数组");
       return;
     }
-    
+
     // 批量添加路由
     let successCount = 0;
     let failCount = 0;
-    
+
     for (const routeData of importData.routes) {
       try {
         // 确保路径以/开头
         if (!routeData.path.startsWith("/")) {
           routeData.path = "/" + routeData.path;
         }
-        
+
         const res = await addDynamicRoute(routeData);
-        if (res.success) {
+        if (res.code === 0) {
           successCount++;
         } else {
           failCount++;
@@ -834,23 +842,24 @@ const handleFileImport = async (event: Event) => {
         console.error(`导入路由出错: ${routeData.name}`, error);
       }
     }
-    
+
     // 刷新路由列表
     await fetchRoutes();
-    
+
     // 显示导入结果
     if (successCount > 0) {
-      ElMessage.success(`成功导入 ${successCount} 个路由配置${failCount > 0 ? `，失败 ${failCount} 个` : ''}`);
+      ElMessage.success(
+        `成功导入 ${successCount} 个路由配置${failCount > 0 ? `，失败 ${failCount} 个` : ""}`
+      );
     } else {
       ElMessage.error(`导入失败，共 ${failCount} 个路由配置导入失败`);
     }
-    
   } catch (error) {
-    console.error('解析导入文件失败:', error);
-    ElMessage.error('导入文件格式不正确，请检查文件内容');
+    console.error("解析导入文件失败:", error);
+    ElMessage.error("导入文件格式不正确，请检查文件内容");
   } finally {
     // 清空文件输入
-    target.value = '';
+    target.value = "";
   }
 };
 
@@ -963,16 +972,16 @@ onMounted(() => {
     }
 
     .script-help {
-    margin-top: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .editor-tips {
-    font-size: 12px;
-    color: var(--el-text-color-secondary);
-  }
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .editor-tips {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
 
     .script-upload {
       width: 100%;

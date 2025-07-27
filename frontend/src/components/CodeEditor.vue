@@ -5,9 +5,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
-import * as monaco from 'monaco-editor';
-import loader from '@monaco-editor/loader';
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import * as monaco from "monaco-editor";
+import loader from "@monaco-editor/loader";
 
 interface Props {
   modelValue: string;
@@ -19,16 +19,16 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: string): void;
-  (e: 'change', value: string): void;
+  (e: "update:modelValue", value: string): void;
+  (e: "change", value: string): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  language: 'javascript',
-  theme: 'vs-dark',
-  height: '300px',
+  language: "javascript",
+  theme: "vs-dark",
+  height: "300px",
   readonly: false,
-  options: () => ({})
+  options: () => ({}),
 });
 
 const emit = defineEmits<Emits>();
@@ -40,8 +40,8 @@ let isEditorReady = false;
 // 配置 Monaco Editor
 loader.config({
   paths: {
-    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs'
-  }
+    vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs",
+  },
 });
 
 // 初始化编辑器
@@ -50,7 +50,7 @@ const initEditor = async () => {
 
   try {
     const monacoInstance = await loader.init();
-    
+
     // 设置 JavaScript 语言的默认配置
     monacoInstance.languages.typescript.javascriptDefaults.setCompilerOptions({
       target: monacoInstance.languages.typescript.ScriptTarget.ES2020,
@@ -60,9 +60,9 @@ const initEditor = async () => {
       noEmit: true,
       esModuleInterop: true,
       jsx: monacoInstance.languages.typescript.JsxEmit.React,
-      reactNamespace: 'React',
+      reactNamespace: "React",
       allowJs: true,
-      typeRoots: ['node_modules/@types']
+      typeRoots: ["node_modules/@types"],
     });
 
     // 添加自定义类型定义
@@ -84,10 +84,10 @@ const initEditor = async () => {
       
       declare const fetch: (url: string, options?: RequestInit) => Promise<Response>;
     `;
-    
+
     monacoInstance.languages.typescript.javascriptDefaults.addExtraLib(
       customTypes,
-      'ts:filename/utils.d.ts'
+      "ts:filename/utils.d.ts"
     );
 
     // 创建编辑器实例
@@ -99,44 +99,44 @@ const initEditor = async () => {
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
       fontSize: 14,
-      lineNumbers: 'on',
+      lineNumbers: "on",
       roundedSelection: false,
       scrollbar: {
-        vertical: 'auto',
-        horizontal: 'auto'
+        vertical: "auto",
+        horizontal: "auto",
       },
       folding: true,
-      foldingStrategy: 'indentation',
-      showFoldingControls: 'always',
-      wordWrap: 'on',
+      foldingStrategy: "indentation",
+      showFoldingControls: "always",
+      wordWrap: "on",
       tabSize: 2,
       insertSpaces: true,
       formatOnPaste: true,
       formatOnType: true,
       readOnly: props.readonly,
-      ...props.options
+      ...props.options,
     });
 
     // 监听内容变化
     editor.onDidChangeModelContent(() => {
       if (editor && isEditorReady) {
         const value = editor.getValue();
-        emit('update:modelValue', value);
-        emit('change', value);
+        emit("update:modelValue", value);
+        emit("change", value);
       }
     });
 
     isEditorReady = true;
   } catch (error) {
-    console.error('Failed to initialize Monaco Editor:', error);
+    console.error("Failed to initialize Monaco Editor:", error);
   }
 };
 
 // 设置编辑器高度
 const setEditorHeight = () => {
   if (!editorContainer.value) return;
-  
-  const height = typeof props.height === 'number' ? `${props.height}px` : props.height;
+
+  const height = typeof props.height === "number" ? `${props.height}px` : props.height;
   editorContainer.value.style.height = height;
 };
 
@@ -145,7 +145,7 @@ watch(
   () => props.modelValue,
   (newValue) => {
     if (editor && isEditorReady && editor.getValue() !== newValue) {
-      editor.setValue(newValue || '');
+      editor.setValue(newValue || "");
     }
   }
 );
@@ -205,18 +205,20 @@ defineExpose({
   focus: () => editor?.focus(),
   layout: () => editor?.layout(),
   setValue: (value: string) => editor?.setValue(value),
-  getValue: () => editor?.getValue() || '',
+  getValue: () => editor?.getValue() || "",
   insertText: (text: string) => {
     if (editor) {
       const selection = editor.getSelection();
       if (selection) {
-        editor.executeEdits('', [{
-          range: selection,
-          text: text
-        }]);
+        editor.executeEdits("", [
+          {
+            range: selection,
+            text: text,
+          },
+        ]);
       }
     }
-  }
+  },
 });
 </script>
 
@@ -233,7 +235,8 @@ defineExpose({
   min-height: 200px;
 }
 
-/* 深色主题适配 */n.dark .code-editor-container {
+/* 深色主题适配 */
+n.dark .code-editor-container {
   border-color: var(--el-border-color-dark);
 }
 </style>

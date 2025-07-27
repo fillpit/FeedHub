@@ -18,10 +18,10 @@ export const authMiddleware = async (
 ): Promise<void | Response> => {
   // 检查是否是公开访问的路径
   if (
-    req.path === "/user/login" || 
-    req.path === "/user/register" || 
+    req.path === "/user/login" ||
+    req.path === "/user/register" ||
     req.path.startsWith("/rss/") ||
-    req.path.startsWith("/json/") || 
+    req.path.startsWith("/json/") ||
     req.path.startsWith("/dynamic")
   ) {
     return next();

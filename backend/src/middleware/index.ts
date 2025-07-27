@@ -10,34 +10,36 @@ import { errorHandler } from "./errorHandler";
 
 export const setupMiddlewares = (app: Application) => {
   // 安全头设置
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        },
       },
-    },
-    crossOriginEmbedderPolicy: false
-  }));
-  
+      crossOriginEmbedderPolicy: false,
+    })
+  );
+
   // 基础中间件
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-  
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
   // CORS配置
   app.use(cors());
-  
+
   // 请求日志
   app.use(requestLogger());
-  
+
   // 限流
   app.use(rateLimiter());
-  
+
   // XSS防护
   // app.use(xssProtection);
-  
+
   // 认证中间件
   app.use(authMiddleware);
 };

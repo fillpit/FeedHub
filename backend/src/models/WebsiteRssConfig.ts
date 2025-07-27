@@ -4,10 +4,9 @@ import {
   SelectorField,
   WebsiteRssSelector,
   WebsiteRssAuth,
-  FetchMode,
   WebsiteRssScript,
   WebsiteRssConfigAttributes,
-  WebsiteRssConfigCreationAttributes
+  WebsiteRssConfigCreationAttributes,
 } from "@feedhub/shared";
 
 // 重新导出类型以供其他模块使用
@@ -15,14 +14,14 @@ export {
   SelectorField,
   WebsiteRssSelector,
   WebsiteRssAuth,
-  FetchMode,
   WebsiteRssScript,
   WebsiteRssConfigAttributes,
-  WebsiteRssConfigCreationAttributes
+  WebsiteRssConfigCreationAttributes,
 };
 
 // Sequelize 模型创建属性接口
-interface ModelCreationAttributes extends Optional<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime"> {}
+interface ModelCreationAttributes
+  extends Optional<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime"> {}
 
 class WebsiteRssConfig
   extends Model<WebsiteRssConfigAttributes, ModelCreationAttributes>
@@ -33,9 +32,7 @@ class WebsiteRssConfig
   public key!: string;
   public title!: string;
   public url!: string;
-  public fetchMode!: FetchMode;
   public selector!: WebsiteRssSelector;
-  public script!: WebsiteRssScript;
   public auth!: WebsiteRssAuth;
   public authCredentialId?: number;
   public lastContent!: string;
@@ -55,7 +52,7 @@ WebsiteRssConfig.init(
     userId: {
       type: DataTypes.STRING,
       allowNull: false,
-      comment: "用户ID"
+      comment: "用户ID",
     },
     key: {
       type: DataTypes.STRING,
@@ -70,36 +67,22 @@ WebsiteRssConfig.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    fetchMode: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: "selector", // 默认为选择器模式
-    },
     selector: {
       type: DataTypes.JSON,
       allowNull: false,
-    },
-    script: {
-      type: DataTypes.JSON,
-      allowNull: false,
-      defaultValue: {
-        enabled: false,
-        script: "",
-        timeout: 30000
-      },
     },
     auth: {
       type: DataTypes.JSON,
       allowNull: false,
       defaultValue: {
         enabled: false,
-        authType: "none"
+        authType: "none",
       },
     },
     authCredentialId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      comment: "授权信息ID"
+      comment: "授权信息ID",
     },
 
     lastContent: {

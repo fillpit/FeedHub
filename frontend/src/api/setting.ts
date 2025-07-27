@@ -15,6 +15,9 @@ export const settingApi = {
     globalSetting?: GlobalSettingAttributes | null;
     notificationSettings?: NotificationSettings | null;
   }) => {
-    return request.post("/api/setting/save", data, { showSuccessMessage: true, successMessage: '设置更新成功！' });
+    return request.post("/api/setting/save", data, {
+      showSuccessMessage: true,
+      successMessage: "设置更新成功！",
+    });
   },
 };

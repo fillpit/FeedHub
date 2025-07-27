@@ -50,14 +50,13 @@ export class WebsiteRssController extends BaseController {
     });
   }
 
-
   async getRssFeed(req: Request, res: Response): Promise<void> {
     try {
       const key = req.params.key;
       const rssXml = await this.websiteRssService.getRssFeed(key);
-      
+
       // 设置正确的内容类型
-      res.setHeader('Content-Type', 'application/rss+xml');
+      res.setHeader("Content-Type", "application/rss+xml");
       res.send(rssXml);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
@@ -69,12 +68,14 @@ export class WebsiteRssController extends BaseController {
     try {
       const key = req.params.key;
       const rssFeedJson = await this.websiteRssService.getRssFeedJson(key);
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader("Content-Type", "application/json");
       // 使用JSON.stringify的第三个参数来美化输出，设置缩进为2个空格
       res.send(JSON.stringify(rssFeedJson, null, 2));
     } catch (error) {
-      console.error('获取JSON Feed失败:', error);
-      res.status(500).json({ error: `获取JSON Feed失败: ${error instanceof Error ? error.message : "未知错误"}` });
+      console.error("获取JSON Feed失败:", error);
+      res.status(500).json({
+        error: `获取JSON Feed失败: ${error instanceof Error ? error.message : "未知错误"}`,
+      });
     }
   }
 

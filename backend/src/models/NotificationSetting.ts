@@ -11,7 +11,7 @@ export interface NotificationSettingAttributes {
   barkSound?: string;
   barkIcon?: string;
   barkGroup?: string;
-  
+
   // 邮件通知设置
   emailEnabled: boolean;
   emailSmtpHost: string;
@@ -21,19 +21,19 @@ export interface NotificationSettingAttributes {
   emailPassword: string;
   emailFromEmail: string;
   emailToEmail: string;
-  
+
   // Gotify 通知设置
   gotifyEnabled: boolean;
   gotifyServerUrl: string;
   gotifyAppToken: string;
   gotifyPriority?: number;
-  
+
   // 企业微信通知设置
   wechatWorkEnabled: boolean;
   wechatWorkWebhookUrl: string;
   wechatWorkMentionedList?: string; // JSON string
   wechatWorkMentionedMobileList?: string; // JSON string
-  
+
   // 钉钉通知设置
   dingtalkEnabled: boolean;
   dingtalkWebhookUrl: string;
@@ -41,7 +41,7 @@ export interface NotificationSettingAttributes {
   dingtalkAtMobiles?: string; // JSON string
   dingtalkAtUserIds?: string; // JSON string
   dingtalkIsAtAll?: boolean;
-  
+
   // 飞书通知设置
   feishuEnabled: boolean;
   feishuWebhookUrl: string;
@@ -49,19 +49,23 @@ export interface NotificationSettingAttributes {
   feishuAtUserIds?: string; // JSON string
   feishuAtMobiles?: string; // JSON string
   feishuAtAll?: boolean;
-  
+
   // 通知触发条件
   triggerNewFeedItems: boolean;
   triggerFeedUpdateErrors: boolean;
   triggerSystemAlerts: boolean;
 }
 
-interface NotificationSettingCreationAttributes extends Optional<NotificationSettingAttributes, "id"> {}
+interface NotificationSettingCreationAttributes
+  extends Optional<NotificationSettingAttributes, "id"> {}
 
-class NotificationSetting extends Model<NotificationSettingAttributes, NotificationSettingCreationAttributes> implements NotificationSettingAttributes {
+class NotificationSetting
+  extends Model<NotificationSettingAttributes, NotificationSettingCreationAttributes>
+  implements NotificationSettingAttributes
+{
   public id!: number;
   public userId!: string;
-  
+
   // Bark 通知设置
   public barkEnabled!: boolean;
   public barkServerUrl!: string;
@@ -69,7 +73,7 @@ class NotificationSetting extends Model<NotificationSettingAttributes, Notificat
   public barkSound?: string;
   public barkIcon?: string;
   public barkGroup?: string;
-  
+
   // 邮件通知设置
   public emailEnabled!: boolean;
   public emailSmtpHost!: string;
@@ -79,19 +83,19 @@ class NotificationSetting extends Model<NotificationSettingAttributes, Notificat
   public emailPassword!: string;
   public emailFromEmail!: string;
   public emailToEmail!: string;
-  
+
   // Gotify 通知设置
   public gotifyEnabled!: boolean;
   public gotifyServerUrl!: string;
   public gotifyAppToken!: string;
   public gotifyPriority?: number;
-  
+
   // 企业微信通知设置
   public wechatWorkEnabled!: boolean;
   public wechatWorkWebhookUrl!: string;
   public wechatWorkMentionedList?: string;
   public wechatWorkMentionedMobileList?: string;
-  
+
   // 钉钉通知设置
   public dingtalkEnabled!: boolean;
   public dingtalkWebhookUrl!: string;
@@ -99,7 +103,7 @@ class NotificationSetting extends Model<NotificationSettingAttributes, Notificat
   public dingtalkAtMobiles?: string;
   public dingtalkAtUserIds?: string;
   public dingtalkIsAtAll?: boolean;
-  
+
   // 飞书通知设置
   public feishuEnabled!: boolean;
   public feishuWebhookUrl!: string;
@@ -107,7 +111,7 @@ class NotificationSetting extends Model<NotificationSettingAttributes, Notificat
   public feishuAtUserIds?: string;
   public feishuAtMobiles?: string;
   public feishuAtAll?: boolean;
-  
+
   // 通知触发条件
   public triggerNewFeedItems!: boolean;
   public triggerFeedUpdateErrors!: boolean;
@@ -127,9 +131,9 @@ NotificationSetting.init(
       allowNull: false,
       unique: true,
       references: {
-        model: 'users',
-        key: 'userId'
-      }
+        model: "users",
+        key: "userId",
+      },
     },
     // Bark 通知设置
     barkEnabled: {
@@ -140,12 +144,12 @@ NotificationSetting.init(
     barkServerUrl: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: 'https://api.day.app',
+      defaultValue: "https://api.day.app",
     },
     barkDeviceKey: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     barkSound: {
       type: DataTypes.STRING,
@@ -159,7 +163,7 @@ NotificationSetting.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    
+
     // 邮件通知设置
     emailEnabled: {
       type: DataTypes.BOOLEAN,
@@ -169,7 +173,7 @@ NotificationSetting.init(
     emailSmtpHost: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     emailSmtpPort: {
       type: DataTypes.INTEGER,
@@ -184,24 +188,24 @@ NotificationSetting.init(
     emailUsername: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     emailPassword: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     emailFromEmail: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     emailToEmail: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
-    
+
     // Gotify 通知设置
     gotifyEnabled: {
       type: DataTypes.BOOLEAN,
@@ -211,19 +215,19 @@ NotificationSetting.init(
     gotifyServerUrl: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     gotifyAppToken: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     gotifyPriority: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 5,
     },
-    
+
     // 企业微信通知设置
     wechatWorkEnabled: {
       type: DataTypes.BOOLEAN,
@@ -233,7 +237,7 @@ NotificationSetting.init(
     wechatWorkWebhookUrl: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     wechatWorkMentionedList: {
       type: DataTypes.TEXT,
@@ -243,7 +247,7 @@ NotificationSetting.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    
+
     // 钉钉通知设置
     dingtalkEnabled: {
       type: DataTypes.BOOLEAN,
@@ -253,7 +257,7 @@ NotificationSetting.init(
     dingtalkWebhookUrl: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     dingtalkSecret: {
       type: DataTypes.STRING,
@@ -272,7 +276,7 @@ NotificationSetting.init(
       allowNull: true,
       defaultValue: false,
     },
-    
+
     // 飞书通知设置
     feishuEnabled: {
       type: DataTypes.BOOLEAN,
@@ -282,7 +286,7 @@ NotificationSetting.init(
     feishuWebhookUrl: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: '',
+      defaultValue: "",
     },
     feishuSecret: {
       type: DataTypes.STRING,
@@ -301,7 +305,7 @@ NotificationSetting.init(
       allowNull: true,
       defaultValue: false,
     },
-    
+
     // 通知触发条件
     triggerNewFeedItems: {
       type: DataTypes.BOOLEAN,

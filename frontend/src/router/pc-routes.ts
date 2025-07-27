@@ -16,16 +16,16 @@ const routes: RouteRecordRaw[] = [
         name: "setting",
         component: () => import("@/views/Setting.vue"),
       },
-        {
+      {
         path: "/auth-credential",
         name: "auth-credential",
         component: () => import("@/views/AuthCredentialManagement.vue"),
       },
       {
-          path: "/dynamic-route",
-          name: "dynamic-route",
-          component: () => import("@/views/DynamicRoute.vue"),
-        },
+        path: "/dynamic-route",
+        name: "dynamic-route",
+        component: () => import("@/views/DynamicRoute.vue"),
+      },
       {
         path: "/npm-package",
         name: "npm-package",
