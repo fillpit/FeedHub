@@ -108,7 +108,7 @@ const handleLogin = async () => {
             localStorage.removeItem(STORAGE_KEYS.PASSWORD);
           }
 
-          localStorage.setItem(STORAGE_KEYS.TOKEN, res.data.token);
+          localStorage.setItem(STORAGE_KEYS.TOKEN, res.data?.token || '');
           ElMessage.success("登录成功");
           router.push("/");
         } else {

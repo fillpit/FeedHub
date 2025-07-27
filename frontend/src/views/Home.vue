@@ -1,5 +1,5 @@
 <template>
-  <div class="pc-home" :class="{ 'is-loading': resourcStore.loading }">
+  <div class="pc-home">
     <!-- 主布局容器 -->
     <el-container class="pc-home__container">
       <!-- 侧边栏 -->
@@ -26,27 +26,18 @@
         </el-main>
       </el-container>
     </el-container>
-
-    <!-- 全局加载 -->
-    <div v-if="resourcStore.loading" class="pc-home__loading">
-      <el-icon class="is-loading"><Loading /></el-icon>
-      <span class="loading-text">加载中...</span>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
-import { useResourceStore } from "@/stores/resource";
 import { useStore } from "@/stores/index";
 import { useUserSettingStore } from "@/stores/userSetting";
 import { throttle } from "@/utils/index";
-import { Loading } from "@element-plus/icons-vue";
 import "element-plus/es/components/loading/style/css";
 import AsideMenu from "@/components/AsideMenu.vue";
 
 // 状态管理
-const resourcStore = useResourceStore();
 const store = useStore();
 const settingStore = useUserSettingStore();
 

@@ -1,3 +1,5 @@
+// 认证凭据相关的共享类型定义
+
 export interface AuthCredential {
   id?: number;
   name: string;
@@ -10,4 +12,4 @@ export interface AuthCredential {
   remark?: string;
   createdAt?: string;
   updatedAt?: string;
-} 
+}

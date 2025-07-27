@@ -38,7 +38,6 @@ declare module 'vue' {
     ElOption: typeof import('element-plus/es')['ElOption']
     ElPopconfirm: typeof import('element-plus/es')['ElPopconfirm']
     ElPopover: typeof import('element-plus/es')['ElPopover']
-    ElRadio: typeof import('element-plus/es')['ElRadio']
     ElRadioButton: typeof import('element-plus/es')['ElRadioButton']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
     ElRow: typeof import('element-plus/es')['ElRow']
@@ -63,7 +62,6 @@ declare module 'vue' {
     ScriptHelpContent: typeof import('./src/components/ScriptHelpContent.vue')['default']
     ScriptHelpGuide: typeof import('./src/components/ScriptHelpGuide.vue')['default']
     SimpleIcon: typeof import('./src/components/SimpleIcon.vue')['default']
-    VersionUpdateNotice: typeof import('./src/components/VersionUpdateNotice.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

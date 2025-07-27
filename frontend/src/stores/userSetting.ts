@@ -1,10 +1,18 @@
 import { defineStore } from "pinia";
 import type {
-  UserSettingStore,
   GlobalSettingAttributes,
   UserSettingAttributes,
   NotificationSettings,
-} from "@/types/user";
+} from "@feedhub/shared";
+
+// 本地store状态接口
+interface UserSettingStore {
+  globalSetting: GlobalSettingAttributes | null;
+  userSettings: UserSettingAttributes;
+  notificationSettings: NotificationSettings | null;
+  displayStyle: "table" | "card";
+  imagesSource: "proxy" | "local";
+}
 import { settingApi } from "@/api/setting";
 import { ElMessage } from "element-plus";
 
@@ -12,6 +20,7 @@ export const useUserSettingStore = defineStore("user", {
   state: (): UserSettingStore => ({
     globalSetting: null,
     userSettings: {
+      userId: "",
       cloud115Cookie: "",
       quarkCookie: "",
     },

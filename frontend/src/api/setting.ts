@@ -1,6 +1,6 @@
 import request from "@/utils/request";
 import type { GlobalSettingAttributes, UserSettingAttributes } from "@/types";
-import type { NotificationSettings } from "@/types/user";
+import type { NotificationSettings } from "@feedhub/shared";
 
 export const settingApi = {
   getSetting: () => {

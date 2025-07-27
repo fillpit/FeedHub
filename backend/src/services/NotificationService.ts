@@ -2,7 +2,7 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../core/types';
 import { SettingService } from './SettingService';
 import { NotificationController } from '../controllers/notification';
-import { NotificationSettings } from '../types/notification';
+import type { NotificationSettings } from '@feedhub/shared';
 import { logger } from '../utils/logger';
 
 @injectable()

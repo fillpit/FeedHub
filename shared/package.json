@@ -1,0 +1,22 @@
+{
+  "name": "@feedhub/shared",
+  "version": "0.1.0",
+  "description": "FeedHub 前后端共享代码库",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.2",
+    "rimraf": "^5.0.5"
+  },
+  "peerDependencies": {
+    "dayjs": "^1.11.13"
+  }
+}

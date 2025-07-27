@@ -324,7 +324,7 @@
 import { useUserSettingStore } from "@/stores/userSetting";
 import { ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import type { GlobalSettingAttributes, UserSettingAttributes, NotificationSettings } from "@/types/user";
+import type { GlobalSettingAttributes, UserSettingAttributes, NotificationSettings } from "@feedhub/shared";
 import NotificationSettingsComponent from "@/components/NotificationSettings.vue";
 import { backupApi, downloadBackupFile, readBackupFile } from "@/api/backup";
 import {
@@ -358,6 +358,7 @@ const localGlobalSetting = ref<GlobalSettingAttributes>({
 });
 
 const localUserSettings = ref<UserSettingAttributes>({
+  userId: "",
   cloud115Cookie: "",
   quarkCookie: "",
   username: "",
@@ -466,15 +467,7 @@ const handleNotificationSave = async () => {
   }
 };
 
-// 处理显示模式变化
-const handleDisplayStyleChange = (value: 'table' | 'card') => {
-  settingStore.setDisplayStyle(value);
-};
 
-// 处理图片源变化
-const handleImagesSourceChange = (value: 'proxy' | 'local') => {
-  settingStore.setImagesSource(value);
-};
 
 // 处理密码修改
 const handlePasswordChange = async () => {

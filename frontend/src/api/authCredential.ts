@@ -1,5 +1,5 @@
 import request from '@/utils/request';
-import type { AuthCredential } from '@/types/authCredential';
+import type { AuthCredential } from '@/types';
 
 const baseUrl = '/api/auth-credential';
 

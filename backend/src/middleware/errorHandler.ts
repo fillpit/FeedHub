@@ -1,58 +1,28 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
+import {
+  AppError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  AppValidationError,
+  ConflictError,
+  ErrorHandler,
+  HTTP_STATUS,
+  ERROR_CODES,
+  DetailedErrorResponse
+} from '@feedhub/shared';
 
-// 自定义错误类
-export class AppError extends Error {
-  public statusCode: number;
-  public isOperational: boolean;
-  public code?: string;
+// 为了兼容现有代码，创建别名和自定义类
+export { AppError, NotFoundError };
+export const AuthError = AuthenticationError;
+export const ForbiddenError = AuthorizationError;
+export const ValidationError = AppValidationError;
 
-  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
-    super(message);
-    this.statusCode = statusCode;
-    this.isOperational = isOperational;
-    this.name = this.constructor.name;
-
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
-// 业务错误类
+// 业务错误类（本地定义）
 export class BusinessError extends AppError {
   constructor(message: string, code?: string) {
-    super(message, 400, true);
-    this.code = code;
-  }
-}
-
-// 认证错误类
-export class AuthError extends AppError {
-  constructor(message: string = '认证失败') {
-    super(message, 401, true);
-  }
-}
-
-// 权限错误类
-export class ForbiddenError extends AppError {
-  constructor(message: string = '权限不足') {
-    super(message, 403, true);
-  }
-}
-
-// 资源未找到错误类
-export class NotFoundError extends AppError {
-  constructor(message: string = '资源未找到') {
-    super(message, 404, true);
-  }
-}
-
-// 验证错误类
-export class ValidationError extends AppError {
-  public errors: any[];
-
-  constructor(message: string, errors: any[] = []) {
-    super(message, 400, true);
-    this.errors = errors;
+    super(message, ERROR_CODES.VALIDATION_ERROR, HTTP_STATUS.BAD_REQUEST, true, { code });
   }
 }
 
@@ -63,7 +33,7 @@ const handleDatabaseError = (error: any): AppError => {
       field: err.path,
       message: err.message
     }));
-    return new ValidationError('数据验证失败', errors);
+    return new AppValidationError('数据验证失败', errors);
   }
 
   if (error.name === 'SequelizeUniqueConstraintError') {
@@ -76,10 +46,10 @@ const handleDatabaseError = (error: any): AppError => {
   }
 
   if (error.name === 'SequelizeConnectionError') {
-    return new AppError('数据库连接失败', 503, false);
+    return new AppError('数据库连接失败', ERROR_CODES.DATABASE_ERROR, HTTP_STATUS.SERVICE_UNAVAILABLE, false);
   }
 
-  return new AppError('数据库操作失败', 500, false);
+  return new AppError('数据库操作失败', ERROR_CODES.DATABASE_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR, false);
 };
 
 // JWT错误处理
@@ -118,8 +88,8 @@ const formatErrorResponse = (error: AppError, req: Request) => {
   }
 
   // 验证错误添加详细信息
-  if (error instanceof ValidationError && error.errors.length > 0) {
-    response.errors = error.errors;
+  if (error instanceof AppValidationError && error.validationErrors?.length > 0) {
+    response.errors = error.validationErrors;
   }
 
   return response;
@@ -161,14 +131,15 @@ export const errorHandler = (error: any, req: Request, res: Response, next: Next
     } else if (error.name?.includes('JsonWebToken') || error.name?.includes('Token')) {
       appError = handleJWTError(error);
     } else if (error.type === 'entity.parse.failed') {
-      appError = new ValidationError('请求体格式错误');
+      appError = new AppValidationError('请求体格式错误');
     } else if (error.code === 'LIMIT_FILE_SIZE') {
-      appError = new ValidationError('文件大小超出限制');
+      appError = new AppValidationError('文件大小超出限制');
     } else {
       // 未知错误
       appError = new AppError(
         process.env.NODE_ENV === 'production' ? '服务器内部错误' : error.message,
-        500,
+        ERROR_CODES.UNKNOWN_ERROR,
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
         false
       );
     }

@@ -48,6 +48,15 @@ importers:
 
   backend:
     dependencies:
+      '@feedhub/shared':
+        specifier: file:../shared
+        version: link:../shared
+      '@types/nodemailer':
+        specifier: ^6.4.17
+        version: 6.4.17
+      '@types/redis':
+        specifier: ^4.0.10
+        version: 4.0.11
       axios:
         specifier: ^1.6.7
         version: 1.8.1
@@ -84,6 +93,12 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      nodemailer:
+        specifier: ^7.0.5
+        version: 7.0.5
+      redis:
+        specifier: ^5.6.1
+        version: 5.6.1
       rss:
         specifier: ^1.2.2
         version: 1.2.2
@@ -160,6 +175,9 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.1(vue@3.5.13(typescript@5.8.2))
+      '@feedhub/shared':
+        specifier: file:../shared
+        version: link:../shared
       '@monaco-editor/loader':
         specifier: ^1.5.0
         version: 1.5.0
@@ -239,6 +257,19 @@ importers:
       vue-tsc:
         specifier: ^2.0.6
         version: 2.2.8(typescript@5.8.2)
+
+  shared:
+    dependencies:
+      dayjs:
+        specifier: ^1.11.13
+        version: 1.11.13
+    devDependencies:
+      rimraf:
+        specifier: ^5.0.5
+        version: 5.0.10
+      typescript:
+        specifier: ^5.4.2
+        version: 5.8.2
 
 packages:
 
@@ -1122,6 +1153,34 @@ packages:
     resolution: {integrity: sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
+  '@redis/bloom@5.6.1':
+    resolution: {integrity: sha512-5/22U76IMEfn6TeZ+uvjXspHw+ykBF0kpBa8xouzeHaQMXs/auqBUOEYzU2VKYDvnd2RSpPTyIg82oB7PpUgLg==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      '@redis/client': ^5.6.1
+
+  '@redis/client@5.6.1':
+    resolution: {integrity: sha512-bWHmSFIJ5w1Y4aHsYs46XMDHKQsBHFRhNcllYaBxz2Zl+lu+gbm5yI9BqxvKh48bLTs/Wx1Kns0gN2WIasE8MA==}
+    engines: {node: '>= 18'}
+
+  '@redis/json@5.6.1':
+    resolution: {integrity: sha512-cTggVzPIVuiFeXcEcnTRiUzV7rmUvM9KUYxWiHyjsAVACTEUe4ifKkvzrij0H/z3ammU5tfGACffDB3olBwtVA==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      '@redis/client': ^5.6.1
+
+  '@redis/search@5.6.1':
+    resolution: {integrity: sha512-+eOjx8O2YoKygjqkLpTHqcAq0zKLjior+ee2tRBx/3RSf1+OHxiC9Y6NstshQpvB1XHqTw9n7+f0+MsRJZrp0g==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      '@redis/client': ^5.6.1
+
+  '@redis/time-series@5.6.1':
+    resolution: {integrity: sha512-sd3q4jMJdoSO2akw1L9NrdFI1JJ6zeMgMUoTh4a34p9sY3AnOI4aDLCecy8L2IcPAP1oNR3TbLFJiCJDQ35QTA==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      '@redis/client': ^5.6.1
+
   '@rollup/plugin-babel@5.3.1':
     resolution: {integrity: sha512-WFfdLWU/xVWKeRQnKmIAQULUI7Il0gZnBIH/ZFO069wYIfPu+8zrfp/KMW0atmELoRDq8FbiP3VCss9MhCut7Q==}
     engines: {node: '>= 10.0.0'}
@@ -1359,11 +1418,18 @@ packages:
   '@types/node@20.17.23':
     resolution: {integrity: sha512-8PCGZ1ZJbEZuYNTMqywO+Sj4vSKjSjT6Ua+6RFOYlEvIvKQABPtrNkoVSLSKDb4obYcMhspVKmsw8Cm10NFRUg==}
 
+  '@types/nodemailer@6.4.17':
+    resolution: {integrity: sha512-I9CCaIp6DTldEg7vyUTZi8+9Vo0hi1/T8gv3C89yk1rSAAzoKQ8H8ki/jBYJSFoH/BisgLP8tkZMlQ91CIquww==}
+
   '@types/qs@6.9.18':
     resolution: {integrity: sha512-kK7dgTYDyGqS+e2Q4aK9X3D7q234CIZ1Bv0q/7Z5IwRDoADNU81xXJK/YVyLbLTZCoIwUoDoffFeF+p/eIklAA==}
 
   '@types/range-parser@1.2.7':
     resolution: {integrity: sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==}
+
+  '@types/redis@4.0.11':
+    resolution: {integrity: sha512-bI+gth8La8Wg/QCR1+V1fhrL9+LZUSWfcqpOj2Kc80ZQ4ffbdL173vQd5wovmoV9i071FU9oP2g6etLuEwb6Rg==}
+    deprecated: This is a stub types definition. redis provides its own type definitions, so you do not need this installed.
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -1796,6 +1862,10 @@ packages:
   clean-stack@2.2.0:
     resolution: {integrity: sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==}
     engines: {node: '>=6'}
+
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
+    engines: {node: '>=0.10.0'}
 
   color-convert@1.9.3:
     resolution: {integrity: sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==}
@@ -3102,6 +3172,10 @@ packages:
   node-releases@2.0.19:
     resolution: {integrity: sha512-xxOWJsBKtzAq7DY0J+DTzuz58K8e7sJbdgwkbMWQe8UYB6ekmsQ45q0M/tJDsGaZmbC+l7n57UV8Hl5tHxO9uw==}
 
+  nodemailer@7.0.5:
+    resolution: {integrity: sha512-nsrh2lO3j4GkLLXoeEksAMgAOqxOv6QumNRVQTJwKH4nuiww6iC2y7GyANs9kRAxCexg3+lTWM3PZ91iLlVjfg==}
+    engines: {node: '>=6.0.0'}
+
   nodemon@3.1.9:
     resolution: {integrity: sha512-hdr1oIb2p6ZSxu3PB2JWWYS7ZQ0qvaZsc3hK8DR8f02kRzc8rjYmxAIvdz+aYC+8F2IjNaB7HMcSDg8nQpJxyg==}
     engines: {node: '>=10'}
@@ -3399,6 +3473,10 @@ packages:
   readdirp@4.1.2:
     resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
     engines: {node: '>= 14.18.0'}
+
+  redis@5.6.1:
+    resolution: {integrity: sha512-O9DwAvcBm/lrlkGE0A6gNBtUdA8J9oD9njeLYlLzmm+MGTR7nd7VkpspfXqeXFg3gm89zldDqckyaHhXfhY80g==}
+    engines: {node: '>= 18'}
 
   reflect-metadata@0.2.2:
     resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
@@ -5320,6 +5398,26 @@ snapshots:
 
   '@pkgr/core@0.1.1': {}
 
+  '@redis/bloom@5.6.1(@redis/client@5.6.1)':
+    dependencies:
+      '@redis/client': 5.6.1
+
+  '@redis/client@5.6.1':
+    dependencies:
+      cluster-key-slot: 1.1.2
+
+  '@redis/json@5.6.1(@redis/client@5.6.1)':
+    dependencies:
+      '@redis/client': 5.6.1
+
+  '@redis/search@5.6.1(@redis/client@5.6.1)':
+    dependencies:
+      '@redis/client': 5.6.1
+
+  '@redis/time-series@5.6.1(@redis/client@5.6.1)':
+    dependencies:
+      '@redis/client': 5.6.1
+
   '@rollup/plugin-babel@5.3.1(@babel/core@7.27.4)(rollup@2.79.2)':
     dependencies:
       '@babel/core': 7.27.4
@@ -5523,9 +5621,17 @@ snapshots:
     dependencies:
       undici-types: 6.19.8
 
+  '@types/nodemailer@6.4.17':
+    dependencies:
+      '@types/node': 20.17.23
+
   '@types/qs@6.9.18': {}
 
   '@types/range-parser@1.2.7': {}
+
+  '@types/redis@4.0.11':
+    dependencies:
+      redis: 5.6.1
 
   '@types/resolve@1.20.2': {}
 
@@ -6092,6 +6198,8 @@ snapshots:
 
   clean-stack@2.2.0:
     optional: true
+
+  cluster-key-slot@1.1.2: {}
 
   color-convert@1.9.3:
     dependencies:
@@ -7587,6 +7695,8 @@ snapshots:
 
   node-releases@2.0.19: {}
 
+  nodemailer@7.0.5: {}
+
   nodemon@3.1.9:
     dependencies:
       chokidar: 3.6.0
@@ -7902,6 +8012,14 @@ snapshots:
       picomatch: 2.3.1
 
   readdirp@4.1.2: {}
+
+  redis@5.6.1:
+    dependencies:
+      '@redis/bloom': 5.6.1(@redis/client@5.6.1)
+      '@redis/client': 5.6.1
+      '@redis/json': 5.6.1(@redis/client@5.6.1)
+      '@redis/search': 5.6.1(@redis/client@5.6.1)
+      '@redis/time-series': 5.6.1(@redis/client@5.6.1)
 
   reflect-metadata@0.2.2: {}
 

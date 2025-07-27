@@ -2,7 +2,7 @@ import { injectable, inject } from "inversify";
 import GlobalSetting from "../models/GlobalSetting";
 import UserSetting from "../models/UserSetting";
 import NotificationSetting from "../models/NotificationSetting";
-import type { NotificationSettings } from "../types/notification";
+import type { NotificationSettings } from "@feedhub/shared";
 
 @injectable()
 export class SettingService {

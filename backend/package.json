@@ -8,6 +8,7 @@
     "start": "node dist/app.js"
   },
   "dependencies": {
+    "@feedhub/shared": "file:../shared",
     "@types/nodemailer": "^6.4.17",
     "@types/redis": "^4.0.10",
     "axios": "^1.6.7",

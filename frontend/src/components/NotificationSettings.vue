@@ -473,10 +473,9 @@
 <script setup lang="ts">
 import { ref, watch, defineEmits, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
-import type { NotificationSettings } from '@/types/user';
+import type { NotificationSettings } from '@/types';
 import { notificationApi } from '@/api/notification';
 import {
-  Bell,
   Iphone,
   Message,
   ChatDotRound,
@@ -618,16 +617,7 @@ watch(
   { deep: true }
 );
 
-// 处理服务开关切换
-const handleServiceToggle = (service: string, enabled: boolean) => {
-  if (enabled) {
-    ElMessage.info(`已启用 ${getServiceName(service)} 通知`);
-  } else {
-    ElMessage.info(`已禁用 ${getServiceName(service)} 通知`);
-  }
-  // 自动保存
-  emit('save');
-};
+// 处理服务开关切换功能已移除，如需要可重新添加
 
 // 处理触发条件变化
 const handleTriggerChange = () => {

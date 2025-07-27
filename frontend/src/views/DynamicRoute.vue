@@ -412,7 +412,7 @@ import {
   type DynamicRouteConfig,
 } from "@/api/dynamicRoute";
 import { authCredentialApi } from "@/api/authCredential";
-import type { AuthCredential } from "@/types/authCredential";
+import type { AuthCredential } from "@feedhub/shared";
 import { copyToClipboard } from "@/utils";
 import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
 import CodeEditor from "@/components/CodeEditor.vue";

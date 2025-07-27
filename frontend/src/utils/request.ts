@@ -1,24 +1,23 @@
 import axios, { AxiosResponse, AxiosRequestConfig, AxiosError } from "axios";
 import { ElMessage, ElNotification } from "element-plus";
-import { RequestResult } from "../types/response";
+import type { ApiResponse } from "@feedhub/shared";
 import { STORAGE_KEYS } from "@/constants/storage";
 import { CSRFProtection, XSSProtection } from '@/utils/security';
+import {
+  DetailedErrorResponse
+} from '@feedhub/shared';
 
+// 本地重试配置
+const RETRY_CONFIG = {
+  DEFAULT_RETRIES: 3,
+  DEFAULT_DELAY: 1000, // 1秒
+  MAX_DELAY: 10000 // 10秒
+};
 
 // 清理请求数据中的潜在XSS内容
 const sanitizeRequestData = (data: any): any => {
   return XSSProtection.sanitizeObject(data);
 };
-
-// 错误类型定义
-interface ApiError {
-  success: false;
-  message: string;
-  errors?: Array<{ field: string; message: string }>;
-  timestamp?: string;
-  path?: string;
-  method?: string;
-}
 
 // 重试配置
 interface RetryConfig {
@@ -28,16 +27,16 @@ interface RetryConfig {
 }
 
 const defaultRetryConfig: RetryConfig = {
-  retries: 2,
-  retryDelay: 1000,
+  retries: RETRY_CONFIG.DEFAULT_RETRIES,
+  retryDelay: RETRY_CONFIG.DEFAULT_DELAY,
   retryCondition: (error: AxiosError) => {
-    // 只对网络错误和5xx错误进行重试
-    return !error.response || (error.response.status >= 500 && error.response.status < 600);
+    // 只对网络错误和5xx错误进行重试 || HttpStatusUtils.isServerError(error.response.status);
+    return !error.response 
   }
 };
 
 // 错误消息处理
-const showErrorMessage = (error: ApiError | string, duration: number = 3000) => {
+const showErrorMessage = (error: DetailedErrorResponse | string, duration: number = 3000) => {
   if (typeof error === 'string') {
     ElMessage.error({ message: error, duration });
     return;
@@ -74,7 +73,7 @@ const retryRequest = async (config: AxiosRequestConfig, retryConfig: RetryConfig
   for (let i = 0; i <= retryConfig.retries; i++) {
     try {
       return await axiosInstance.request(config);
-    } catch (error) {
+    } catch (error: any) {
       lastError = error as AxiosError;
       
       // 如果不满足重试条件或已达到最大重试次数，抛出错误
@@ -181,7 +180,7 @@ axiosInstance.interceptors.response.use(
     }
     
     const status = response.status;
-    const data = response.data as ApiError;
+    const data = response.data as DetailedErrorResponse;
     
     switch (status) {
       case 400:
@@ -237,7 +236,7 @@ interface ExtendedInternalRequestConfig extends AxiosRequestConfig {
 }
 
 const request = {
-  get: <T>(url: string, config?: ExtendedRequestConfig): Promise<RequestResult<T>> => {
+  get: <T>(url: string, config?: ExtendedRequestConfig): Promise<ApiResponse<T>> => {
     const finalConfig = { ...config };
     const retryConfig = { ...defaultRetryConfig, ...config?.retry };
     
@@ -257,7 +256,7 @@ const request = {
     url: string,
     data: D,
     config?: ExtendedRequestConfig
-  ): Promise<RequestResult<T>> => {
+  ): Promise<ApiResponse<T>> => {
     const finalConfig = { ...config };
     const retryConfig = { ...defaultRetryConfig, ...config?.retry };
     
@@ -285,7 +284,7 @@ const request = {
     url: string,
     data: D,
     config?: ExtendedRequestConfig
-  ): Promise<RequestResult<T>> => {
+  ): Promise<ApiResponse<T>> => {
     const finalConfig = { ...config };
     const retryConfig = { ...defaultRetryConfig, ...config?.retry };
     
@@ -309,7 +308,7 @@ const request = {
     return requestPromise;
   },
   
-  delete: <T>(url: string, config?: ExtendedRequestConfig): Promise<RequestResult<T>> => {
+  delete: <T>(url: string, config?: ExtendedRequestConfig): Promise<ApiResponse<T>> => {
     const finalConfig = { ...config };
     const retryConfig = { ...defaultRetryConfig, ...config?.retry };
     
