@@ -10,7 +10,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # 镜像名称和标签
-IMAGE_NAME="FeedHub"
+IMAGE_NAME="feedhub"
 TAG=${1:-latest}
 
 echo -e "${YELLOW}开始构建 RSS Bot Docker 镜像...${NC}"
@@ -42,4 +42,4 @@ if [ $? -eq 0 ]; then
 else
     echo -e "${RED}❌ 镜像构建失败!${NC}"
     exit 1
-fi 
+fi
