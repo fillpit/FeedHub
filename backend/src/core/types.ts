@@ -4,6 +4,7 @@ export const TYPES = {
   SettingService: Symbol.for("SettingService"),
   UserService: Symbol.for("UserService"),
   SponsorsService: Symbol.for("SponsorsService"),
+  NotificationService: Symbol.for("NotificationService"),
   RssFeedService: Symbol.for("RssFeedService"),
   WebsiteRssService: Symbol.for("WebsiteRssService"),
 
@@ -18,4 +19,6 @@ export const TYPES = {
 
   DynamicRouteController: Symbol.for("DynamicRouteController"),
   NpmPackageController: Symbol.for("NpmPackageController"),
+  NotificationController: Symbol.for("NotificationController"),
+  BackupController: Symbol.for("BackupController"),
 };

@@ -6,6 +6,7 @@ import { DatabaseService } from "./services/DatabaseService";
 import { UserService } from "./services/UserService";
 import { WebsiteRssService } from "./services/WebsiteRssService";
 import { SettingService } from "./services/SettingService";
+import { NotificationService } from "./services/NotificationService";
 
 import { DynamicRouteService } from "./services/DynamicRouteService";
 import { NpmPackageService } from "./services/NpmPackageService";
@@ -16,6 +17,8 @@ import { WebsiteRssController } from "./controllers/websiteRss";
 
 import { DynamicRouteController } from "./controllers/dynamicRoute";
 import { NpmPackageController } from "./controllers/npmPackage";
+import { NotificationController } from "./controllers/notification";
+import { BackupController } from "./controllers/backup";
 
 const container = new Container();
 
@@ -25,6 +28,7 @@ container.bind<UserService>(TYPES.UserService).to(UserService).inSingletonScope(
 container.bind<WebsiteRssService>(TYPES.WebsiteRssService).to(WebsiteRssService).inSingletonScope();
 
 container.bind<SettingService>(TYPES.SettingService).to(SettingService).inSingletonScope();
+container.bind<NotificationService>(TYPES.NotificationService).to(NotificationService).inSingletonScope();
 container.bind<DynamicRouteService>(TYPES.DynamicRouteService).to(DynamicRouteService).inSingletonScope();
 container.bind<NpmPackageService>(TYPES.NpmPackageService).to(NpmPackageService).inSingletonScope();
 // Controllers
@@ -34,5 +38,7 @@ container.bind<WebsiteRssController>(TYPES.WebsiteRssController).to(WebsiteRssCo
 
 container.bind<DynamicRouteController>(TYPES.DynamicRouteController).to(DynamicRouteController);
 container.bind<NpmPackageController>(TYPES.NpmPackageController).to(NpmPackageController);
+container.bind<NotificationController>(TYPES.NotificationController).to(NotificationController);
+container.bind<BackupController>(TYPES.BackupController).to(BackupController);
 
 export { container };

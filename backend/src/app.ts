@@ -1,6 +1,7 @@
 
 import "./types/express";
 import express from "express";
+
 import { container } from "./inversify.config";
 import { TYPES } from "./core/types";
 import { DatabaseService } from "./services/DatabaseService";
@@ -57,6 +58,7 @@ class App {
 🚀 服务器启动成功
 🌍 监听端口: ${port}
 🔧 运行环境: ${process.env.NODE_ENV || "development"}
+⚡ 服务已重新启动
         `);
       });
 

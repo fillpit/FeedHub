@@ -2,6 +2,8 @@ import { Sequelize, QueryTypes } from "sequelize";
 import bcrypt from "bcrypt";
 import GlobalSetting from "../models/GlobalSetting";
 import User from "../models/User";
+import UserSetting from "../models/UserSetting";
+import NotificationSetting from "../models/NotificationSetting";
 import sequelize from "../config/database";
 
 // 全局设置默认值
@@ -26,6 +28,8 @@ export class DatabaseService {
       await this.cleanupBackupTables();
       // 使用alter选项同步表结构
       await this.sequelize.sync({ alter: true });
+      // 同步后再次清理可能产生的备份表
+      await this.cleanupBackupTables();
       await this.sequelize.query("PRAGMA foreign_keys = ON");
       await this.initializeGlobalSettings();
       await this.initializeAdminUser();
@@ -77,6 +81,9 @@ export class DatabaseService {
 
   private async cleanupBackupTables(): Promise<void> {
     try {
+      // 检查数据库连接是否正常
+      await this.sequelize.authenticate();
+      
       const backupTables = await this.sequelize.query<{ name: string }>(
         "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_backup%'",
         { type: QueryTypes.SELECT }
@@ -84,13 +91,23 @@ export class DatabaseService {
 
       for (const table of backupTables) {
         if (table?.name) {
-          await this.sequelize.query(`DROP TABLE IF EXISTS \`${table.name}\``);
+          try {
+            await this.sequelize.query(`DROP TABLE IF EXISTS \`${table.name}\``);
+            console.log(`✅ 已清理备份表: ${table.name}`);
+          } catch (dropError) {
+            console.warn(`清理备份表 ${table.name} 时出现警告:`, (dropError as Error).message);
+          }
         }
       }
     } catch (error) {
       // 忽略清理备份表时的错误，不影响主要初始化流程
       console.warn('清理备份表时出现警告:', (error as Error).message);
     }
+  }
+
+  // 获取sequelize实例的公共方法
+  public getSequelize(): Sequelize {
+    return this.sequelize;
   }
 
   // ... 其他数据库相关方法

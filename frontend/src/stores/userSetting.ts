@@ -3,6 +3,7 @@ import type {
   UserSettingStore,
   GlobalSettingAttributes,
   UserSettingAttributes,
+  NotificationSettings,
 } from "@/types/user";
 import { settingApi } from "@/api/setting";
 import { ElMessage } from "element-plus";
@@ -14,6 +15,7 @@ export const useUserSettingStore = defineStore("user", {
       cloud115Cookie: "",
       quarkCookie: "",
     },
+    notificationSettings: null,
     displayStyle: (localStorage.getItem("display_style") as "table" | "card") || "card",
     imagesSource: (localStorage.getItem("images_source") as "proxy" | "local") || "proxy",
   }),
@@ -24,12 +26,14 @@ export const useUserSettingStore = defineStore("user", {
       if (data) {
         this.globalSetting = data.globalSetting;
         this.userSettings = data.userSettings;
+        this.notificationSettings = data.notificationSettings || this.getDefaultNotificationSettings();
       }
     },
 
     async saveSettings(settings: {
       globalSetting?: GlobalSettingAttributes | null;
       userSettings: UserSettingAttributes;
+      notificationSettings?: NotificationSettings | null;
     }) {
       try {
         await settingApi.saveSetting(settings);
@@ -38,6 +42,77 @@ export const useUserSettingStore = defineStore("user", {
         console.log(error);
         throw error;
       }
+    },
+
+    async saveNotificationSettings(notificationSettings: NotificationSettings) {
+      try {
+        await this.saveSettings({
+          userSettings: this.userSettings,
+          notificationSettings,
+        });
+        this.notificationSettings = notificationSettings;
+        ElMessage.success('通知设置保存成功');
+      } catch (error) {
+        console.error('保存通知设置失败:', error);
+        ElMessage.error('保存通知设置失败');
+        throw error;
+      }
+    },
+
+    getDefaultNotificationSettings(): NotificationSettings {
+      return {
+        bark: {
+          enabled: false,
+          serverUrl: 'https://api.day.app',
+          deviceKey: '',
+          sound: '',
+          icon: '',
+          group: ''
+        },
+        email: {
+          enabled: false,
+          smtpHost: '',
+          smtpPort: 587,
+          smtpSecure: true,
+          username: '',
+          password: '',
+          fromEmail: '',
+          toEmail: ''
+        },
+        gotify: {
+          enabled: false,
+          serverUrl: '',
+          appToken: '',
+          priority: 5
+        },
+        wechatWork: {
+          enabled: false,
+          webhookUrl: '',
+          mentionedList: [],
+          mentionedMobileList: []
+        },
+        dingtalk: {
+          enabled: false,
+          webhookUrl: '',
+          secret: '',
+          atMobiles: [],
+          atUserIds: [],
+          isAtAll: false
+        },
+        feishu: {
+          enabled: false,
+          webhookUrl: '',
+          secret: '',
+          atUserIds: [],
+          atMobiles: [],
+          atAll: false
+        },
+        triggers: {
+          newFeedItems: true,
+          feedUpdateErrors: true,
+          systemAlerts: true
+        }
+      };
     },
 
     setDisplayStyle(style: "table" | "card") {

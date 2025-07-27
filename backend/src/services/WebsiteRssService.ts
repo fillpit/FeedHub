@@ -19,6 +19,7 @@ import { validateselector } from "../utils/selectorValidator";
 import AuthCredential from "../models/AuthCredential";
 import { TYPES } from "../core/types";
 import { NpmPackageService } from "./NpmPackageService";
+import { NotificationService } from "./NotificationService";
 
 // 配置 dayjs
 dayjs.extend(relativeTime);
@@ -29,8 +30,12 @@ dayjs.locale(zhCN); // 设置为中文
 export class WebsiteRssService {
   private axiosInstance: AxiosInstance;
   private npmPackageService: NpmPackageService;
+  private notificationService: NotificationService;
 
-  constructor(@inject(TYPES.NpmPackageService) npmPackageService: NpmPackageService) {
+  constructor(
+    @inject(TYPES.NpmPackageService) npmPackageService: NpmPackageService,
+    @inject(TYPES.NotificationService) notificationService: NotificationService
+  ) {
     this.axiosInstance = axios.create({
       timeout: 30000,
       headers: {
@@ -38,6 +43,7 @@ export class WebsiteRssService {
       },
     });
     this.npmPackageService = npmPackageService;
+    this.notificationService = notificationService;
   }
 
   /**
@@ -83,11 +89,10 @@ export class WebsiteRssService {
     }
     // 创建新配置
     const newConfig = await WebsiteRssConfig.create(configData);
-    // 立即抓取一次内容
-    await this.fetchAndUpdateContent(newConfig.id);
-    // 重新获取更新后的配置
-    const updatedConfig = await WebsiteRssConfig.findByPk(newConfig.id);
-    return { success: true, data: updatedConfig!, message: "网站RSS配置添加成功" };
+    // 移除立即抓取内容的逻辑，只进行必要的语法检查
+    // await this.fetchAndUpdateContent(newConfig.id);
+    // 直接返回新创建的配置
+    return { success: true, data: newConfig, message: "网站RSS配置添加成功" };
   }
 
   /**
@@ -102,8 +107,8 @@ export class WebsiteRssService {
     if (!isScriptMode) validateselector(configData.selector as WebsiteRssSelector);
     // 更新数据库
     await WebsiteRssConfig.update(configData, { where: { id } });
-    // 如果更新了URL或选择器，立即重新抓取
-    if (configData.url || configData.selector) await this.fetchAndUpdateContent(id);
+    // 移除立即抓取内容的逻辑，只进行必要的语法检查
+    // if (configData.url || configData.selector) await this.fetchAndUpdateContent(id);
     // 返回最新配置
     const updatedConfig = await WebsiteRssConfig.findByPk(id);
     return { success: true, data: updatedConfig!, message: "网站RSS配置更新成功" };
@@ -181,48 +186,75 @@ export class WebsiteRssService {
    * 抓取并更新内容
    */
   private async fetchAndUpdateContent(id: number): Promise<void> {
-    // 查找配置
-    const config = await WebsiteRssConfig.findByPk(id);
-    if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
-    // 兼容性处理：确保 auth 字段存在
-    let auth = config.auth || { enabled: false, authType: "none" };
-    // 新增：如有authCredentialId，查库组装
-    if (config.authCredentialId) {
-      const authObj = await AuthCredential.findByPk(config.authCredentialId);
-      if (!authObj) throw new Error("未找到授权信息");
-      let customHeaders: Record<string, string> | undefined = undefined;
-      if (authObj.customHeaders && typeof authObj.customHeaders === 'object') {
+    let config: any;
+    try {
+      // 查找配置
+      config = await WebsiteRssConfig.findByPk(id);
+      if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
+      
+      // 兼容性处理：确保 auth 字段存在
+      let auth = config.auth || { enabled: false, authType: "none" };
+      // 新增：如有authCredentialId，查库组装
+      if (config.authCredentialId) {
+        const authObj = await AuthCredential.findByPk(config.authCredentialId);
+        if (!authObj) throw new Error("未找到授权信息");
+        let customHeaders: Record<string, string> | undefined = undefined;
+        if (authObj.customHeaders && typeof authObj.customHeaders === 'object') {
+          try {
+            customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
+          } catch {
+            customHeaders = undefined;
+          }
+        }
+        auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
+        config.auth = auth;
+      }
+      
+      // 创建带有授权信息的请求配置
+      const requestConfig = createRequestConfig(auth);
+      let extractedContent: any[] = [];
+      
+      // 选择器抓取模式（默认）
+      const response = await this.axiosInstance.get(config.url, requestConfig);
+      const html = response.data;
+      
+      // 提取内容并格式化日期
+      extractedContent = extractContentFromHtml(html, config.selector as WebsiteRssSelector, config.url)
+        .map(item => ({
+          ...item,
+          pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat)
+        }));
+
+      console.log('extractedContent', extractedContent)
+      
+      // 更新配置
+      await WebsiteRssConfig.update(
+        {
+          lastContent: JSON.stringify(extractedContent),
+          lastFetchTime: new Date(),
+        },
+        { where: { id } }
+      );
+      
+    } catch (error: any) {
+      console.error(`RSS订阅更新失败 [ID: ${id}]:`, error.message);
+      
+      // 发送错误通知
+      if (config && config.userId) {
         try {
-          customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
-        } catch {
-          customHeaders = undefined;
+          await this.notificationService.sendFeedUpdateErrorNotification(
+            config.userId,
+            config.title || config.url,
+            error.message
+          );
+        } catch (notificationError: any) {
+          console.error('发送通知失败:', notificationError.message);
         }
       }
-      auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
-      config.auth = auth;
+      
+      // 重新抛出错误，保持原有的错误处理逻辑
+      throw error;
     }
-    // 创建带有授权信息的请求配置
-    const requestConfig = createRequestConfig(auth);
-    let extractedContent: any[] = [];
-    // 选择器抓取模式（默认）
-    const response = await this.axiosInstance.get(config.url, requestConfig);
-    const html = response.data;
-    // 提取内容并格式化日期
-    extractedContent = extractContentFromHtml(html, config.selector as WebsiteRssSelector, config.url)
-      .map(item => ({
-        ...item,
-        pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat)
-      }));
-
-    console.log('extractedContent', extractedContent)
-    // 更新配置
-    await WebsiteRssConfig.update(
-      {
-        lastContent: JSON.stringify(extractedContent),
-        lastFetchTime: new Date(),
-      },
-      { where: { id } }
-    );
   }
 
   /**

@@ -40,7 +40,7 @@ export function getNodeText(node: any): string {
 function extractWithSelectorField($element: any, field: SelectorField): string {
   const elements = $element.find(field.selector);
   if (elements.length === 0) return '';
-  
+
   if (field.extractType === 'attr' && field.attrName) {
     return elements.attr(field.attrName) || '';
   } else {
@@ -52,9 +52,9 @@ function extractWithSelectorField($element: any, field: SelectorField): string {
 function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField): string {
   const nodesResult = xpath.select(field.selector, containerNode);
   const nodes = Array.isArray(nodesResult) ? nodesResult : [nodesResult];
-  
+
   if (nodes.length === 0 || !nodes[0]) return '';
-  
+
   const node = nodes[0];
 
   if (field.extractType === 'attr' && field.attrName) {
@@ -65,7 +65,7 @@ function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField
       if (directValue) {
         return directValue;
       }
-      
+
       // 如果直接获取失败，尝试忽略大小写匹配
       if ((node as any).attributes) {
         const attributes = (node as any).attributes;
@@ -90,10 +90,10 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
 
   if (logs) logs.push(`[DEBUG] 使用CSS选择器模式`);
   if (logs) logs.push(`[DEBUG] 容器选择器: ${selector.container}`);
-  
+
   const containerElements = $(selector.container);
   if (logs) logs.push(`[INFO] 找到 ${containerElements.length} 个容器元素`);
-  
+
   if (containerElements.length === 0) {
     if (logs) logs.push(`[WARN] 未找到匹配容器选择器的元素: ${selector.container}`);
     return items;
@@ -102,18 +102,18 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
   $(selector.container).each((index, element) => {
     const $element = $(element);
     if (logs) logs.push(`[DEBUG] 处理第 ${index + 1} 个容器元素`);
-    
+
     // 提取标题
     const title = extractWithSelectorField($element, selector.title);
     if (logs) logs.push(`[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`);
-    
+
     // 提取链接
     let link = '';
     if (selector.link) {
       link = extractWithSelectorField($element, selector.link);
       if (logs) logs.push(`[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`);
     }
-    
+
     // 处理相对URL
     let absoluteLink = link;
     if (link && !link.startsWith('http') && baseUrl) {
@@ -182,43 +182,45 @@ export function extractContentWithCSS(html: string, selector: WebsiteRssSelector
 
 export function extractContentWithXPath(html: string, selector: WebsiteRssSelector, baseUrl?: string, logs?: string[]): any[] {
   const items: any[] = [];
-  
-  const doc = new DOMParser().parseFromString(html);
-  
-  // 如果XPath解析失败，尝试使用cheerio作为后备方案
-  let containerNodesResult: any = xpath.select(selector.container, doc);
 
   if (logs) logs.push(`[DEBUG] 使用XPath选择器模式`);
-  if (logs) logs.push(`[DEBUG] 容器选择器: ${selector.container}`);
+  const doc = new DOMParser().parseFromString(html);
 
+  // 检查解析是否成功
+  if (!doc || doc.documentElement.nodeName === 'parsererror') {
+    throw new Error('HTML解析失败');
+  }
+
+  if (logs) logs.push(`[DEBUG] 容器选择器: ${selector.container}`);
+  let containerNodesResult: any = xpath.select(selector.container, doc);
 
   const containerNodes = Array.isArray(containerNodesResult) ? containerNodesResult : [containerNodesResult];
-  
+
   if (logs) logs.push(`[INFO] 找到 ${containerNodes.length} 个容器节点`);
-  
+
   if (containerNodes.length === 0) {
     if (logs) logs.push(`[WARN] 未找到匹配容器选择器的节点: ${selector.container}`);
     return items;
   }
-  
+
   // 遍历每个容器节点
   for (let i = 0; i < containerNodes.length; i++) {
     const containerNode = containerNodes[i];
     if (!containerNode) continue;
-    
+
     if (logs) logs.push(`[DEBUG] 处理第 ${i + 1} 个容器节点`);
-    
+
     // 提取标题
     const title = extractWithSelectorFieldXPath(containerNode as Node, selector.title);
     if (logs) logs.push(`[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`);
-    
+
     // 提取链接
     let link = '';
     if (selector.link) {
       link = extractWithSelectorFieldXPath(containerNode as Node, selector.link);
       if (logs) logs.push(`[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`);
     }
-    
+
     // 处理相对URL
     let absoluteLink = link;
     if (link && !link.startsWith('http') && baseUrl) {

@@ -1,18 +1,3 @@
-export interface GlobalSettingAttributes {
-  httpProxyHost: string;
-  httpProxyPort: string | number;
-  isProxyEnabled: boolean;
-  AdminUserCode: number;
-  CommonUserCode: number;
-}
-
-export interface UserSettingAttributes {
-  cloud115Cookie: string;
-  quarkCookie: string;
-  username?: string;
-  email?: string;
-}
-
 // 通知设置接口
 export interface NotificationSettings {
   // Bark 通知设置
@@ -79,12 +64,4 @@ export interface NotificationSettings {
     feedUpdateErrors: boolean;  // 订阅更新错误
     systemAlerts: boolean;  // 系统警告
   };
-}
-
-export interface UserSettingStore {
-  globalSetting: GlobalSettingAttributes | null;
-  userSettings: UserSettingAttributes;
-  notificationSettings: NotificationSettings | null;
-  displayStyle: "table" | "card";
-  imagesSource: "proxy" | "local";
 }

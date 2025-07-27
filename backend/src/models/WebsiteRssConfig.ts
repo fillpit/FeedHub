@@ -45,6 +45,7 @@ export interface WebsiteRssScript {
 
 export interface WebsiteRssConfigAttributes {
   id: number;
+  userId: string; // 用户ID
   key: string;
   title: string;
   url: string;
@@ -67,6 +68,7 @@ class WebsiteRssConfig
   implements WebsiteRssConfigAttributes
 {
   public id!: number;
+  public userId!: string;
   public key!: string;
   public title!: string;
   public url!: string;
@@ -88,6 +90,11 @@ WebsiteRssConfig.init(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+    },
+    userId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      comment: "用户ID"
     },
     key: {
       type: DataTypes.STRING,
