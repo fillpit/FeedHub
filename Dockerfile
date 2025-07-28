@@ -73,7 +73,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # 创建启动脚本
 RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo 'cd /app/backend && node dist/app.js &' >> /app/start.sh && \
+    echo 'cd /app/backend && node dist/backend/src/app.js &' >> /app/start.sh && \
     echo 'nginx -g "daemon off;"' >> /app/start.sh && \
     chmod +x /app/start.sh
 
