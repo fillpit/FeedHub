@@ -6,16 +6,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8009
+      - JWT_SECRET=eZjgR0bYm7uEv7uL7tfRMqtaj3lh95OE
       - BASIC_AUTH_USERNAME=admin
       - BASIC_AUTH_PASSWORD=admin@123
+      - API_BASE_URL=http://localhost:8008
     volumes:
       # 可选：挂载数据目录以持久化数据
-      - ./backend/data:/app/backend/data
-      - ./backend/logs:/app/backend/logs
+      - ./data:/app/backend/data
+      - ./logs:/app/backend/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://0.0.0.0:8008"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s 
+      start_period: 40s
