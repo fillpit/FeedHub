@@ -65,6 +65,10 @@ COPY --from=shared-builder /app/shared/package*.json ./shared/
 WORKDIR /app/backend
 RUN npm install --only=production
 
+# 安装shared模块的生产依赖
+WORKDIR /app/shared
+RUN npm install --only=production
+
 # 回到应用根目录
 WORKDIR /app
 
