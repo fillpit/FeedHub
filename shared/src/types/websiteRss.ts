@@ -40,7 +40,6 @@ export interface WebsiteRssScript {
 // 网站RSS配置基础接口
 export interface WebsiteRssConfigBase {
   id: number;
-  userId: string; // 用户ID
   key: string;
   title: string;
   url: string;
@@ -64,8 +63,7 @@ export interface WebsiteRssConfigAttributes extends WebsiteRssConfigBase {
 
 // 前端使用的配置接口（字段可选且类型适配前端）
 export interface WebsiteRssConfig
-  extends Omit<WebsiteRssConfigBase, "userId" | "lastFetchTime" | "createdAt" | "updatedAt"> {
-  userId?: number; // 前端可能使用数字类型
+  extends Omit<WebsiteRssConfigBase, "lastFetchTime" | "createdAt" | "updatedAt"> {
   description?: string; // 前端别名
   feedUrl?: string; // 前端额外字段
   lastFetchedAt?: string; // 前端使用字符串格式

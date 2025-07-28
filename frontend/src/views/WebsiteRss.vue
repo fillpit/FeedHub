@@ -747,7 +747,6 @@ const xpathExamples = ref([
 const getInitialFormState = (): WebsiteRssConfig => ({
   id: 0,
   key: "",
-  userId: 0,
   title: "",
   url: "",
   favicon: "",
@@ -1034,7 +1033,6 @@ const exportConfigs = async () => {
       ...config,
       id: undefined, // 导出时移除ID
       key: undefined, // 导出时移除key
-      userId: undefined, // 导出时移除userId
     }));
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -1132,8 +1130,7 @@ const importConfigs = async () => {
         const cleanConfig = {
           ...config,
           id: undefined,
-          key: undefined,
-          userId: undefined,
+          key: undefined
         };
 
         if (exists && importOptions.overwrite) {

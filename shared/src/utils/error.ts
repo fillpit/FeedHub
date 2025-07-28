@@ -25,8 +25,10 @@ export class AppError extends Error {
     this.isOperational = isOperational;
     this.details = details;
 
-    // 确保堆栈跟踪正确
-    Error.captureStackTrace(this, this.constructor);
+    // 确保堆栈跟踪正确（仅在 Node.js 环境中可用）
+    if ((Error as any).captureStackTrace) {
+      (Error as any).captureStackTrace(this, this.constructor);
+    }
   }
 }
 
