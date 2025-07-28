@@ -292,7 +292,7 @@ export function extractContentWithXPath(
   console.log('html', html);
   const doc = new DOMParser({
     errorHandler: errorHandler
-  }).parseFromString(html, 'text/html');
+  }).parseFromString(html);
 
   // 检查解析是否成功
   if (!doc || doc.documentElement.nodeName === "parsererror") {
