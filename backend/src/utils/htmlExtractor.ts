@@ -49,26 +49,67 @@ export function getNodeText(node: any): string {
   return "";
 }
 
-// 辅助方法：根据SelectorField配置提取内容（CSS选择器）
-function extractWithSelectorField($element: any, field: SelectorField): string {
-  const elements = $element.find(field.selector);
-  if (elements.length === 0) return "";
+// 辅助方法：应用正则表达式处理
+function applyRegexProcessing(text: string, field: SelectorField, logs?: string[]): string {
+  if (!field.regexPattern || !text) {
+    return text;
+  }
 
-  if (field.extractType === "attr" && field.attrName) {
-    return elements.attr(field.attrName) || "";
-  } else {
-    return elements.text().trim();
+  try {
+    const flags = field.regexFlags || '';
+    const regex = new RegExp(field.regexPattern, flags);
+    const match = text.match(regex);
+    
+    if (match) {
+      const groupIndex = field.regexGroup || 0;
+      const result = match[groupIndex] || '';
+      
+      if (logs) {
+        logs.push(`[DEBUG] 正则处理: 模式="${field.regexPattern}", 标志="${flags}", 组索引=${groupIndex}, 原文="${text}", 结果="${result}"`);
+      }
+      
+      return result;
+    } else {
+      if (logs) {
+        logs.push(`[DEBUG] 正则处理: 模式="${field.regexPattern}" 未匹配到内容, 原文="${text}"`);
+      }
+      return '';
+    }
+  } catch (error) {
+    const errorMsg = `正则表达式处理失败: ${(error as Error).message}`;
+    if (logs) {
+      logs.push(`[ERROR] ${errorMsg}`);
+    }
+    logger.error(errorMsg);
+    return text; // 返回原始文本
   }
 }
 
+// 辅助方法：根据SelectorField配置提取内容（CSS选择器）
+function extractWithSelectorField($element: any, field: SelectorField, logs?: string[]): string {
+  const elements = $element.find(field.selector);
+  if (elements.length === 0) return "";
+
+  let text = "";
+  if (field.extractType === "attr" && field.attrName) {
+    text = elements.attr(field.attrName) || "";
+  } else {
+    text = elements.text().trim();
+  }
+
+  // 应用正则处理
+  return applyRegexProcessing(text, field, logs);
+}
+
 // 辅助方法：根据SelectorField配置提取内容（XPath选择器）
-function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField): string {
+function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField, logs?: string[]): string {
   const nodesResult = xpath.select(field.selector, containerNode);
   const nodes = Array.isArray(nodesResult) ? nodesResult : [nodesResult];
 
   if (nodes.length === 0 || !nodes[0]) return "";
 
   const node = nodes[0];
+  let text = "";
 
   if (field.extractType === "attr" && field.attrName) {
     if (isElementNode(node)) {
@@ -76,25 +117,27 @@ function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField
       // 首先尝试直接获取
       const directValue = node.getAttribute(field.attrName);
       if (directValue) {
-        return directValue;
-      }
-
-      // 如果直接获取失败，尝试忽略大小写匹配
-      if ((node as any).attributes) {
-        const attributes = (node as any).attributes;
-        for (let i = 0; i < attributes.length; i++) {
-          const attr = attributes.item(i);
-          if (attr && attr.name.toLowerCase() === field.attrName.toLowerCase()) {
-            return attr.value || "";
+        text = directValue;
+      } else {
+        // 如果直接获取失败，尝试忽略大小写匹配
+        if ((node as any).attributes) {
+          const attributes = (node as any).attributes;
+          for (let i = 0; i < attributes.length; i++) {
+            const attr = attributes.item(i);
+            if (attr && attr.name.toLowerCase() === field.attrName.toLowerCase()) {
+              text = attr.value || "";
+              break;
+            }
           }
         }
       }
-      return "";
     }
-    return "";
   } else {
-    return getNodeText(node);
+    text = getNodeText(node);
   }
+
+  // 应用正则处理
+  return applyRegexProcessing(text, field, logs);
 }
 
 export function extractContentWithCSS(
@@ -122,7 +165,7 @@ export function extractContentWithCSS(
     if (logs) logs.push(`[DEBUG] 处理第 ${index + 1} 个容器元素`);
 
     // 提取标题
-    const title = extractWithSelectorField($element, selector.title);
+    const title = extractWithSelectorField($element, selector.title, logs);
     if (logs)
       logs.push(
         `[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`
@@ -131,7 +174,7 @@ export function extractContentWithCSS(
     // 提取链接
     let link = "";
     if (selector.link) {
-      link = extractWithSelectorField($element, selector.link);
+      link = extractWithSelectorField($element, selector.link, logs);
       if (logs)
         logs.push(
           `[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`
@@ -160,7 +203,7 @@ export function extractContentWithCSS(
 
     // 提取日期（如果有）
     if (selector.date) {
-      const dateText = extractWithSelectorField($element, selector.date);
+      const dateText = extractWithSelectorField($element, selector.date, logs);
       if (dateText) {
         item.pubDate = dateText;
         if (logs)
@@ -173,7 +216,7 @@ export function extractContentWithCSS(
     }
 
     // 提取内容（如果有）
-    const contentText = extractWithSelectorField($element, selector.content);
+    const contentText = extractWithSelectorField($element, selector.content, logs);
     if (contentText) {
       // 对于内容，如果是文本提取，我们需要获取HTML内容
       if (selector.content.extractType === "text") {
@@ -194,7 +237,7 @@ export function extractContentWithCSS(
 
     // 提取作者（如果有）
     if (selector.author) {
-      const authorText = extractWithSelectorField($element, selector.author);
+      const authorText = extractWithSelectorField($element, selector.author, logs);
       if (authorText) {
         item.author = authorText;
         if (logs)
@@ -223,7 +266,33 @@ export function extractContentWithXPath(
   const items: any[] = [];
 
   if (logs) logs.push(`[DEBUG] 使用XPath选择器模式`);
-  const doc = new DOMParser().parseFromString(html);
+  
+  // 创建自定义错误处理器，忽略重复属性等非致命错误
+  const errorHandler = {
+    warning: (msg: string) => {
+      // 忽略重复属性警告
+      if (msg.includes('redefined') || msg.includes('duplicate')) {
+        if (logs) logs.push(`[WARN] 忽略HTML解析警告: ${msg}`);
+        return;
+      }
+      if (logs) logs.push(`[WARN] HTML解析警告: ${msg}`);
+    },
+    error: (msg: string) => {
+      // 对于重复属性错误，降级为警告
+      if (msg.includes('redefined') || msg.includes('duplicate')) {
+        if (logs) logs.push(`[WARN] 忽略HTML解析错误: ${msg}`);
+        return;
+      }
+      throw new Error(`HTML解析错误: ${msg}`);
+    },
+    fatalError: (msg: string) => {
+      throw new Error(`HTML解析致命错误: ${msg}`);
+    }
+  };
+  console.log('html', html);
+  const doc = new DOMParser({
+    errorHandler: errorHandler
+  }).parseFromString(html, 'text/html');
 
   // 检查解析是否成功
   if (!doc || doc.documentElement.nodeName === "parsererror") {
@@ -252,7 +321,7 @@ export function extractContentWithXPath(
     if (logs) logs.push(`[DEBUG] 处理第 ${i + 1} 个容器节点`);
 
     // 提取标题
-    const title = extractWithSelectorFieldXPath(containerNode as Node, selector.title);
+    const title = extractWithSelectorFieldXPath(containerNode as Node, selector.title, logs);
     if (logs)
       logs.push(
         `[DEBUG] 标题选择器: ${selector.title.selector}, 提取类型: ${selector.title.extractType}, 提取结果: "${title}"`
@@ -261,7 +330,7 @@ export function extractContentWithXPath(
     // 提取链接
     let link = "";
     if (selector.link) {
-      link = extractWithSelectorFieldXPath(containerNode as Node, selector.link);
+      link = extractWithSelectorFieldXPath(containerNode as Node, selector.link, logs);
       if (logs)
         logs.push(
           `[DEBUG] 链接选择器: ${selector.link.selector}, 提取类型: ${selector.link.extractType}, 提取结果: "${link}"`
@@ -290,7 +359,7 @@ export function extractContentWithXPath(
 
     // 提取日期（如果有）
     if (selector.date) {
-      const dateText = extractWithSelectorFieldXPath(containerNode as Node, selector.date);
+      const dateText = extractWithSelectorFieldXPath(containerNode as Node, selector.date, logs);
       if (dateText) {
         item.pubDate = formatDate(dateText);
         if (logs)
@@ -303,7 +372,7 @@ export function extractContentWithXPath(
     }
 
     // 提取内容（如果有）
-    const contentText = extractWithSelectorFieldXPath(containerNode as Node, selector.content);
+    const contentText = extractWithSelectorFieldXPath(containerNode as Node, selector.content, logs);
     if (contentText) {
       // 对于内容，如果是文本提取，我们需要获取HTML内容
       if (selector.content.extractType === "text") {
@@ -331,7 +400,7 @@ export function extractContentWithXPath(
 
     // 提取作者（如果有）
     if (selector.author) {
-      const authorText = extractWithSelectorFieldXPath(containerNode as Node, selector.author);
+      const authorText = extractWithSelectorFieldXPath(containerNode as Node, selector.author, logs);
       if (authorText) {
         item.author = authorText;
         if (logs)

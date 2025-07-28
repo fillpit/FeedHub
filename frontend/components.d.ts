@@ -61,6 +61,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     ScriptHelpContent: typeof import('./src/components/ScriptHelpContent.vue')['default']
     ScriptHelpGuide: typeof import('./src/components/ScriptHelpGuide.vue')['default']
+    SelectorHelpDialog: typeof import('./src/components/SelectorHelpDialog.vue')['default']
     SimpleIcon: typeof import('./src/components/SimpleIcon.vue')['default']
   }
   export interface ComponentCustomProperties {

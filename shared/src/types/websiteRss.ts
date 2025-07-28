@@ -3,6 +3,9 @@ export interface SelectorField {
   selector: string; // 选择器表达式
   extractType: "text" | "attr"; // 抓取类型：文本值或属性值
   attrName?: string; // 当extractType为attr时，指定属性名
+  regexPattern?: string; // 正则表达式模式（可选）
+  regexFlags?: string; // 正则表达式标志（可选，如 'g', 'i', 'gi' 等）
+  regexGroup?: number; // 正则表达式捕获组索引（可选，默认为0表示整个匹配）
 }
 
 export interface WebsiteRssSelector {
