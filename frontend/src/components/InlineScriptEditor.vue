@@ -13,6 +13,10 @@
           <div class="panel-header">
             <h4>文件列表</h4>
             <div class="panel-actions">
+              <el-button size="small" type="primary" @click="showCreateFileDialog">
+                <el-icon><Plus /></el-icon>
+                新建
+              </el-button>
               <el-button size="small" @click="loadFiles">
                 <el-icon><Refresh /></el-icon>
                 刷新
@@ -27,12 +31,25 @@
             @node-click="handleFileClick"
           >
             <template #default="{ node, data }">
-              <span class="tree-node" :class="{ active: selectedFile === data.path }">
-                <el-icon style="margin-right: 4px;">
-                  <Document />
-                </el-icon>
-                {{ data.name }}
-              </span>
+              <div class="tree-node" :class="{ active: selectedFile === data.path }">
+                <span class="file-info" @click="handleFileClick(data)">
+                  <el-icon style="margin-right: 4px;">
+                    <Document />
+                  </el-icon>
+                  {{ data.name }}
+                </span>
+                <div class="file-actions" v-if="data.name !== 'main.js' && data.name !== 'index.js'">
+                  <el-button 
+                    size="small" 
+                    type="danger" 
+                    text 
+                    @click.stop="deleteFile(data.path)"
+                    title="删除文件"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
+              </div>
             </template>
           </el-tree>
         </div>
@@ -81,17 +98,59 @@
       </div>
     </template>
   </el-dialog>
+
+  <!-- 新建文件对话框 -->
+  <el-dialog
+    v-model="createFileDialogVisible"
+    title="新建文件"
+    width="500px"
+    :close-on-click-modal="false"
+  >
+    <el-form :model="createFileForm" label-width="80px">
+      <el-form-item label="文件名" required>
+        <el-input
+          v-model="createFileForm.fileName"
+          placeholder="请输入文件名（如：utils.js, config.json）"
+          @keyup.enter="createFile"
+        />
+      </el-form-item>
+      <el-form-item label="模板">
+        <el-radio-group v-model="createFileForm.template">
+          <el-radio label="blank">空白模板</el-radio>
+          <el-radio label="main">主文件模板</el-radio>
+          <el-radio label="utils">工具模板</el-radio>
+          <el-radio label="package">Package模板</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item>
+        <div class="template-description">
+          <p v-if="createFileForm.template === 'blank'">创建一个空白文件，适合自定义内容</p>
+          <p v-else-if="createFileForm.template === 'main'">创建一个主入口文件模板，包含完整的脚本结构</p>
+          <p v-else-if="createFileForm.template === 'utils'">创建一个工具函数模板，包含常用的工具方法</p>
+          <p v-else-if="createFileForm.template === 'package'">创建一个package.json文件模板</p>
+        </div>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="createFileDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="createFile" :disabled="!createFileForm.fileName.trim()">创建</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { ElMessage } from 'element-plus';
-import { Refresh, Document, DocumentCopy } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { Refresh, Document, DocumentCopy, Plus, Delete } from '@element-plus/icons-vue';
 import CodeEditor from '@/components/CodeEditor.vue';
 import {
   getInlineScriptFiles,
   getInlineScriptFileContent,
   updateInlineScriptFileContent,
+  createInlineScriptFile,
+  deleteInlineScriptFile,
 } from '@/api/dynamicRoute';
 
 // Props
@@ -118,6 +177,13 @@ const loading = ref(false);
 const files = ref<any[]>([]);
 const selectedFile = ref<string>('');
 const fileContent = ref<string>('');
+
+// 新建文件对话框状态
+const createFileDialogVisible = ref(false);
+const createFileForm = ref({
+  fileName: '',
+  template: 'blank'
+});
 
 // 监听 modelValue 变化
 watch(
@@ -214,12 +280,84 @@ const handleFileClick = (data: any) => {
   }
 };
 
+// 显示新建文件对话框
+const showCreateFileDialog = () => {
+  createFileForm.value = {
+    fileName: '',
+    template: 'blank'
+  };
+  createFileDialogVisible.value = true;
+};
+
+// 创建文件
+const createFile = async () => {
+  if (!props.routeId || !createFileForm.value.fileName.trim()) return;
+  
+  try {
+    const result = await createInlineScriptFile(
+      props.routeId,
+      createFileForm.value.fileName.trim(),
+      createFileForm.value.template
+    ) as any;
+    
+    if (result.success) {
+      ElMessage.success('文件创建成功');
+      createFileDialogVisible.value = false;
+      await loadFiles();
+      // 自动选择新创建的文件
+      await selectFile(createFileForm.value.fileName.trim());
+    } else {
+      ElMessage.error(result.message || '文件创建失败');
+    }
+  } catch (error) {
+    console.error('创建文件失败:', error);
+    ElMessage.error('创建文件失败');
+  }
+};
+
+// 删除文件
+const deleteFile = async (fileName: string) => {
+  if (!props.routeId) return;
+  
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除文件 "${fileName}" 吗？此操作不可恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+    
+    const result = await deleteInlineScriptFile(props.routeId, fileName) as any;
+    
+    if (result.success) {
+      ElMessage.success('文件删除成功');
+      // 如果删除的是当前选中的文件，清空选择
+      if (selectedFile.value === fileName) {
+        selectedFile.value = '';
+        fileContent.value = '';
+      }
+      await loadFiles();
+    } else {
+      ElMessage.error(result.message || '文件删除失败');
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除文件失败:', error);
+      ElMessage.error('删除文件失败');
+    }
+  }
+};
+
 // 关闭对话框
 const handleClose = () => {
   visible.value = false;
   selectedFile.value = '';
   fileContent.value = '';
   files.value = [];
+  createFileDialogVisible.value = false;
 };
 </script>
 
@@ -251,12 +389,47 @@ const handleClose = () => {
         h4 {
           margin: 0;
           font-size: 14px;
-          font-weight: 500;
+          color: #303133;
         }
         
         .panel-actions {
           display: flex;
           gap: 8px;
+        }
+      }
+      
+      .tree-node {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 4px 0;
+        
+        &.active {
+          .file-info {
+            color: #409eff;
+            font-weight: 500;
+          }
+        }
+        
+        .file-info {
+          display: flex;
+          align-items: center;
+          flex: 1;
+          cursor: pointer;
+          
+          &:hover {
+            color: #409eff;
+          }
+        }
+        
+        .file-actions {
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        
+        &:hover .file-actions {
+          opacity: 1;
         }
       }
       
@@ -339,5 +512,14 @@ const handleClose = () => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.template-description {
+  p {
+    margin: 0;
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.4;
+  }
 }
 </style>

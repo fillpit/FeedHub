@@ -18,7 +18,7 @@ import AuthCredentialService from "./AuthCredentialService";
 import { AuthCredentialAttributes } from "../models/AuthCredential";
 import { ICacheService, getCacheService } from "./cache";
 import AdmZip from "adm-zip";
-import { ScriptPackageService } from "./ScriptPackageService";
+
 import { ScriptFileService } from "./ScriptFileService";
 
 @injectable()
@@ -35,7 +35,7 @@ export class DynamicRouteService {
 
   constructor(
     @inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService,
-    @inject(TYPES.ScriptPackageService) private scriptPackageService: ScriptPackageService,
+
     @inject(TYPES.ScriptFileService) private scriptFileService: ScriptFileService
   ) {
     this.initializeCacheService();
@@ -206,25 +206,24 @@ export class DynamicRouteService {
     this.validateScriptConfig(routeData.script);
     console.log("验证脚本配置通过");
 
-    // 处理内联脚本：创建脚本目录并保存到文件系统
-    if (routeData.script.sourceType === 'inline') {
-      try {
-        // 创建脚本目录
-        const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name);
-        
-        // 如果用户提供了自定义脚本内容，覆盖默认的main.js
-        if (routeData.script.content && routeData.script.content.trim()) {
-          await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.content);
-        }
-        
-        // 更新脚本配置，将content改为脚本目录名称
-        routeData.script.content = scriptDirName;
-        
-        logger.info(`[DynamicRouteService] 为内联脚本路由 "${routeData.name}" 创建脚本目录: ${scriptDirName}`);
-      } catch (error) {
-        logger.error(`[DynamicRouteService] 创建脚本目录失败:`, error);
-        throw new Error(`创建脚本目录失败: ${(error as Error).message}`);
+    // 统一使用内联脚本：创建脚本目录并保存到文件系统
+    try {
+      // 创建脚本目录
+      const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name);
+      
+      // 如果用户提供了自定义脚本内容，覆盖默认的main.js
+      if (routeData.script.content && routeData.script.content.trim()) {
+        await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.content);
       }
+      
+      // 更新脚本配置，将content改为脚本目录名称，sourceType设为inline
+      routeData.script.content = scriptDirName;
+      routeData.script.sourceType = 'inline';
+      
+      logger.info(`[DynamicRouteService] 为路由 "${routeData.name}" 创建脚本目录: ${scriptDirName}`);
+    } catch (error) {
+      logger.error(`[DynamicRouteService] 创建脚本目录失败:`, error);
+      throw new Error(`创建脚本目录失败: ${(error as Error).message}`);
     }
 
     // 创建新配置
@@ -378,6 +377,226 @@ export class DynamicRouteService {
     } catch (error) {
       throw new Error(`更新文件内容失败: ${(error as Error).message}`);
     }
+  }
+
+  /**
+   * 创建内联脚本文件
+   * @param routeId 路由ID
+   * @param fileName 文件名
+   * @param template 模板类型
+   */
+  async createInlineScriptFile(routeId: number, fileName: string, template: string = 'blank'): Promise<ApiResponseData<void>> {
+    const route = await DynamicRouteConfig.findByPk(routeId);
+    if (!route) throw new Error(`未找到ID为${routeId}的动态路由配置`);
+    
+    if (route.script.sourceType !== 'inline') {
+      throw new Error('只有内联脚本类型的路由才支持文件创建');
+    }
+    
+    const scriptDirName = route.script.content;
+    if (!scriptDirName) {
+      throw new Error('内联脚本目录名称不能为空');
+    }
+    
+    // 检查文件是否已存在
+    const existingFiles = await this.scriptFileService.getScriptFiles(scriptDirName);
+    if (existingFiles.includes(fileName)) {
+      throw new Error(`文件 ${fileName} 已存在`);
+    }
+    
+    // 根据模板生成文件内容
+    const content = this.getFileTemplate(fileName, template);
+    
+    await this.scriptFileService.writeScriptFile(scriptDirName, fileName, content);
+    
+    return { success: true, data: undefined, message: "文件创建成功" };
+  }
+
+  /**
+   * 删除内联脚本文件
+   * @param routeId 路由ID
+   * @param fileName 文件名
+   */
+  async deleteInlineScriptFile(routeId: number, fileName: string): Promise<ApiResponseData<void>> {
+    const route = await DynamicRouteConfig.findByPk(routeId);
+    if (!route) throw new Error(`未找到ID为${routeId}的动态路由配置`);
+    
+    if (route.script.sourceType !== 'inline') {
+      throw new Error('只有内联脚本类型的路由才支持文件删除');
+    }
+    
+    const scriptDirName = route.script.content;
+    if (!scriptDirName) {
+      throw new Error('内联脚本目录名称不能为空');
+    }
+    
+    // 不允许删除主文件
+    if (fileName === 'main.js' || fileName === 'index.js') {
+      throw new Error('不能删除主入口文件');
+    }
+    
+    await this.scriptFileService.deleteScriptFile(scriptDirName, fileName);
+    
+    return { success: true, data: undefined, message: "文件删除成功" };
+  }
+
+  /**
+   * 获取文件模板内容
+   * @param fileName 文件名
+   * @param template 模板类型
+   */
+  private getFileTemplate(fileName: string, template: string): string {
+    const isJsFile = fileName.endsWith('.js');
+    const isJsonFile = fileName.endsWith('.json');
+    
+    switch (template) {
+      case 'main':
+        return this.getMainFileTemplate();
+      case 'package':
+        return this.getPackageJsonTemplate();
+      case 'utils':
+        return this.getUtilsFileTemplate();
+      case 'blank':
+      default:
+        if (isJsonFile) {
+          return '{\n  \n}';
+        } else if (isJsFile) {
+          return `/**\n * ${fileName}\n * 创建时间: ${new Date().toISOString()}\n */\n\n`;
+        } else {
+          return '';
+        }
+    }
+  }
+
+  /**
+   * 获取主文件模板
+   */
+  private getMainFileTemplate(): string {
+    return `/**
+ * 动态路由脚本主文件
+ * 这是您的自定义脚本入口文件
+ */
+
+/**
+ * 主函数 - 脚本的入口点
+ * @param {Object} context - 脚本执行上下文
+ * @returns {Object|Array} RSS格式的数据或文章数组
+ */
+async function main(context) {
+  const { routeParams, utils, auth, console, dayjs, require } = context;
+  
+  try {
+    // 在这里编写您的脚本逻辑
+    console.log('脚本开始执行，路由参数:', routeParams);
+    
+    // 示例：返回简单的文章列表
+    const items = [
+      {
+        title: '示例文章1',
+        link: 'https://example.com/article1',
+        content: '这是示例文章的内容',
+        author: '作者',
+        pubDate: dayjs().toISOString(),
+      },
+      {
+        title: '示例文章2', 
+        link: 'https://example.com/article2',
+        content: '这是另一篇示例文章的内容',
+        author: '作者',
+        pubDate: dayjs().subtract(1, 'day').toISOString(),
+      }
+    ];
+    
+    // 返回完整的RSS格式数据（推荐）
+    return {
+      title: '我的动态路由RSS',
+      description: '这是一个动态生成的RSS源',
+      link: 'https://example.com',
+      items: items
+    };
+    
+  } catch (error) {
+    console.error('脚本执行失败:', error);
+    throw error;
+  }
+}
+
+// 导出主函数
+module.exports = { main };
+`;
+  }
+
+  /**
+   * 获取package.json模板
+   */
+  private getPackageJsonTemplate(): string {
+    return `{
+  "name": "dynamic-route-script",
+  "version": "1.0.0",
+  "description": "动态路由脚本包",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    
+  },
+  "author": "",
+  "license": "ISC"
+}
+`;
+  }
+
+  /**
+   * 获取工具文件模板
+   */
+  private getUtilsFileTemplate(): string {
+    return `/**
+ * 工具函数模块
+ * 在这里定义可复用的工具函数
+ */
+
+/**
+ * 格式化日期
+ * @param {Date|string} date 日期
+ * @param {string} format 格式
+ * @returns {string} 格式化后的日期字符串
+ */
+function formatDate(date, format = 'YYYY-MM-DD HH:mm:ss') {
+  // 实现日期格式化逻辑
+  return new Date(date).toISOString();
+}
+
+/**
+ * 安全获取对象属性
+ * @param {Object} obj 对象
+ * @param {string} path 属性路径
+ * @param {any} defaultValue 默认值
+ * @returns {any} 属性值或默认值
+ */
+function safeGet(obj, path, defaultValue = null) {
+  try {
+    return path.split('.').reduce((current, key) => current && current[key], obj) || defaultValue;
+  } catch (error) {
+    return defaultValue;
+  }
+}
+
+/**
+ * 清理HTML标签
+ * @param {string} html HTML字符串
+ * @returns {string} 纯文本
+ */
+function stripHtml(html) {
+  return html.replace(/<[^>]*>/g, '');
+}
+
+module.exports = {
+  formatDate,
+  safeGet,
+  stripHtml
+};
+`;
   }
 
   /**
@@ -620,141 +839,14 @@ export class DynamicRouteService {
     }
   }
 
-  /**
-   * 使用编辑会话调试动态路由脚本
-   */
-  async debugRouteScriptWithEditSession(
-    routeData: DynamicRouteConfigAttributes,
-    testParams: any,
-    editSessionId: string
-  ): Promise<ApiResponseData<any>> {
-    const startTime = Date.now();
-    const logs: string[] = [];
 
-    try {
-      // 验证并处理参数
-      const processedParams = this.processRouteParams(routeData.params, testParams);
-      logs.push(`[DEBUG] 路由参数处理完成`);
-
-      // 获取授权信息
-      let authInfo: AuthCredentialAttributes | null = null;
-      if (routeData.authCredentialId) {
-        try {
-          const authResult = await AuthCredentialService.getById(routeData.authCredentialId);
-          if (authResult.success && authResult.data) {
-            authInfo = authResult.data;
-            logs.push(`[DEBUG] 获取到授权信息: ${authInfo.name} (${authInfo.authType})`);
-          } else {
-            logs.push(`[WARN] 未找到授权信息，ID: ${routeData.authCredentialId}`);
-          }
-        } catch (error) {
-          logs.push(`[ERROR] 获取授权信息失败: ${(error as Error).message}`);
-        }
-      }
-
-      // 获取编辑会话的临时目录
-      const tempDir = this.scriptPackageService.getEditSessionTempDir(editSessionId);
-      logs.push(`[DEBUG] 使用编辑会话临时目录: ${tempDir}`);
-
-      // 创建临时脚本配置，使用编辑会话的临时目录
-      const tempScriptConfig = {
-        ...routeData.script,
-        sourceType: 'package' as const,
-        content: tempDir // 直接使用临时目录路径
-      };
-
-      // 获取脚本内容（从编辑会话的临时目录）
-      const scriptContent = await this.getScriptContentFromTempDir(tempDir);
-      logs.push(`[DEBUG] 从编辑会话获取脚本内容，长度: ${scriptContent.length} 字符`);
-
-      // 创建脚本上下文并执行
-      const context = createScriptContext(
-        { url: "", script: { enabled: true, script: scriptContent }, auth: authInfo },
-        this.axiosInstance,
-        logs
-      );
-
-      // 添加路由参数到上下文
-      (context as any).routeParams = processedParams;
-
-      // 添加调试信息
-      logs.push(`[DEBUG] 路由参数: ${JSON.stringify(processedParams, null, 2)}`);
-      logs.push(`[DEBUG] 编辑会话ID: ${editSessionId}`);
-
-      // 执行脚本
-      const result = await executeScript(
-        {
-          script: {
-            enabled: true,
-            script: scriptContent,
-            timeout: routeData.script.timeout || 30000,
-          },
-        },
-        context,
-        this.axiosInstance,
-        logs,
-        this.npmPackageService
-      );
-
-      // 验证结果
-      const validatedResult = validateScriptResult(result);
-
-      const executionTime = Date.now() - startTime;
-      logs.push(`[INFO] 编辑会话脚本执行成功，耗时 ${executionTime}ms`);
-
-      return {
-        success: true,
-        data: {
-          success: true,
-          logs,
-          result: validatedResult,
-          executionTime,
-          editSessionId,
-        },
-        message: "编辑会话脚本调试成功",
-      };
-    } catch (error) {
-      const executionTime = Date.now() - startTime;
-      logs.push(`[FATAL] 编辑会话脚本执行失败: ${(error as Error).message}`);
-
-      return {
-        success: false,
-        data: {
-          success: false,
-          logs,
-          error: (error as Error).message,
-          stack: (error as Error).stack,
-          executionTime,
-          editSessionId,
-        },
-        message: "编辑会话脚本调试失败",
-      };
-    }
-  }
 
   /**
    * 验证脚本配置
    */
   private validateScriptConfig(scriptConfig: any): void {
     if (!scriptConfig) throw new Error("脚本配置不能为空");
-    if (!scriptConfig.sourceType) throw new Error("脚本来源类型不能为空");
-    if (!scriptConfig.content) throw new Error("脚本内容不能为空");
-
-    if (scriptConfig.sourceType === "url" && !this.isValidUrl(scriptConfig.content)) {
-      throw new Error("无效的脚本URL");
-    }
-  }
-
-  /**
-   * 验证URL是否有效
-   */
-  private isValidUrl(url: string): boolean {
-    try {
-      new URL(url);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    // 统一使用内联脚本，不需要验证其他类型
   }
 
   /**
@@ -813,85 +905,15 @@ export class DynamicRouteService {
    * 获取脚本内容
    */
   private async getScriptContent(scriptConfig: any): Promise<string> {
-    switch (scriptConfig.sourceType) {
-      case "inline":
-        try {
-          // 从文件系统读取内联脚本内容
-          const scriptDirName = scriptConfig.content;
-          const scriptDir = this.scriptFileService.getScriptDirectoryPath(scriptDirName);
-          
-          // 读取package.json获取入口文件
-          const packageJsonPath = path.join(scriptDir, 'package.json');
-          if (!fs.existsSync(packageJsonPath)) {
-            throw new Error('脚本目录必须包含package.json文件');
-          }
-          
-          let packageInfo: any;
-          try {
-            const packageContent = fs.readFileSync(packageJsonPath, 'utf-8');
-            packageInfo = JSON.parse(packageContent);
-          } catch (error) {
-            throw new Error('package.json格式错误');
-          }
-          
-          const entryPoint = packageInfo.main || 'main.js';
-          const entryFilePath = path.join(scriptDir, entryPoint);
-          
-          if (!fs.existsSync(entryFilePath)) {
-            throw new Error(`入口文件不存在: ${entryPoint}`);
-          }
-          
-          const entryScript = fs.readFileSync(entryFilePath, 'utf-8');
-          
-          // 创建包装脚本，支持require模块加载
-          return this.createPackageWrapper(scriptDir, entryScript, entryPoint);
-        } catch (error) {
-          throw new Error(`无法读取内联脚本: ${(error as Error).message}`);
-        }
-      case "url":
-        try {
-          const response = await this.axiosInstance.get(scriptConfig.content);
-          return response.data;
-        } catch (error) {
-          throw new Error(`无法从URL获取脚本: ${(error as Error).message}`);
-        }
-      case "file":
-        // 这里假设content存储的是文件路径
-        try {
-          const filePath = path.resolve(process.cwd(), "uploads", scriptConfig.content);
-          return fs.readFileSync(filePath, "utf-8");
-        } catch (error) {
-          throw new Error(`无法读取脚本文件: ${(error as Error).message}`);
-        }
-      case "package":
-        try {
-          return await this.extractAndLoadPackageScript(scriptConfig);
-        } catch (error) {
-          throw new Error(`无法加载脚本包: ${(error as Error).message}`);
-        }
-      default:
-        throw new Error(`不支持的脚本来源类型: ${scriptConfig.sourceType}`);
-    }
-  }
-
-  /**
-   * 解压并加载脚本包
-   */
-  private async extractAndLoadPackageScript(scriptConfig: any): Promise<string> {
-    const zipFilePath = path.resolve(process.cwd(), "uploads", scriptConfig.content);
-    
-    // 创建临时目录
-    const tempDir = path.join(os.tmpdir(), `script-package-${uuidv4()}`);
-    
     try {
-      // 解压zip文件
-      const zip = new AdmZip(zipFilePath);
-      zip.extractAllTo(tempDir, true);
+      // 从文件系统读取内联脚本内容
+      const scriptDirName = scriptConfig.content;
+      const scriptDir = this.scriptFileService.getScriptDirectoryPath(scriptDirName);
       
       // 读取package.json获取入口文件
-      const packageJsonPath = path.join(tempDir, 'package.json');
+      const packageJsonPath = path.join(scriptDir, 'package.json');
       if (!fs.existsSync(packageJsonPath)) {
-        throw new Error('脚本包必须包含package.json文件');
+        throw new Error('脚本目录必须包含package.json文件');
       }
       
       let packageInfo: any;
@@ -902,71 +924,20 @@ export class DynamicRouteService {
         throw new Error('package.json格式错误');
       }
       
-      if (!packageInfo.main) {
-        throw new Error('package.json中必须包含main字段指定入口文件');
-      }
+      const entryPoint = packageInfo.main || 'main.js';
+      const entryFilePath = path.join(scriptDir, entryPoint);
       
-      const entryPoint = packageInfo.main;
-      
-      // 读取入口文件
-      const entryFilePath = path.join(tempDir, entryPoint);
       if (!fs.existsSync(entryFilePath)) {
         throw new Error(`入口文件不存在: ${entryPoint}`);
       }
       
-      // 创建包装脚本，支持require模块加载
-      const entryScript = fs.readFileSync(entryFilePath, "utf-8");
-      const packageScript = this.createPackageWrapper(tempDir, entryScript, entryPoint);
+      const entryScript = fs.readFileSync(entryFilePath, 'utf-8');
       
-      return packageScript;
-    } finally {
-      // 清理临时目录（延迟清理，确保脚本执行完成）
-      setTimeout(() => {
-        try {
-          if (fs.existsSync(tempDir)) {
-            fs.rmSync(tempDir, { recursive: true, force: true });
-          }
-        } catch (error) {
-          logger.warn(`清理临时目录失败: ${tempDir}`, error);
-        }
-      }, 60000); // 1分钟后清理
-    }
-  }
-
-  /**
-   * 从临时目录获取脚本内容（用于编辑会话调试）
-   */
-  private async getScriptContentFromTempDir(tempDir: string): Promise<string> {
-    // 读取package.json获取入口文件
-    const packageJsonPath = path.join(tempDir, 'package.json');
-    if (!fs.existsSync(packageJsonPath)) {
-      throw new Error('脚本包必须包含package.json文件');
-    }
-    
-    let packageInfo: any;
-    try {
-      const packageContent = fs.readFileSync(packageJsonPath, 'utf-8');
-      packageInfo = JSON.parse(packageContent);
+      // 创建包装脚本，支持require模块加载
+      return this.createPackageWrapper(scriptDir, entryScript, entryPoint);
     } catch (error) {
-      throw new Error('package.json格式错误');
+      throw new Error(`无法读取内联脚本: ${(error as Error).message}`);
     }
-    
-    if (!packageInfo.main) {
-      throw new Error('package.json中必须包含main字段指定入口文件');
-    }
-    
-    const entryPoint = packageInfo.main;
-    
-    // 读取入口文件
-    const entryFilePath = path.join(tempDir, entryPoint);
-    if (!fs.existsSync(entryFilePath)) {
-      throw new Error(`入口文件不存在: ${entryPoint}`);
-    }
-    
-    const entryScript = fs.readFileSync(entryFilePath, "utf-8");
-    
-    // 创建包装脚本，支持require模块加载
-    return this.createPackageWrapper(tempDir, entryScript, entryPoint);
   }
 
   /**
@@ -1019,9 +990,6 @@ export class DynamicRouteService {
           // 对于非相对路径，使用原始require
           return originalRequire(modulePath);
         }
-        
-        // 替换全局require
-        const require = customRequire;
         
         // 执行入口脚本并获取导出
         const moduleExports = {};

@@ -9,7 +9,7 @@ import { SettingService } from "./services/SettingService";
 import { NotificationService } from "./services/NotificationService";
 
 import { DynamicRouteService } from "./services/DynamicRouteService";
-import { ScriptPackageService } from "./services/ScriptPackageService";
+
 import { ScriptFileService } from "./services/ScriptFileService";
 import { NpmPackageService } from "./services/NpmPackageService";
 // Controllers
@@ -38,10 +38,7 @@ container
   .bind<DynamicRouteService>(TYPES.DynamicRouteService)
   .to(DynamicRouteService)
   .inSingletonScope();
-container
-  .bind<ScriptPackageService>(TYPES.ScriptPackageService)
-  .to(ScriptPackageService)
-  .inSingletonScope();
+
 container
   .bind<ScriptFileService>(TYPES.ScriptFileService)
   .to(ScriptFileService)

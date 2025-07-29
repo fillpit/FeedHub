@@ -349,42 +349,20 @@ export async function executeScript(
   };
   const vmContext = vm.createContext(scriptContext);
   const timeout = config.script?.timeout || 30000;
-  console.log("config.script=", config.script);
-  const asyncScript = `
-    (async () => {
-      // 显式声明所有上下文变量，防止变量提升问题
-      const { url, axios, auth, console, utils, dayjs, routeParams, requirex } = this;
-      
-      try {
-        ${config.script?.script}
-      } catch (error) {
-        console.error('脚本执行错误:', error.message);
-        
-        // 特殊处理常见错误
-        if (error.message.includes("Cannot read properties of undefined")) {
-          if (error.message.includes("reading 'uid'")) {
-            console.error('提示: 您可能想要访问 guid 属性而不是 uid 属性');
-            console.error('或者使用 helpers.generateGuid() 生成唯一ID');
-            console.error('或者使用 helpers.safeGet(obj, "uid", defaultValue) 安全访问属性');
-          }
-          console.error('提示: 请检查对象是否存在，或使用 helpers.safeGet() 安全访问属性');
-        }
-        
-        throw error;
-      }
-    })()
-  `;
-  const script = new vm.Script(asyncScript);
+
+  const script = new vm.Script(config.script?.script);
   const result = await Promise.race([
     script.runInContext(vmContext, { timeout }),
     new Promise((_, reject) =>
       setTimeout(() => reject(new Error(`脚本执行超时 (${timeout}ms)`)), timeout)
     ),
   ]);
+    
   return result;
 }
 
 export function validateScriptResult(result: any): any {
+
   // 如果返回的是数组，说明是旧格式（只返回items），保持向后兼容
   if (Array.isArray(result)) {
     const validatedItems = result.map((item, index) => {

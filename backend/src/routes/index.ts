@@ -11,7 +11,7 @@ import websiteRssRoutes from "./websiteRss";
 import dynamicRouteRoutes from "./dynamicRoute";
 import npmPackageRoutes from "./npmPackage";
 import notificationRoutes from "./notification";
-import scriptPackageRoutes from "./scriptPackage";
+
 import uploadRoutes from "./upload";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
 import { asyncHandler } from "../middleware/errorHandler";
@@ -83,7 +83,7 @@ router.use("/npm-package", npmPackageRoutes);
 router.use("/notification", notificationRoutes);
 
 // 脚本包路由
-router.use("/script-package", scriptPackageRoutes);
+
 
 // 文件上传路由
 router.use("/upload", uploadRoutes);

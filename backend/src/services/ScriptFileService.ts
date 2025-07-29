@@ -281,6 +281,33 @@ module.exports = {
   }
 
   /**
+   * 删除脚本文件
+   * @param scriptDirName 脚本目录名称
+   * @param fileName 文件名
+   */
+  async deleteScriptFile(scriptDirName: string, fileName: string): Promise<void> {
+    const scriptDir = this.getScriptDirectoryPath(scriptDirName);
+    
+    if (!fs.existsSync(scriptDir)) {
+      throw new Error(`脚本目录不存在: ${scriptDirName}`);
+    }
+    
+    const filePath = path.join(scriptDir, fileName);
+    
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`文件不存在: ${fileName}`);
+    }
+    
+    try {
+      fs.unlinkSync(filePath);
+      logger.info(`[ScriptFileService] 删除脚本文件: ${filePath}`);
+    } catch (error) {
+      logger.error(`[ScriptFileService] 删除脚本文件失败: ${filePath}`, error);
+      throw new Error(`删除脚本文件失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
    * 复制脚本目录
    * @param sourceScriptDirName 源脚本目录名称
    * @param targetRouteName 目标路由名称
