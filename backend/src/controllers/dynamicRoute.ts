@@ -74,6 +74,49 @@ export class DynamicRouteController extends BaseController {
   }
 
   /**
+   * 使用编辑会话调试自定义路由脚本
+   */
+  async debugDynamicRouteScriptWithEditSession(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const { routeConfig, params, editSessionId } = req.body;
+      return await this.dynamicRouteService.debugRouteScriptWithEditSession(routeConfig, params, editSessionId);
+    });
+  }
+
+  /**
+   * 获取内联脚本的文件列表
+   */
+  async getInlineScriptFiles(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const routeId = Number(req.params.id);
+      return await this.dynamicRouteService.getInlineScriptFiles(routeId);
+    });
+  }
+
+  /**
+   * 获取内联脚本的文件内容
+   */
+  async getInlineScriptFileContent(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const routeId = Number(req.params.id);
+      const fileName = req.params.fileName;
+      return await this.dynamicRouteService.getInlineScriptFileContent(routeId, fileName);
+    });
+  }
+
+  /**
+   * 更新内联脚本的文件内容
+   */
+  async updateInlineScriptFileContent(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const routeId = Number(req.params.id);
+      const fileName = req.params.fileName;
+      const { content } = req.body;
+      return await this.dynamicRouteService.updateInlineScriptFileContent(routeId, fileName, content);
+    });
+  }
+
+  /**
    * 执行自定义路由脚本并返回RSS
    */
   async executeRouteScript(req: Request, res: Response): Promise<void> {

@@ -63,3 +63,50 @@ export function debugDynamicRouteScript(
     params,
   });
 }
+
+/**
+ * 使用编辑会话调试动态路由脚本
+ * @param routeConfig 路由配置
+ * @param params 测试参数
+ * @param editSessionId 编辑会话ID
+ */
+export function debugDynamicRouteScriptWithEditSession(
+  routeConfig: DynamicRouteConfig,
+  params: Record<string, unknown>,
+  editSessionId: string
+) {
+  return request.post("/api/dynamic-route/debug-with-edit-session", {
+    routeConfig,
+    params,
+    editSessionId,
+  });
+}
+
+/**
+ * 获取内联脚本的文件列表
+ * @param routeId 路由ID
+ */
+export function getInlineScriptFiles(routeId: number) {
+  return request.get(`/api/dynamic-route/${routeId}/inline-script/files`);
+}
+
+/**
+ * 获取内联脚本的文件内容
+ * @param routeId 路由ID
+ * @param fileName 文件名
+ */
+export function getInlineScriptFileContent(routeId: number, fileName: string) {
+  return request.get(`/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`);
+}
+
+/**
+ * 更新内联脚本的文件内容
+ * @param routeId 路由ID
+ * @param fileName 文件名
+ * @param content 文件内容
+ */
+export function updateInlineScriptFileContent(routeId: number, fileName: string, content: string) {
+  return request.put(`/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`, {
+    content,
+  });
+}

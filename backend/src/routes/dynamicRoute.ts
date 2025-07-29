@@ -24,4 +24,16 @@ router.delete("/:id", (req, res) => controller.deleteDynamicRoute(req, res));
 // 调试自定义路由脚本
 router.post("/debug", (req, res) => controller.debugDynamicRouteScript(req, res));
 
+// 使用编辑会话调试自定义路由脚本
+router.post("/debug-with-edit-session", (req, res) => controller.debugDynamicRouteScriptWithEditSession(req, res));
+
+// 获取内联脚本的文件列表
+router.get("/:id/inline-script/files", (req, res) => controller.getInlineScriptFiles(req, res));
+
+// 获取内联脚本的文件内容
+router.get("/:id/inline-script/files/:fileName", (req, res) => controller.getInlineScriptFileContent(req, res));
+
+// 更新内联脚本的文件内容
+router.put("/:id/inline-script/files/:fileName", (req, res) => controller.updateInlineScriptFileContent(req, res));
+
 export default router;

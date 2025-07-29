@@ -1,5 +1,5 @@
 // 统一的API响应格式
-export interface ApiResponse<T = unknown> {
+export interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;

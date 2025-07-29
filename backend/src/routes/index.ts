@@ -11,6 +11,8 @@ import websiteRssRoutes from "./websiteRss";
 import dynamicRouteRoutes from "./dynamicRoute";
 import npmPackageRoutes from "./npmPackage";
 import notificationRoutes from "./notification";
+import scriptPackageRoutes from "./scriptPackage";
+import uploadRoutes from "./upload";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
 import { asyncHandler } from "../middleware/errorHandler";
 
@@ -77,8 +79,14 @@ router.use("/dynamic-route", dynamicRouteRoutes);
 // npm包管理相关路由
 router.use("/npm-package", npmPackageRoutes);
 
-// 通知相关路由
+// 通知路由
 router.use("/notification", notificationRoutes);
+
+// 脚本包路由
+router.use("/script-package", scriptPackageRoutes);
+
+// 文件上传路由
+router.use("/upload", uploadRoutes);
 
 // 网站RSS订阅地址（公开访问）
 router.get("/rss/:key", (req, res) => websiteRssController.getRssFeed(req, res));

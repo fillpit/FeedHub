@@ -28,63 +28,8 @@ function formatMultilineLog(level: string, message: string): string {
 export function createScriptContext(
   config: any,
   axiosInstance: any,
-  requestConfig: any,
   logs?: string[]
 ): any {
-  let html = "";
-  let $: any = null;
-  const fetchHtml = async () => {
-    try {
-      if (logs) logs.push(formatMultilineLog("INFO", `正在尝试获取URL内容: ${config.url}`));
-      if (logs)
-        logs.push(
-          formatMultilineLog("DEBUG", `请求配置: ${JSON.stringify(requestConfig, null, 2)}`)
-        );
-      if (logs)
-        logs.push(formatMultilineLog("DEBUG", `授权信息: ${JSON.stringify(config.auth, null, 2)}`));
-      const response = await axiosInstance.get(config.url, requestConfig);
-      html = response.data;
-      $ = cheerio.load(html);
-      if (logs) {
-        logs.push(formatMultilineLog("INFO", "成功获取URL内容。"));
-        logs.push(formatMultilineLog("INFO", `响应状态: ${response.status}`));
-        logs.push(formatMultilineLog("INFO", `响应头: ${JSON.stringify(response.headers)}`));
-        let dataStr = "";
-        if (typeof response.data === "object") {
-          try {
-            if (
-              Object.prototype.toString.call(response.data) === "[object Object]" &&
-              response.data.constructor &&
-              response.data.constructor.name !== "Object"
-            ) {
-              dataStr = `[对象类型: ${response.data.constructor.name}]`;
-              const keys = Object.keys(response.data);
-              if (keys.length > 0) {
-                dataStr += "\n可枚举属性: " + JSON.stringify(keys);
-              }
-            } else {
-              dataStr = JSON.stringify(response.data, null, 2);
-            }
-          } catch {
-            dataStr = String(response.data);
-          }
-        } else {
-          dataStr = String(response.data);
-        }
-        if (dataStr.length > 2000) {
-          dataStr = dataStr.slice(0, 2000) + "\n...内容过长已截断...";
-        }
-        logs.push(formatMultilineLog("INFO", `响应内容:\n${dataStr}`));
-      }
-    } catch (error) {
-      const errorMessage = `获取网页内容失败，这可能是一个API接口，可忽略: ${(error as Error).message}`;
-      if (logs) {
-        logs.push(formatMultilineLog("WARN", errorMessage));
-      } else {
-        logger.warn(errorMessage);
-      }
-    }
-  };
   const authInfo = {
     type: config.auth?.authType || "none",
     cookie: sanitizeCookie(config.auth?.cookie || ""),
@@ -218,10 +163,6 @@ export function createScriptContext(
         throw new Error(`JSON解析失败: ${(error as Error).message}`);
       }
     },
-    extractText: (html: string) => {
-      if (!$) return html;
-      return $(html).text().trim();
-    },
     parseDate: (dateStr: string, format?: string) => {
       try {
         if (!dateStr || typeof dateStr !== "string") {
@@ -337,12 +278,9 @@ export function createScriptContext(
     }
   };
   return {
-    fetchHtml,
     authInfo,
     createUtils,
-    createConsole,
-    html,
-    $,
+    createConsole
   };
 }
 
@@ -353,9 +291,8 @@ export async function executeScript(
   logs?: string[],
   npmPackageService?: any
 ): Promise<any> {
-  const { fetchHtml, authInfo, createUtils, createConsole, html, $, routeParams, helpers } =
+  const { authInfo, createUtils, createConsole, routeParams } =
     context;
-  await fetchHtml();
 
   // 创建安全的require函数
   const createSafeRequire = () => {
@@ -364,50 +301,43 @@ export async function executeScript(
         throw new Error("npm包功能未启用");
       };
     }
-
     return (packageName: string) => {
-      try {
-        // 验证包名格式
-        const packageNameRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
-        if (!packageNameRegex.test(packageName)) {
-          throw new Error(`无效的包名: ${packageName}`);
-        }
+      console.log("加载npm包:", packageName);
+    }
+    // return (packageName: string) => {
+    //   try {
+    //     // 验证包名格式
+    //     const packageNameRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+    //     if (!packageNameRegex.test(packageName)) {
+    //       throw new Error(`无效的包名: ${packageName}`);
+    //     }
 
-        // 检查包是否在白名单中
-        const whitelist = npmPackageService.getSecurityWhitelist();
-        if (!whitelist.includes(packageName)) {
-          throw new Error(`包 ${packageName} 不在安全白名单中`);
-        }
+    //     // 尝试加载包
+    //     const packagesDir = npmPackageService.getPackagesDirectory();
+    //     const packagePath = require.resolve(packageName, { paths: [packagesDir] });
+    //     // eslint-disable-next-line @typescript-eslint/no-var-requires
+    //     const loadedPackage = require(packagePath);
 
-        // 尝试加载包
-        const packagesDir = npmPackageService.getPackagesDirectory();
-        const packagePath = require.resolve(packageName, { paths: [packagesDir] });
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const loadedPackage = require(packagePath);
+    //     // 更新使用统计
+    //     npmPackageService.updatePackageUsage(packageName).catch((error: any) => {
+    //       logger.warn(`更新包使用统计失败: ${packageName}`, error);
+    //     });
 
-        // 更新使用统计
-        npmPackageService.updatePackageUsage(packageName).catch((error: any) => {
-          logger.warn(`更新包使用统计失败: ${packageName}`, error);
-        });
+    //     if (logs) {
+    //       logs.push(formatMultilineLog("INFO", `成功加载npm包: ${packageName}`));
+    //     }
 
-        if (logs) {
-          logs.push(formatMultilineLog("INFO", `成功加载npm包: ${packageName}`));
-        }
-
-        return loadedPackage;
-      } catch (error) {
-        const errorMessage = `加载npm包失败: ${packageName} - ${(error as Error).message}`;
-        if (logs) {
-          logs.push(formatMultilineLog("ERROR", errorMessage));
-        }
-        throw new Error(errorMessage);
-      }
-    };
+    //     return loadedPackage;
+    //   } catch (error) {
+    //     const errorMessage = `加载npm包失败: ${packageName} - ${(error as Error).message}`;
+    //     if (logs) {
+    //       logs.push(formatMultilineLog("ERROR", errorMessage));
+    //     }
+    //     throw new Error(errorMessage);
+    //   }
+    // };
   };
-
   const scriptContext = {
-    $: $,
-    html: html,
     url: config.url,
     axios: axiosInstance,
     auth: authInfo,
@@ -415,13 +345,16 @@ export async function executeScript(
     utils: createUtils(),
     dayjs: dayjs,
     routeParams: routeParams || {},
-    helpers: helpers || {},
-    require: createSafeRequire(),
+    requirex: createSafeRequire(),
   };
   const vmContext = vm.createContext(scriptContext);
   const timeout = config.script?.timeout || 30000;
+  console.log("config.script=", config.script);
   const asyncScript = `
     (async () => {
+      // 显式声明所有上下文变量，防止变量提升问题
+      const { url, axios, auth, console, utils, dayjs, routeParams, requirex } = this;
+      
       try {
         ${config.script?.script}
       } catch (error) {

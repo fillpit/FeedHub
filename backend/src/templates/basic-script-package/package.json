@@ -1,0 +1,48 @@
+{
+  "name": "basic-script-package",
+  "version": "1.0.0",
+  "description": "基础脚本包模板 - 用于创建GitHub仓库搜索RSS Feed",
+  "main": "index.js",
+  "author": "FeedHub",
+  "license": "MIT",
+  "keywords": [
+    "feedhub",
+    "script-package",
+    "rss",
+    "github",
+    "template"
+  ],
+  "feedhub": {
+    "entryPoint": "index.js",
+    "parameters": [
+      {
+        "name": "keyword",
+        "type": "string",
+        "required": false,
+        "default": "javascript",
+        "description": "搜索关键词"
+      },
+      {
+        "name": "limit",
+        "type": "number",
+        "required": false,
+        "default": 10,
+        "description": "返回结果数量限制（1-100）"
+      },
+      {
+        "name": "sort",
+        "type": "string",
+        "required": false,
+        "default": "updated",
+        "description": "排序方式：stars, forks, updated, created"
+      }
+    ],
+    "description": "通过GitHub API搜索仓库并生成RSS Feed",
+    "example": {
+      "url": "/api/dynamic-route/your-route-key?keyword=vue&limit=20&sort=stars",
+      "description": "搜索Vue相关仓库，返回20个结果，按星标数排序"
+    },
+    "category": "开发工具",
+    "tags": ["github", "search", "repository", "development"]
+  }
+}

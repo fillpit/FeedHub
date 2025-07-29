@@ -240,6 +240,7 @@
             <el-radio-button label="inline">内联脚本</el-radio-button>
             <el-radio-button label="url">远程URL</el-radio-button>
             <el-radio-button label="file">上传文件</el-radio-button>
+            <el-radio-button label="package">脚本包</el-radio-button>
           </el-radio-group>
         </el-form-item>
 
@@ -267,6 +268,10 @@
             />
             <div class="script-help">
               <el-button type="primary" link @click="showScriptHelp">脚本帮助指南</el-button>
+              <el-button v-if="form.id && form.script.sourceType === 'inline'" type="success" link @click="openInlineScriptEditor" style="margin-left: 12px;">
+                <el-icon><Edit /></el-icon>
+                在线编辑
+              </el-button>
               <span class="editor-tips">支持语法高亮、自动补全、错误检查等功能</span>
             </div>
           </template>
@@ -277,10 +282,11 @@
           </template>
 
           <!-- 上传文件 -->
-          <template v-else>
+          <template v-else-if="form.script.sourceType === 'file'">
             <el-upload
               class="script-upload"
               action="/api/upload"
+              :headers="uploadHeaders"
               :on-success="handleUploadSuccess"
               :on-error="handleUploadError"
               :before-upload="beforeUpload"
@@ -292,6 +298,49 @@
             </el-upload>
             <div v-if="form.script.content" class="file-info">
               <span>已上传文件: {{ form.script.content }}</span>
+            </div>
+          </template>
+
+          <!-- 脚本包 -->
+          <template v-else-if="form.script.sourceType === 'package'">
+            <div class="package-upload-section">
+              <div class="upload-actions">
+                <el-upload
+                  class="script-upload"
+                  action="/api/upload"
+                  :headers="uploadHeaders"
+                  :on-success="handlePackageUploadSuccess"
+                  :on-error="handleUploadError"
+                  :before-upload="beforePackageUpload"
+                >
+                  <el-button type="primary">上传脚本包</el-button>
+                  <template #tip>
+                    <div class="el-upload__tip">只能上传 .zip 文件，包含多个脚本文件的压缩包</div>
+                  </template>
+                </el-upload>
+                <el-button type="success" @click="openTemplateDialog" style="margin-left: 12px;">
+                  <el-icon><Document /></el-icon>
+                  使用模板
+                </el-button>
+              </div>
+            </div>
+            <div v-if="form.script.content" class="file-info">
+              <span>已上传脚本包: {{ form.script.content }}</span>
+              <el-button type="primary" link @click="previewPackageContent" style="margin-left: 12px;">
+                预览包内容
+              </el-button>
+              <el-button type="warning" link @click="validatePackageStructure" style="margin-left: 8px;">
+                验证包结构
+              </el-button>
+              <el-button type="success" link @click="openPackageEditor" style="margin-left: 8px;">
+                <el-icon><Edit /></el-icon>
+                在线编辑
+              </el-button>
+            </div>
+            
+            <div style="margin-top: 16px; padding: 12px; background-color: #f5f7fa; border-radius: 4px; font-size: 12px; color: #606266;">
+              <el-icon style="margin-right: 4px;"><InfoFilled /></el-icon>
+              入口文件将自动从脚本包的 package.json 文件中的 main 字段读取
             </div>
           </template>
         </el-form-item>
@@ -400,26 +449,341 @@
 
     <!-- 脚本帮助指南对话框 -->
     <ScriptHelpGuide mode="dialog" v-model="scriptHelpVisible" />
+
+    <!-- 脚本包预览对话框 -->
+    <el-dialog v-model="packagePreviewVisible" title="脚本包内容预览" width="60%" :close-on-click-modal="false">
+      <div v-if="packagePreviewData" class="package-preview">
+        <div class="package-info">
+          <h4>包信息</h4>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="包名">
+              {{ packagePreviewData.packageInfo?.name || '未知' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="版本">
+              {{ packagePreviewData.packageInfo?.version || '未知' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="描述">
+              {{ packagePreviewData.packageInfo?.description || '无描述' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="入口文件">
+              {{ packagePreviewData.packageInfo?.main || 'index.js' }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <div class="file-structure" style="margin-top: 20px;">
+          <h4>文件结构</h4>
+          <el-tree
+            :data="packagePreviewData.fileTree"
+            :props="{ label: 'name', children: 'children' }"
+            default-expand-all
+            :expand-on-click-node="false"
+          >
+            <template #default="{ node, data }">
+              <span class="tree-node">
+                <el-icon v-if="data.type === 'folder'" style="margin-right: 4px;">
+                  <Folder />
+                </el-icon>
+                <el-icon v-else style="margin-right: 4px;">
+                  <Document />
+                </el-icon>
+                {{ data.name }}
+                <span v-if="data.size" class="file-size">({{ formatFileSize(data.size) }})</span>
+              </span>
+            </template>
+          </el-tree>
+        </div>
+
+        <div class="file-content" style="margin-top: 20px;" v-if="packagePreviewData.entryContent">
+          <h4>入口文件内容预览</h4>
+          <CodeEditor
+            :model-value="packagePreviewData.entryContent"
+            language="javascript"
+            theme="vs-dark"
+            :height="300"
+            :readonly="true"
+          />
+        </div>
+      </div>
+      
+      <template #footer>
+        <el-button @click="packagePreviewVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 脚本包验证对话框 -->
+    <el-dialog v-model="packageValidationVisible" title="脚本包结构验证" width="50%" :close-on-click-modal="false">
+      <div v-if="packageValidationResult" class="package-validation">
+        <el-alert
+          :type="packageValidationResult.valid ? 'success' : 'warning'"
+          :title="packageValidationResult.valid ? '验证通过' : '验证失败'"
+          :description="packageValidationResult.message"
+          show-icon
+          :closable="false"
+        />
+
+    <!-- 脚本包在线编辑器对话框 -->
+    <el-dialog 
+      v-model="packageEditorVisible" 
+      title="脚本包在线编辑器" 
+      width="90%" 
+      :close-on-click-modal="false"
+      @close="closeEditSession"
+    >
+      <div v-loading="editSessionLoading" class="package-editor">
+        <div class="editor-layout">
+          <!-- 左侧文件树 -->
+          <div class="file-tree-panel">
+            <div class="panel-header">
+              <h4>文件列表</h4>
+              <div class="panel-actions">
+                <el-button size="small" @click="loadEditSessionFiles">
+                  <el-icon><Refresh /></el-icon>
+                  刷新
+                </el-button>
+              </div>
+            </div>
+            <el-tree
+              :data="editSessionFiles"
+              :props="{ label: 'name', children: 'children' }"
+              default-expand-all
+              :expand-on-click-node="false"
+              @node-click="handleFileClick"
+            >
+              <template #default="{ node, data }">
+                <span class="tree-node" :class="{ active: selectedFile === data.path }">
+                  <el-icon v-if="data.type === 'folder'" style="margin-right: 4px;">
+                    <Folder />
+                  </el-icon>
+                  <el-icon v-else style="margin-right: 4px;">
+                    <Document />
+                  </el-icon>
+                  {{ data.name }}
+                  <span v-if="data.size" class="file-size">({{ formatFileSize(data.size) }})</span>
+                </span>
+              </template>
+            </el-tree>
+          </div>
+
+          <!-- 右侧代码编辑器 -->
+          <div class="code-editor-panel">
+            <div class="panel-header">
+              <h4 v-if="selectedFile">{{ selectedFile }}</h4>
+              <h4 v-else>请选择文件</h4>
+              <div class="panel-actions">
+                <el-button 
+                  size="small" 
+                  type="primary" 
+                  @click="saveFileContent"
+                  :disabled="!selectedFile"
+                >
+                  <el-icon><DocumentCopy /></el-icon>
+                  保存
+                </el-button>
+                <el-button 
+                  size="small" 
+                  type="success" 
+                  @click="debugWithEditSession"
+                  :loading="debugging"
+                >
+                  <el-icon><CaretRight /></el-icon>
+                  调试
+                </el-button>
+              </div>
+            </div>
+            <div class="editor-content" v-loading="editorLoading">
+              <CodeEditor
+                v-if="selectedFile"
+                v-model="fileContent"
+                language="javascript"
+                theme="vs-dark"
+                :height="500"
+              />
+              <div v-else class="no-file-selected">
+                <el-empty description="请从左侧选择要编辑的文件" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 调试结果 -->
+        <div v-if="debugResult" class="debug-result" style="margin-top: 20px;">
+          <h4>调试结果</h4>
+          <el-tabs v-model="activeDebugTab">
+            <el-tab-pane label="执行结果" name="result">
+              <div v-if="debugResult.success" class="result-success">
+                <el-alert type="success" title="脚本执行成功" :closable="false" />
+                <div class="result-content">
+                  <pre>{{ JSON.stringify(debugResult.result, null, 2) }}</pre>
+                </div>
+              </div>
+              <div v-else class="result-error">
+                <el-alert type="error" :title="debugResult.error" :closable="false" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="执行日志" name="logs">
+              <div class="logs-content">
+                <div v-for="(log, index) in debugResult.logs" :key="index" class="log-item">
+                  {{ log }}
+                </div>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="exportEditedPackage">
+            <el-icon><Download /></el-icon>
+            导出脚本包
+          </el-button>
+          <el-button @click="closeEditSession">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+
+        <div v-if="packageValidationResult.issues && packageValidationResult.issues.length > 0" style="margin-top: 16px;">
+          <h4>发现的问题：</h4>
+          <div class="validation-list">
+            <div v-for="(issue, index) in packageValidationResult.issues" :key="index" class="validation-item">
+              <el-icon style="margin-right: 8px;">
+                <Warning v-if="issue.level === 'warning'" />
+                <CircleClose v-else />
+              </el-icon>
+              <span>{{ issue.message }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="packageValidationResult.suggestions && packageValidationResult.suggestions.length > 0" style="margin-top: 16px;">
+          <h4>建议：</h4>
+          <div class="validation-list">
+            <div v-for="(suggestion, index) in packageValidationResult.suggestions" :key="index" class="validation-item">
+              <el-icon style="margin-right: 8px;">
+                <InfoFilled />
+              </el-icon>
+              <span>{{ suggestion }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <template #footer>
+        <el-button @click="packageValidationVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 模板选择对话框 -->
+    <el-dialog
+      v-model="templateDialogVisible"
+      title="选择脚本包模板"
+      width="800px"
+      :close-on-click-modal="false"
+    >
+      <div v-loading="templateLoading">
+        <div v-if="templateList.length === 0" class="empty-templates">
+          <el-empty description="暂无可用模板" />
+        </div>
+        <div v-else class="template-grid">
+          <div 
+            v-for="template in templateList" 
+            :key="template.id" 
+            class="template-card"
+            :class="{ 'selected': selectedTemplate?.id === template.id }"
+            @click="selectedTemplate = template"
+          >
+            <div class="template-header">
+              <h4>{{ template.name }}</h4>
+              <el-tag :type="getTemplateTagType(template.category)">{{ template.category }}</el-tag>
+            </div>
+            <p class="template-description">{{ template.description }}</p>
+            <div class="template-meta">
+              <span class="version">v{{ template.version }}</span>
+              <span class="author">{{ template.author }}</span>
+            </div>
+            <div class="template-tags">
+              <el-tag 
+                v-for="tag in template.tags" 
+                :key="tag" 
+                size="small" 
+                effect="plain"
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
+            <div class="template-actions">
+              <el-button 
+                size="small" 
+                type="primary" 
+                @click.stop="downloadTemplateFile(template.id)"
+              >
+                下载
+              </el-button>
+              <el-button 
+                size="small" 
+                @click.stop="useTemplate(template)"
+              >
+                使用
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <template #footer>
+        <el-button @click="templateDialogVisible = false">关闭</el-button>
+        <el-button 
+          type="primary" 
+          :disabled="!selectedTemplate"
+          @click="useTemplate(selectedTemplate)"
+        >
+          使用选中模板
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 内联脚本在线编辑器组件 -->
+    <InlineScriptEditor 
+      v-model="inlineScriptEditorVisible" 
+      :route-id="currentEditingRouteId"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
-import { Search, Download, Upload } from "@element-plus/icons-vue";
+import { Search, Download, Upload, Folder, Document, Warning, CircleClose, InfoFilled, Refresh, DocumentCopy, CaretRight } from "@element-plus/icons-vue";
+import { 
+  previewPackage, 
+  validatePackage, 
+  getTemplates, 
+  downloadTemplate,
+  createEditSession,
+  getEditSessionFiles,
+  getEditSessionFileContent,
+  saveEditSessionFileContent,
+  closeEditSession as closeEditSessionAPI,
+  exportEditSession
+} from "@/api/scriptPackage";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
   updateDynamicRoute,
   deleteDynamicRoute,
   debugDynamicRouteScript,
+  debugDynamicRouteScriptWithEditSession,
   type DynamicRouteConfig,
 } from "@/api/dynamicRoute";
 import { authCredentialApi } from "@/api/authCredential";
 import type { AuthCredential } from "@feedhub/shared";
 import { copyToClipboard } from "@/utils";
+import { STORAGE_KEYS } from "@/constants/storage";
 import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
 import CodeEditor from "@/components/CodeEditor.vue";
+import InlineScriptEditor from "@/components/InlineScriptEditor.vue";
 
 // 状态
 const loading = ref(false);
@@ -434,13 +798,44 @@ const debugging = ref(false);
 const debugResult = ref<Record<string, any>>();
 const activeDebugTab = ref("result");
 const scriptHelpVisible = ref(false);
+
+// 脚本包预览和验证相关
+const packagePreviewVisible = ref(false);
+const packagePreviewData = ref<any>(null);
+const packageValidationVisible = ref(false);
+const packageValidationResult = ref<any>(null);
+
+// 模板管理相关
+const templateDialogVisible = ref(false);
+const templateList = ref<any[]>([]);
+const templateLoading = ref(false);
+const selectedTemplate = ref<any>(null);
 const testParams = ref<Record<string, unknown>>({});
 const debugForm = ref<DynamicRouteConfig>({} as DynamicRouteConfig);
 const fileInputRef = ref<HTMLInputElement>();
 const selectedRoutes = ref<DynamicRouteConfig[]>([]);
 
+// 在线编辑相关
+const packageEditorVisible = ref(false);
+const editSessionId = ref<string>('');
+const editSessionFiles = ref<any[]>([]);
+const selectedFile = ref<string>('');
+const fileContent = ref<string>('');
+const editorLoading = ref(false);
+const editSessionLoading = ref(false);
+
+// 内联脚本在线编辑相关
+const inlineScriptEditorVisible = ref(false);
+const currentEditingRouteId = ref<number>(0);
+
 // 基础URL
 const baseUrl = window.location.origin;
+
+// 上传认证头
+const uploadHeaders = computed(() => {
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+});
 
 // 表单数据
 const form = reactive<DynamicRouteConfig>({
@@ -481,8 +876,31 @@ const rules = {
     { type: "number", min: 1, max: 1440, message: "刷新间隔必须在1-1440分钟之间", trigger: "blur" },
   ],
   "script.sourceType": [{ required: true, message: "请选择脚本来源类型", trigger: "change" }],
-  "script.content": [{ required: true, message: "请输入脚本内容", trigger: "blur" }],
-  "script.timeout": [
+  "script.content": [
+    {
+      required: true,
+      validator: (rule: any, value: string, callback: Function) => {
+        if (!value || value.trim() === '') {
+          const sourceType = form.script.sourceType;
+          if (sourceType === 'inline') {
+            callback(new Error('请输入脚本内容'));
+          } else if (sourceType === 'url') {
+            callback(new Error('请输入脚本URL'));
+          } else if (sourceType === 'file') {
+            callback(new Error('请上传脚本文件'));
+          } else if (sourceType === 'package') {
+            callback(new Error('请上传脚本包'));
+          } else {
+            callback(new Error('请输入脚本内容'));
+          }
+        } else {
+          callback();
+        }
+      },
+       trigger: 'blur'
+     }
+   ],
+   "script.timeout": [
     { required: true, message: "请输入超时时间", trigger: "blur" },
     {
       type: "number",
@@ -711,13 +1129,42 @@ const beforeUpload = (file: File) => {
   return true;
 };
 
+// 脚本包上传前检查
+const beforePackageUpload = (file: File) => {
+  const isZip = file.type === "application/zip" || file.name.endsWith(".zip");
+  if (!isZip) {
+    ElMessage.error("只能上传ZIP压缩包文件!");
+    return false;
+  }
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    ElMessage.error("脚本包大小不能超过10MB!");
+    return false;
+  }
+  return true;
+};
+
 // 上传成功处理
 const handleUploadSuccess = (response: any) => {
   if (response.success) {
     form.script.content = response.data.path;
+    // 清除该字段的验证错误
+    formRef.value?.clearValidate('script.content');
     ElMessage.success("文件上传成功");
   } else {
     ElMessage.error(response.message || "文件上传失败");
+  }
+};
+
+// 脚本包上传成功处理
+const handlePackageUploadSuccess = (response: any) => {
+  if (response.success) {
+    form.script.content = response.data.file.path;
+    // 清除该字段的验证错误
+    formRef.value?.clearValidate('script.content');
+    ElMessage.success("脚本包上传成功");
+  } else {
+    ElMessage.error(response.message || "脚本包上传失败");
   }
 };
 
@@ -726,9 +1173,332 @@ const handleUploadError = () => {
   ElMessage.error("文件上传失败");
 };
 
+// 预览脚本包内容
+const previewPackageContent = async () => {
+  if (!form.script.content) {
+    ElMessage.warning("请先上传脚本包");
+    return;
+  }
+  
+  try {
+    const result = await previewPackage(form.script.content);
+    
+    if (result.code === 0) {
+      packagePreviewVisible.value = true;
+      packagePreviewData.value = result.data;
+    } else {
+      ElMessage.error(result.message || "获取包内容失败");
+    }
+  } catch (error) {
+    console.error("预览脚本包失败:", error);
+    ElMessage.error("预览脚本包失败");
+  }
+};
+
+// 验证脚本包结构
+const validatePackageStructure = async () => {
+  if (!form.script.content) {
+    ElMessage.warning("请先上传脚本包");
+    return;
+  }
+  
+  try {
+    const result = await validatePackage(form.script.content);
+    
+    if (result.code === 0) {
+      if (result.data && (result.data as { valid: boolean }).valid) {
+        ElMessage.success("脚本包结构验证通过");
+        packageValidationResult.value = result.data;
+      } else {
+        ElMessage.warning("脚本包结构存在问题");
+        packageValidationResult.value = result.data;
+      }
+      packageValidationVisible.value = true;
+    } else {
+      ElMessage.error(result.message || "验证脚本包失败");
+    }
+  } catch (error) {
+    console.error("验证脚本包失败:", error);
+    ElMessage.error("验证脚本包失败");
+  }
+};
+
 // 显示脚本帮助
 const showScriptHelp = () => {
   scriptHelpVisible.value = true;
+};
+
+// 打开模板对话框
+const openTemplateDialog = async () => {
+  templateDialogVisible.value = true;
+  await loadTemplates();
+};
+
+// 加载模板列表
+const loadTemplates = async () => {
+  templateLoading.value = true;
+  try {
+    const result = await getTemplates();
+    if (result.code === 0) {
+      templateList.value = (result.data as any[]) || [];
+    } else {
+      ElMessage.error(result.message || '获取模板列表失败');
+    }
+  } catch (error) {
+    console.error('获取模板列表失败:', error);
+    ElMessage.error('获取模板列表失败');
+  } finally {
+    templateLoading.value = false;
+  }
+};
+
+// 下载模板
+const downloadTemplateFile = async (templateId: string) => {
+  try {
+    const result = await downloadTemplate(templateId);
+    if (result.code === 0) {
+      // 创建下载链接
+      const blob = new Blob([result.data as BlobPart], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${templateId}-template.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      ElMessage.success('模板下载成功');
+    } else {
+      ElMessage.error(result.message || '下载模板失败');
+    }
+  } catch (error) {
+    console.error('下载模板失败:', error);
+    ElMessage.error('下载模板失败');
+  }
+};
+
+// 打开脚本包编辑器
+const openPackageEditor = async () => {
+  if (!form.script.content) {
+    ElMessage.warning('请先上传脚本包');
+    return;
+  }
+  
+  editSessionLoading.value = true;
+  try {
+    // 创建编辑会话
+    const result = await createEditSession(form.script.content);
+    if (result.code === 0) {
+      editSessionId.value = (result.data as any).sessionId;
+      await loadEditSessionFiles();
+      packageEditorVisible.value = true;
+    } else {
+      ElMessage.error(result.message || '创建编辑会话失败');
+    }
+  } catch (error) {
+    console.error('创建编辑会话失败:', error);
+    ElMessage.error('创建编辑会话失败');
+  } finally {
+    editSessionLoading.value = false;
+  }
+};
+
+// 加载编辑会话文件列表
+const loadEditSessionFiles = async () => {
+  if (!editSessionId.value) return;
+  
+  try {
+    const result = await getEditSessionFiles(editSessionId.value);
+    if (result.code === 0) {
+      editSessionFiles.value = (result.data as any[]) || [];
+      // 默认选择入口文件
+      const entryFile = editSessionFiles.value.find(file => 
+        file.name === 'index.js' || file.name === 'main.js'
+      );
+      if (entryFile) {
+        await selectFile(entryFile.path);
+      }
+    } else {
+      ElMessage.error(result.message || '获取文件列表失败');
+    }
+  } catch (error) {
+    console.error('获取文件列表失败:', error);
+    ElMessage.error('获取文件列表失败');
+  }
+};
+
+// 选择文件
+const selectFile = async (filePath: string) => {
+  if (!editSessionId.value) return;
+  
+  selectedFile.value = filePath;
+  editorLoading.value = true;
+  
+  try {
+    const result = await getEditSessionFileContent(editSessionId.value, filePath);
+    if (result.code === 0) {
+      fileContent.value = (result.data as any).content || '';
+    } else {
+      ElMessage.error(result.message || '获取文件内容失败');
+    }
+  } catch (error) {
+    console.error('获取文件内容失败:', error);
+    ElMessage.error('获取文件内容失败');
+  } finally {
+    editorLoading.value = false;
+  }
+};
+
+// 保存文件内容
+const saveFileContent = async () => {
+  if (!editSessionId.value || !selectedFile.value) return;
+  
+  try {
+    const result = await saveEditSessionFileContent(editSessionId.value, selectedFile.value, fileContent.value);
+    if (result.code === 0) {
+      ElMessage.success('文件保存成功');
+    } else {
+      ElMessage.error(result.message || '文件保存失败');
+    }
+  } catch (error) {
+    console.error('文件保存失败:', error);
+    ElMessage.error('文件保存失败');
+  }
+};
+
+// 使用编辑会话调试脚本
+const debugWithEditSession = async () => {
+  if (!editSessionId.value) {
+    ElMessage.warning('请先打开编辑会话');
+    return;
+  }
+  
+  // 先保存当前文件
+  if (selectedFile.value) {
+    await saveFileContent();
+  }
+  
+  debugging.value = true;
+  try {
+    const result = await debugDynamicRouteScriptWithEditSession(
+      debugForm.value,
+      testParams.value,
+      editSessionId.value
+    );
+    
+    if (result.code === 0) {
+      debugResult.value = result.data as Record<string, any>;
+      activeDebugTab.value = 'result';
+      ElMessage.success('调试完成');
+    } else {
+      debugResult.value = {
+        success: false,
+        error: result.message || '调试失败',
+        logs: [`[ERROR] ${result.message || '调试失败'}`]
+      };
+      activeDebugTab.value = 'logs';
+      ElMessage.error(result.message || '调试失败');
+    }
+  } catch (error) {
+    console.error('调试失败:', error);
+    debugResult.value = {
+      success: false,
+      error: (error as Error).message,
+      logs: [`[ERROR] ${(error as Error).message}`]
+    };
+    activeDebugTab.value = 'logs';
+    ElMessage.error('调试失败');
+  } finally {
+    debugging.value = false;
+  }
+};
+
+// 关闭编辑会话
+const closeEditSession = async () => {
+  if (!editSessionId.value) return;
+  
+  try {
+    await closeEditSessionAPI(editSessionId.value);
+    editSessionId.value = '';
+    editSessionFiles.value = [];
+    selectedFile.value = '';
+    fileContent.value = '';
+    packageEditorVisible.value = false;
+  } catch (error) {
+    console.error('关闭编辑会话失败:', error);
+  }
+};
+
+// 导出编辑后的脚本包
+const exportEditedPackage = async () => {
+  if (!editSessionId.value) return;
+  
+  try {
+    const result = await exportEditSession(editSessionId.value);
+    
+    // 创建下载链接
+    const blob = new Blob([result.data as BlobPart], { type: 'application/zip' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `edited-script-package-${new Date().toISOString().split('T')[0]}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    ElMessage.success('脚本包导出成功');
+  } catch (error) {
+    console.error('导出脚本包失败:', error);
+    ElMessage.error('导出脚本包失败');
+  }
+};
+
+// 处理文件点击
+const handleFileClick = (data: any) => {
+  if (data.type === 'file') {
+    selectFile(data.path);
+  }
+};
+
+// 格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// 打开内联脚本编辑器
+const openInlineScriptEditor = async () => {
+  if (!form.id) {
+    ElMessage.warning('请先保存路由配置');
+    return;
+  }
+  
+  currentEditingRouteId.value = form.id;
+  inlineScriptEditorVisible.value = true;
+};
+
+// 使用模板
+const useTemplate = (template: any) => {
+  selectedTemplate.value = template;
+  templateDialogVisible.value = false;
+  ElMessage.success(`已选择模板: ${template.name}`);
+  ElMessage.info('请下载模板文件，修改后重新上传');
+};
+
+// 获取模板标签类型
+const getTemplateTagType = (category: string) => {
+  const typeMap: Record<string, string> = {
+    '开发工具': 'primary',
+    '新闻': 'success',
+    'API': 'warning',
+    '通用': 'info',
+    '数据': 'danger'
+  };
+  return typeMap[category] || 'info';
 };
 
 // 调试脚本
@@ -1098,6 +1868,247 @@ onMounted(() => {
       white-space: pre-wrap;
       word-break: break-all;
       margin: 10px 0;
+    }
+  }
+
+  .validation-list {
+    .validation-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .el-icon {
+        margin-right: 8px;
+        flex-shrink: 0;
+      }
+      
+      span {
+        flex: 1;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 16px;
+    
+    .template-card {
+      border: 1px solid #e4e7ed;
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      
+      &:hover {
+        border-color: #409eff;
+        box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+      }
+      
+      &.selected {
+        border-color: #409eff;
+        background-color: #f0f9ff;
+      }
+      
+      .template-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        
+        h4 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+        }
+      }
+      
+      .template-description {
+        color: #606266;
+        font-size: 14px;
+        line-height: 1.4;
+        margin: 8px 0;
+        min-height: 40px;
+      }
+      
+      .template-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #909399;
+        margin: 8px 0;
+        
+        .version {
+          font-weight: 500;
+        }
+      }
+      
+      .template-tags {
+        margin: 8px 0;
+        
+        .el-tag {
+          margin-right: 4px;
+          margin-bottom: 4px;
+        }
+      }
+      
+      .template-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        
+        .el-button {
+          flex: 1;
+        }
+      }
+    }
+  }
+
+  .package-upload-section {
+    .upload-actions {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+  }
+
+  // 在线编辑器样式
+  .package-editor {
+    .editor-layout {
+      display: flex;
+      gap: 16px;
+      height: 600px;
+      
+      .file-tree-panel {
+        width: 300px;
+        border: 1px solid #e4e7ed;
+        border-radius: 4px;
+        overflow: hidden;
+        
+        .panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px;
+          background: #f5f7fa;
+          border-bottom: 1px solid #e4e7ed;
+          
+          h4 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+          }
+        }
+        
+        .el-tree {
+          padding: 8px;
+          
+          .tree-node {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            
+            &.active {
+              color: #409eff;
+              font-weight: 500;
+            }
+            
+            .file-size {
+              margin-left: auto;
+              font-size: 12px;
+              color: #909399;
+            }
+          }
+        }
+      }
+      
+      .code-editor-panel {
+        flex: 1;
+        border: 1px solid #e4e7ed;
+        border-radius: 4px;
+        overflow: hidden;
+        
+        .panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px;
+          background: #f5f7fa;
+          border-bottom: 1px solid #e4e7ed;
+          
+          h4 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+          }
+          
+          .panel-actions {
+            display: flex;
+            gap: 8px;
+          }
+        }
+        
+        .editor-content {
+          height: calc(100% - 49px);
+          
+          .no-file-selected {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+          }
+        }
+      }
+    }
+    
+    .debug-result {
+      border: 1px solid #e4e7ed;
+      border-radius: 4px;
+      padding: 16px;
+      
+      h4 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      
+      .result-content {
+        background: #f5f7fa;
+        border-radius: 4px;
+        padding: 12px;
+        margin-top: 12px;
+        
+        pre {
+          margin: 0;
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+      }
+      
+      .logs-content {
+        background: #f5f7fa;
+        border-radius: 4px;
+        padding: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+        
+        .log-item {
+          padding: 4px 0;
+          border-bottom: 1px solid #e4e7ed;
+          font-family: monospace;
+          font-size: 12px;
+          
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+      }
     }
   }
 }

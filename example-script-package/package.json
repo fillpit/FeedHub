@@ -1,0 +1,54 @@
+{
+  "name": "feedhub-example-script-package",
+  "version": "1.0.0",
+  "description": "FeedHub动态路由脚本包示例 - GitHub搜索RSS生成器",
+  "main": "index.js",
+  "author": "FeedHub",
+  "license": "MIT",
+  "keywords": [
+    "feedhub",
+    "rss",
+    "github",
+    "search",
+    "script-package"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "feedhub": {
+    "entryPoint": "index.js",
+    "parameters": [
+      {
+        "name": "keyword",
+        "type": "string",
+        "required": false,
+        "default": "javascript",
+        "description": "搜索关键词"
+      },
+      {
+        "name": "limit",
+        "type": "number",
+        "required": false,
+        "default": 10,
+        "description": "返回结果数量限制"
+      }
+    ],
+    "description": "通过GitHub API搜索仓库并生成RSS feed",
+    "examples": [
+      {
+        "name": "搜索JavaScript项目",
+        "params": {
+          "keyword": "javascript",
+          "limit": 10
+        }
+      },
+      {
+        "name": "搜索Vue.js项目",
+        "params": {
+          "keyword": "vue.js",
+          "limit": 20
+        }
+      }
+    ]
+  }
+}
