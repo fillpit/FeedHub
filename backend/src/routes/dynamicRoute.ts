@@ -1,7 +1,16 @@
 import { Router } from "express";
+import multer from "multer";
 import { container } from "../inversify.config";
 import { TYPES } from "../core/types";
 import { DynamicRouteController } from "../controllers/dynamicRoute";
+
+// 配置文件上传
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  }
+});
 
 const router = Router();
 const controller = container.get<DynamicRouteController>(TYPES.DynamicRouteController);
@@ -38,6 +47,17 @@ router.put("/:id/inline-script/files", (req, res) => controller.updateInlineScri
 router.post("/:id/inline-script/files", (req, res) => controller.createInlineScriptFile(req, res));
 
 // 删除内联脚本文件
-router.delete("/:id/inline-script/files", (req, res) => controller.deleteInlineScriptFile(req, res));
+router.delete("/:id/inline-script/files/:fileName", (req, res) => controller.deleteInlineScriptFile(req, res));
+
+// 初始化路由脚本 - 支持文件上传和JSON请求
+router.post("/:id/initialize-script", (req, res, next) => {
+  // 检查Content-Type，如果是multipart/form-data则使用multer
+  const contentType = req.get('Content-Type') || '';
+  if (contentType.includes('multipart/form-data')) {
+    upload.single('zipFile')(req, res, next);
+  } else {
+    next();
+  }
+}, (req, res) => controller.initializeRouteScript(req, res));
 
 export default router;

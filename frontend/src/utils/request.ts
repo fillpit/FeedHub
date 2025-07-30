@@ -118,9 +118,15 @@ axiosInstance.interceptors.request.use(
     // 添加 CSRF 防护
     Object.assign(config.headers, CSRFProtection.setRequestHeader(config.headers));
 
-    // 清理请求数据中的潜在XSS内容
-    if (config.data && typeof config.data === "object") {
-      config.data = sanitizeRequestData(config.data);
+    // 如果是 FormData，不要设置 Content-Type，让浏览器自动处理
+    if (config.data instanceof FormData) {
+      // 删除默认的 Content-Type，让浏览器自动设置包含 boundary 的 multipart/form-data
+      delete config.headers['Content-Type'];
+    } else {
+      // 清理请求数据中的潜在XSS内容
+      if (config.data && typeof config.data === "object") {
+        config.data = sanitizeRequestData(config.data);
+      }
     }
 
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);

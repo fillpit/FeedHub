@@ -30,7 +30,7 @@
             :expand-on-click-node="false"
             @node-click="handleFileClick"
           >
-            <template #default="{ node, data }">
+            <template #default="{ data }">
               <div class="tree-node" :class="{ active: selectedFile === data.path }">
                 <span class="file-info" @click="handleFileClick(data)">
                   <el-icon style="margin-right: 4px;">
@@ -59,6 +59,14 @@
           <div class="panel-header">
             <h4>{{ selectedFile || '请选择文件' }}</h4>
             <div class="panel-actions">
+              <el-button 
+                type="info" 
+                size="small" 
+                @click="showScriptHelp"
+              >
+                <el-icon><QuestionFilled /></el-icon>
+                脚本帮助指南
+              </el-button>
               <el-button 
                 type="primary" 
                 size="small" 
@@ -98,6 +106,9 @@
       </div>
     </template>
   </el-dialog>
+
+  <!-- 脚本帮助指南对话框 -->
+  <ScriptHelpGuide mode="dialog" v-model="scriptHelpVisible" />
 
   <!-- 新建文件对话框 -->
   <el-dialog
@@ -143,8 +154,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Refresh, Document, DocumentCopy, Plus, Delete } from '@element-plus/icons-vue';
+import { Refresh, Document, DocumentCopy, Plus, Delete, QuestionFilled } from '@element-plus/icons-vue';
 import CodeEditor from '@/components/CodeEditor.vue';
+import ScriptHelpGuide from '@/components/ScriptHelpGuide.vue';
 import {
   getInlineScriptFiles,
   getInlineScriptFileContent,
@@ -177,6 +189,7 @@ const loading = ref(false);
 const files = ref<any[]>([]);
 const selectedFile = ref<string>('');
 const fileContent = ref<string>('');
+const scriptHelpVisible = ref(false);
 
 // 新建文件对话框状态
 const createFileDialogVisible = ref(false);
@@ -349,6 +362,11 @@ const deleteFile = async (fileName: string) => {
       ElMessage.error('删除文件失败');
     }
   }
+};
+
+// 显示脚本帮助
+const showScriptHelp = () => {
+  scriptHelpVisible.value = true;
 };
 
 // 关闭对话框

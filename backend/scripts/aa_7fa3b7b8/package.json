@@ -1,0 +1,14 @@
+{
+  "name": "dynamic-route-script",
+  "version": "1.0.0",
+  "description": "动态路由脚本包",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo "Error: no test specified" && exit 1"
+  },
+  "dependencies": {
+    
+  },
+  "author": "",
+  "license": "ISC"
+}

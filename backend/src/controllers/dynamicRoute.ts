@@ -123,8 +123,30 @@ export class DynamicRouteController extends BaseController {
   async deleteInlineScriptFile(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const routeId = Number(req.params.id);
-      const { fileName } = req.body;
+      const fileName = req.params.fileName;
       return await this.dynamicRouteService.deleteInlineScriptFile(routeId, fileName);
+    });
+  }
+
+  /**
+   * 初始化路由脚本
+   */
+  async initializeRouteScript(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const routeId = Number(req.params.id);
+      const { initType, templateName, gitUrl, gitBranch } = req.body;
+      
+      let zipBuffer: Buffer | undefined;
+      if (req.file) {
+        zipBuffer = req.file.buffer;
+      }
+      
+      return await this.dynamicRouteService.initializeRouteScript(routeId, initType, {
+        templateName,
+        zipBuffer,
+        gitUrl,
+        gitBranch
+      });
     });
   }
 
@@ -135,11 +157,17 @@ export class DynamicRouteController extends BaseController {
     const routePath = req.params[0]; // 使用通配符路由，获取完整路径
 
     try {
-      const rssXml = await this.dynamicRouteService.executeRouteScript(routePath, req.query);
+      const responseContent = await this.dynamicRouteService.executeRouteScript(routePath, req.query);
 
-      // 设置正确的内容类型
-      res.setHeader("Content-Type", "application/rss+xml");
-      res.send(rssXml);
+      // 根据type参数设置正确的内容类型
+      const responseType = (req.query.type as string) || 'rss';
+      if (responseType === 'json') {
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+      } else {
+        res.setHeader("Content-Type", "application/rss+xml; charset=utf-8");
+      }
+      
+      res.send(responseContent);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
 

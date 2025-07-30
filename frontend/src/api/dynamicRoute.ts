@@ -114,9 +114,49 @@ export function createInlineScriptFile(routeId: number, fileName: string, templa
  * @param fileName 文件名
  */
 export function deleteInlineScriptFile(routeId: number, fileName: string) {
-  return request.delete(`/api/dynamic-route/${routeId}/inline-script/files`, {
-    data: {
-      fileName,
-    },
-  });
+  return request.delete(`/api/dynamic-route/${routeId}/inline-script/files/${fileName}`);
+}
+
+/**
+ * 初始化路由脚本
+ * @param routeId 路由ID
+ * @param initType 初始化类型
+ * @param options 初始化选项
+ */
+export function initializeRouteScript(
+  routeId: number, 
+  initType: 'template' | 'upload' | 'git',
+  options: {
+    templateName?: string;
+    zipFile?: File;
+    gitUrl?: string;
+    gitBranch?: string;
+  }
+) {
+  // 对于文件上传，使用FormData
+  if (initType === 'upload' && options.zipFile) {
+    const formData = new FormData();
+    formData.append('initType', initType);
+    formData.append('zipFile', options.zipFile);
+    
+    // 不要手动设置 Content-Type，让浏览器自动设置以包含正确的 boundary
+    return request.post(`/api/dynamic-route/${routeId}/initialize-script`, formData);
+  }
+  
+  // 对于模板和Git，使用JSON
+  const data: any = { initType };
+  
+  if (options.templateName) {
+    data.templateName = options.templateName;
+  }
+  
+  if (options.gitUrl) {
+    data.gitUrl = options.gitUrl;
+  }
+  
+  if (options.gitBranch) {
+    data.gitBranch = options.gitBranch;
+  }
+  
+  return request.post(`/api/dynamic-route/${routeId}/initialize-script`, data);
 }

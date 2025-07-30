@@ -3,6 +3,7 @@ import DynamicRouteConfig, {
   DynamicRouteConfigAttributes,
   RouteParam,
 } from "../models/DynamicRouteConfig";
+import { DEFAULT_TYPE_PARAM } from "../../../shared/src/types/dynamicRoute";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import axios from "axios";
@@ -207,23 +208,42 @@ export class DynamicRouteService {
     console.log("验证脚本配置通过");
 
     // 统一使用内联脚本：创建脚本目录并保存到文件系统
-    try {
-      // 创建脚本目录
-      const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name);
-      
-      // 如果用户提供了自定义脚本内容，覆盖默认的main.js
-      if (routeData.script.content && routeData.script.content.trim()) {
-        await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.content);
+    // 只有当用户提供了脚本目录时才创建脚本目录
+    if (routeData.script.folder && routeData.script.folder.trim()) {
+      try {
+        // 创建脚本目录
+        const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name);
+        
+        // 写入用户提供的脚本目录到main.js
+        await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.folder);
+        
+        // 更新脚本配置，将folder改为脚本目录名称
+        routeData.script.folder = scriptDirName;
+        
+        logger.info(`[DynamicRouteService] 为路由 "${routeData.name}" 创建脚本目录: ${scriptDirName}`);
+      } catch (error) {
+        logger.error(`[DynamicRouteService] 创建脚本目录失败:`, error);
+        throw new Error(`创建脚本目录失败: ${(error as Error).message}`);
       }
-      
-      // 更新脚本配置，将content改为脚本目录名称，sourceType设为inline
-      routeData.script.content = scriptDirName;
-      routeData.script.sourceType = 'inline';
-      
-      logger.info(`[DynamicRouteService] 为路由 "${routeData.name}" 创建脚本目录: ${scriptDirName}`);
-    } catch (error) {
-      logger.error(`[DynamicRouteService] 创建脚本目录失败:`, error);
-      throw new Error(`创建脚本目录失败: ${(error as Error).message}`);
+    } else {
+      // 脚本目录为空，标记为未初始化状态
+      routeData.script.folder = '';
+      logger.info(`[DynamicRouteService] 路由 "${routeData.name}" 创建成功，脚本未初始化`);
+    }
+    
+    // 设置脚本类型为内联
+    routeData.script.sourceType = 'inline';
+
+    // 确保params数组存在
+    if (!routeData.params) {
+      routeData.params = [];
+    }
+
+    // 检查是否已经存在type参数，如果不存在则添加默认的type参数
+    const hasTypeParam = routeData.params.some(param => param.name === 'type');
+    if (!hasTypeParam) {
+      routeData.params.push(DEFAULT_TYPE_PARAM);
+      logger.info(`[DynamicRouteService] 为路由 "${routeData.name}" 添加默认type参数`);
     }
 
     // 创建新配置
@@ -257,41 +277,41 @@ export class DynamicRouteService {
       if (routeData.script.sourceType === 'inline') {
         try {
           // 如果原来也是内联脚本，更新现有脚本目录
-          if (route.script.sourceType === 'inline' && route.script.content) {
+          if (route.script.sourceType === 'inline' && route.script.folder) {
             // 检查脚本目录是否存在
-            if (this.scriptFileService.scriptDirectoryExists(route.script.content)) {
-              // 更新脚本内容
-              if (routeData.script.content && routeData.script.content.trim()) {
-                await this.scriptFileService.writeScriptFile(route.script.content, 'main.js', routeData.script.content);
+            if (this.scriptFileService.scriptDirectoryExists(route.script.folder)) {
+              // 更新脚本目录
+              if (routeData.script.folder && routeData.script.folder.trim()) {
+                await this.scriptFileService.writeScriptFile(route.script.folder, 'main.js', routeData.script.folder);
               }
               // 保持原有的脚本目录名称
-              routeData.script.content = route.script.content;
+              routeData.script.folder = route.script.folder;
             } else {
               // 原脚本目录不存在，创建新的
               const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name || route.name);
-              if (routeData.script.content && routeData.script.content.trim()) {
-                await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.content);
+              if (routeData.script.folder && routeData.script.folder.trim()) {
+                await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.folder);
               }
-              routeData.script.content = scriptDirName;
+              routeData.script.folder = scriptDirName;
             }
           } else {
             // 从其他类型转换为内联脚本，创建新的脚本目录
             const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name || route.name);
-            if (routeData.script.content && routeData.script.content.trim()) {
-              await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.content);
+            if (routeData.script.folder && routeData.script.folder.trim()) {
+              await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.folder);
             }
-            routeData.script.content = scriptDirName;
+            routeData.script.folder = scriptDirName;
           }
           
-          logger.info(`[DynamicRouteService] 更新内联脚本路由 "${route.name}" 的脚本内容`);
+          logger.info(`[DynamicRouteService] 更新内联脚本路由 "${route.name}" 的脚本目录`);
         } catch (error) {
-          logger.error(`[DynamicRouteService] 更新脚本内容失败:`, error);
-          throw new Error(`更新脚本内容失败: ${(error as Error).message}`);
+          logger.error(`[DynamicRouteService] 更新脚本目录失败:`, error);
+          throw new Error(`更新脚本目录失败: ${(error as Error).message}`);
         }
-      } else if (route.script.sourceType === 'inline' && route.script.content) {
+      } else if (route.script.sourceType === 'inline' && route.script.folder) {
         // 从内联脚本转换为其他类型，可以选择保留或删除脚本目录
         // 这里选择保留，以防用户误操作
-        logger.info(`[DynamicRouteService] 路由 "${route.name}" 从内联脚本转换为 ${routeData.script.sourceType}，保留原脚本目录: ${route.script.content}`);
+        logger.info(`[DynamicRouteService] 路由 "${route.name}" 从内联脚本转换为 ${routeData.script.sourceType}，保留原脚本目录: ${route.script.folder}`);
       }
     }
 
@@ -323,8 +343,13 @@ export class DynamicRouteService {
       throw new Error('该路由不是内联脚本类型');
     }
     
+    // 检查脚本目录是否为空
+    if (!route.script.folder || route.script.folder.trim() === '') {
+      return { success: true, data: [], message: '脚本尚未初始化，文件列表为空' };
+    }
+    
     try {
-      const files = await this.scriptFileService.getScriptFiles(route.script.content);
+      const files = await this.scriptFileService.getScriptFiles(route.script.folder);
       return { success: true, data: files, message: '获取文件列表成功' };
     } catch (error) {
       throw new Error(`获取文件列表失败: ${(error as Error).message}`);
@@ -345,8 +370,13 @@ export class DynamicRouteService {
       throw new Error('该路由不是内联脚本类型');
     }
     
+    const scriptDirName = route.script.folder;
+    if (!scriptDirName || scriptDirName.trim() === '') {
+      throw new Error('脚本尚未初始化，请先初始化脚本');
+    }
+    
     try {
-      const content = await this.scriptFileService.readScriptFile(route.script.content, fileName);
+      const content = await this.scriptFileService.readScriptFile(route.script.folder, fileName);
       return { success: true, data: { content }, message: '获取文件内容成功' };
     } catch (error) {
       throw new Error(`获取文件内容失败: ${(error as Error).message}`);
@@ -367,8 +397,13 @@ export class DynamicRouteService {
       throw new Error('该路由不是内联脚本类型');
     }
     
+    const scriptDirName = route.script.folder;
+    if (!scriptDirName || scriptDirName.trim() === '') {
+      throw new Error('脚本尚未初始化，请先初始化脚本');
+    }
+    
     try {
-      await this.scriptFileService.writeScriptFile(route.script.content, fileName, content);
+      await this.scriptFileService.writeScriptFile(route.script.folder, fileName, content);
       
       // 清除相关缓存
       await this.clearRouteCache(route.path);
@@ -393,9 +428,9 @@ export class DynamicRouteService {
       throw new Error('只有内联脚本类型的路由才支持文件创建');
     }
     
-    const scriptDirName = route.script.content;
-    if (!scriptDirName) {
-      throw new Error('内联脚本目录名称不能为空');
+    const scriptDirName = route.script.folder;
+    if (!scriptDirName || scriptDirName.trim() === '') {
+      throw new Error('脚本尚未初始化，请先初始化脚本');
     }
     
     // 检查文件是否已存在
@@ -425,9 +460,9 @@ export class DynamicRouteService {
       throw new Error('只有内联脚本类型的路由才支持文件删除');
     }
     
-    const scriptDirName = route.script.content;
-    if (!scriptDirName) {
-      throw new Error('内联脚本目录名称不能为空');
+    const scriptDirName = route.script.folder;
+    if (!scriptDirName || scriptDirName.trim() === '') {
+      throw new Error('脚本尚未初始化，请先初始化脚本');
     }
     
     // 不允许删除主文件
@@ -438,6 +473,182 @@ export class DynamicRouteService {
     await this.scriptFileService.deleteScriptFile(scriptDirName, fileName);
     
     return { success: true, data: undefined, message: "文件删除成功" };
+  }
+
+  /**
+   * 初始化路由脚本
+   */
+  async initializeRouteScript(
+    routeId: number, 
+    initType: 'template' | 'upload' | 'git',
+    options: {
+      templateName?: string;
+      zipBuffer?: Buffer;
+      gitUrl?: string;
+      gitBranch?: string;
+    }
+  ): Promise<ApiResponseData<void>> {
+    try {
+      const route = await DynamicRouteConfig.findByPk(routeId);
+      if (!route) {
+        return {
+          success: false,
+          message: "路由不存在",
+          data: undefined,
+        };
+      }
+
+      if (route.script.sourceType !== 'inline') {
+        return {
+          success: false,
+          message: "只有内联脚本类型的路由支持初始化",
+          data: undefined,
+        };
+      }
+
+      // 如果已经初始化过，先删除原有目录
+      if (route.script.folder && route.script.folder.trim()) {
+        await this.scriptFileService.deleteScriptDirectory(route.script.folder);
+      }
+
+      // 为路由创建新的脚本目录
+      const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(route.name);
+      logger.info(`[DynamicRouteService] 创建脚本目录成功: ${scriptDirName}`);
+
+      switch (initType) {
+        case 'template':
+          await this.initializeFromTemplate(scriptDirName, options.templateName || 'basic');
+          logger.info(`[DynamicRouteService] 模板初始化完成: ${options.templateName || 'basic'}`);
+          break;
+        case 'upload':
+          if (!options.zipBuffer) {
+            throw new Error('上传文件不能为空');
+          }
+          logger.debug(`[DynamicRouteService] 开始初始化ZIP文件，文件大小: ${options.zipBuffer.length} bytes`);
+          await this.initializeFromZip(scriptDirName, options.zipBuffer);
+          logger.info(`[DynamicRouteService] ZIP文件初始化完成，文件大小: ${options.zipBuffer.length} bytes`);
+          break;
+        case 'git':
+          if (!options.gitUrl) {
+            throw new Error('Git仓库地址不能为空');
+          }
+          await this.initializeFromGit(scriptDirName, options.gitUrl, options.gitBranch || 'main');
+          logger.info(`[DynamicRouteService] Git初始化完成: ${options.gitUrl}`);
+          break;
+        default:
+          throw new Error('不支持的初始化类型');
+      }
+
+      // 更新路由配置
+      logger.info(`[DynamicRouteService] 准备更新路由配置，scriptDirName: ${scriptDirName}`);
+      const updatedRoute = await route.update({
+        script: {
+          ...route.script,
+          folder: scriptDirName
+        }
+      });
+      logger.info(`[DynamicRouteService] 路由配置更新完成，新的folder: ${updatedRoute.script.folder}`);
+
+      logger.info(`[DynamicRouteService] 路由 "${route.name}" 脚本目录初始化成功，类型: ${initType}`);
+
+      return {
+        success: true,
+        message: "脚本目录初始化成功",
+        data: undefined,
+      };
+    } catch (error) {
+      logger.error(`[DynamicRouteService] 初始化路由脚本目录失败:`, error);
+      return {
+        success: false,
+        message: `初始化失败: ${(error as Error).message}`,
+        data: undefined,
+      };
+    }
+  }
+
+  /**
+   * 从模板初始化脚本
+   */
+  private async initializeFromTemplate(scriptDirName: string, templateName: string): Promise<void> {
+    const templates = {
+      basic: {
+        'main.js': this.getMainFileTemplate(),
+        'package.json': this.getPackageJsonTemplate(),
+        'utils/helper.js': this.getUtilsFileTemplate()
+      },
+      rss: {
+        'main.js': this.getRssTemplate(),
+        'package.json': this.getPackageJsonTemplate(),
+        'utils/helper.js': this.getUtilsFileTemplate()
+      },
+      api: {
+        'main.js': this.getApiTemplate(),
+        'package.json': this.getPackageJsonTemplate(),
+        'utils/helper.js': this.getUtilsFileTemplate()
+      }
+    };
+
+    const template = templates[templateName as keyof typeof templates];
+    if (!template) {
+      throw new Error(`模板 "${templateName}" 不存在`);
+    }
+
+    for (const [filePath, content] of Object.entries(template)) {
+      await this.scriptFileService.writeScriptFile(scriptDirName, filePath, content);
+    }
+  }
+
+  /**
+   * 从ZIP文件初始化脚本
+   */
+  private async initializeFromZip(scriptDirName: string, zipBuffer: Buffer): Promise<void> {
+    console.log(`[DynamicRouteService] 开始初始化ZIP文件，文件大小: ${zipBuffer.length} bytes`);
+    const zip = new AdmZip(zipBuffer);
+    const entries = zip.getEntries();
+    console.log(`[DynamicRouteService] ZIP文件包含 ${entries.length} 个条目`);
+    
+    // 首先处理所有目录，确保目录结构存在
+    for (const entry of entries) {
+      if (entry.isDirectory) {
+        const dirPath = entry.entryName.replace(/\/$/, ''); // 移除末尾的斜杠
+        if (dirPath) {
+          console.log(`[DynamicRouteService] 创建目录: ${dirPath}`);
+          await this.scriptFileService.ensureDirectoryExists(scriptDirName, dirPath);
+        }
+      }
+    }
+    
+    // 然后处理所有文件
+    for (const entry of entries) {
+      if (!entry.isDirectory) {
+        try {
+          const content = entry.getData().toString('utf8');
+          const filePath = entry.entryName;
+          console.log(`[DynamicRouteService] 写入文件: ${filePath}`);
+          
+          // 确保文件所在的目录存在
+          const dirPath = filePath.substring(0, filePath.lastIndexOf('/'));
+          if (dirPath) {
+            await this.scriptFileService.ensureDirectoryExists(scriptDirName, dirPath);
+          }
+          
+          await this.scriptFileService.writeScriptFile(scriptDirName, filePath, content);
+        } catch (error) {
+          console.error(`[DynamicRouteService] 处理文件 ${entry.entryName} 时出错:`, error);
+          // 继续处理其他文件，不因单个文件错误而中断整个过程
+        }
+      }
+    }
+    
+    console.log(`[DynamicRouteService] ZIP文件解压完成`);
+  }
+
+  /**
+   * 从Git仓库初始化脚本
+   */
+  private async initializeFromGit(scriptDirName: string, gitUrl: string, branch: string): Promise<void> {
+    // 这里需要实现Git克隆功能，暂时抛出错误提示需要安装git依赖
+    throw new Error('Git初始化功能需要额外配置，请使用模板或上传方式');
   }
 
   /**
@@ -600,6 +811,125 @@ module.exports = {
   }
 
   /**
+   * 获取RSS模板
+   */
+  private getRssTemplate(): string {
+    return `/**
+ * RSS数据抓取脚本模板
+ * 适用于从RSS源获取数据
+ */
+
+async function main(context) {
+  const { routeParams, utils, auth, console, dayjs, require } = context;
+  
+  try {
+    // RSS源URL
+    const rssUrl = routeParams.url || 'https://example.com/rss.xml';
+    
+    console.log('开始抓取RSS数据:', rssUrl);
+    
+    // 使用utils.axios获取RSS数据
+    const response = await utils.axios.get(rssUrl);
+    const rssData = response.data;
+    
+    // 这里应该解析RSS XML数据
+    // 示例返回格式
+    const items = [
+      {
+        title: '示例RSS文章',
+        link: 'https://example.com/article',
+        content: '文章内容摘要',
+        author: 'RSS作者',
+        pubDate: dayjs().toISOString(),
+      }
+    ];
+    
+    return {
+      title: 'RSS数据源',
+      description: '从RSS源获取的数据',
+      link: rssUrl,
+      items: items
+    };
+    
+  } catch (error) {
+    console.error('RSS抓取失败:', error);
+    throw error;
+  }
+}
+
+module.exports = { main };
+`;
+  }
+
+  /**
+   * 获取API模板
+   */
+  private getApiTemplate(): string {
+    return `/**
+ * API数据抓取脚本模板
+ * 适用于从API接口获取数据
+ */
+
+async function main(context) {
+  const { routeParams, utils, auth, console, dayjs, require } = context;
+  
+  try {
+    // API接口URL
+    const apiUrl = routeParams.apiUrl || 'https://api.example.com/data';
+    
+    console.log('开始调用API:', apiUrl);
+    
+    // 构建请求配置
+    const requestConfig = {
+      method: 'GET',
+      url: apiUrl,
+      headers: {
+        'User-Agent': 'FeedHub/1.0'
+      }
+    };
+    
+    // 如果有认证信息，添加到请求头
+    if (auth && auth.credentials) {
+      if (auth.authType === 'bearer') {
+        requestConfig.headers['Authorization'] = \`Bearer \${auth.credentials.token}\`;
+      } else if (auth.authType === 'apikey') {
+        requestConfig.headers[auth.credentials.headerName || 'X-API-Key'] = auth.credentials.apiKey;
+      }
+    }
+    
+    // 发送请求
+    const response = await utils.axios(requestConfig);
+    const apiData = response.data;
+    
+    console.log('API响应状态:', response.status);
+    
+    // 处理API数据，转换为RSS格式
+    const items = (apiData.items || []).map(item => ({
+      title: item.title || '无标题',
+      link: item.url || item.link || '#',
+      content: item.description || item.content || '',
+      author: item.author || '未知作者',
+      pubDate: item.publishedAt || item.createdAt || dayjs().toISOString(),
+    }));
+    
+    return {
+      title: 'API数据源',
+      description: '从API获取的数据',
+      link: apiUrl,
+      items: items
+    };
+    
+  } catch (error) {
+    console.error('API调用失败:', error);
+    throw error;
+  }
+}
+
+module.exports = { main };
+`;
+  }
+
+  /**
    * 删除动态路由配置
    */
   async deleteRoute(id: number): Promise<ApiResponseData<void>> {
@@ -608,10 +938,10 @@ module.exports = {
     if (!route) throw new Error(`未找到ID为${id}的动态路由配置`);
 
     // 如果是内联脚本，删除对应的脚本目录
-    if (route.script.sourceType === 'inline' && route.script.content) {
+    if (route.script.sourceType === 'inline' && route.script.folder) {
       try {
-        await this.scriptFileService.deleteScriptDirectory(route.script.content);
-        logger.info(`[DynamicRouteService] 删除内联脚本路由 "${route.name}" 的脚本目录: ${route.script.content}`);
+        await this.scriptFileService.deleteScriptDirectory(route.script.folder);
+        logger.info(`[DynamicRouteService] 删除内联脚本路由 "${route.name}" 的脚本目录: ${route.script.folder}`);
       } catch (error) {
         logger.warn(`[DynamicRouteService] 删除脚本目录失败，但继续删除路由配置:`, error);
       }
@@ -720,16 +1050,25 @@ module.exports = {
     // 验证结果
     const validatedResult = validateScriptResult(result);
 
-    // 生成RSS
-    const rssXml = this.generateRssXml(route, validatedResult);
+    // 检查type参数，决定返回格式
+    const responseType = processedParams.type || 'rss';
+    let responseContent: string;
+
+    if (responseType === 'json') {
+      // 返回JSON格式
+      responseContent = JSON.stringify(validatedResult, null, 2);
+    } else {
+      // 默认返回RSS格式
+      responseContent = this.generateRssXml(route, validatedResult);
+    }
 
     // 将结果存入缓存，使用refreshInterval作为缓存时间
     const refreshInterval = route.refreshInterval || 60; // 默认60分钟
-    await this.setCache(cacheKey, rssXml, refreshInterval);
+    await this.setCache(cacheKey, responseContent, refreshInterval);
 
-    logger.info(`[DynamicRouteService] 脚本执行完成，结果已缓存 ${refreshInterval} 分钟`);
+    logger.info(`[DynamicRouteService] 脚本执行完成，返回格式: ${responseType}，结果已缓存 ${refreshInterval} 分钟`);
 
-    return rssXml;
+    return responseContent;
   }
 
   /**
@@ -907,7 +1246,7 @@ module.exports = {
   private async getScriptContent(scriptConfig: any): Promise<string> {
     try {
       // 从文件系统读取内联脚本内容
-      const scriptDirName = scriptConfig.content;
+      const scriptDirName = scriptConfig.folder;
       const scriptDir = this.scriptFileService.getScriptDirectoryPath(scriptDirName);
       
       // 读取package.json获取入口文件

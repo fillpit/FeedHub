@@ -13,7 +13,14 @@ export class ScriptFileService {
   private readonly scriptsDir: string;
 
   constructor() {
-    this.scriptsDir = path.join(process.cwd(), "backend", "scripts");
+    // 如果当前工作目录已经是 backend 目录，直接使用 scripts
+    // 否则使用 backend/scripts
+    const cwd = process.cwd();
+    if (cwd.endsWith('/backend') || cwd.endsWith('\\backend')) {
+      this.scriptsDir = path.join(cwd, "scripts");
+    } else {
+      this.scriptsDir = path.join(cwd, "backend", "scripts");
+    }
     this.ensureScriptsDirectory();
   }
 
@@ -40,8 +47,6 @@ export class ScriptFileService {
     // 创建目录
     fs.mkdirSync(scriptDir, { recursive: true });
     
-    // 创建默认的脚本文件
-    await this.createDefaultScriptFiles(scriptDir);
     
     logger.info(`[ScriptFileService] 为路由 "${routeName}" 创建脚本目录: ${scriptDir}`);
     return dirName; // 返回相对路径
@@ -225,6 +230,14 @@ module.exports = {
     }
     
     const filePath = path.join(scriptDir, fileName);
+    
+    // 确保文件所在的目录存在
+    const fileDir = path.dirname(filePath);
+    if (!fs.existsSync(fileDir)) {
+      fs.mkdirSync(fileDir, { recursive: true });
+      logger.info(`[ScriptFileService] 创建目录: ${fileDir}`);
+    }
+    
     fs.writeFileSync(filePath, content, 'utf-8');
     
     logger.info(`[ScriptFileService] 更新脚本文件: ${filePath}`);
@@ -409,7 +422,20 @@ module.exports = {
     return {
       fileCount,
       totalSize,
-      lastModified
+      lastModified,
     };
+  }
+
+  /**
+   * 确保指定的目录路径存在，如果不存在则创建（支持多级目录）
+   */
+  async ensureDirectoryExists(scriptDirName: string, relativePath: string): Promise<void> {
+    const scriptDir = this.getScriptDirectoryPath(scriptDirName);
+    const targetDir = path.join(scriptDir, relativePath);
+    
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+      logger.info(`创建目录: ${targetDir}`);
+    }
   }
 }

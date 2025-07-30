@@ -104,7 +104,6 @@ const handleLogin = async () => {
           }
 
           localStorage.setItem(STORAGE_KEYS.TOKEN, res.data?.token || "");
-          ElMessage.success("登录成功");
           router.push("/");
         } else {
           ElMessage.error(res.message || "登录失败");

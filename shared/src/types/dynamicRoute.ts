@@ -4,7 +4,7 @@ export type ScriptSourceType = "inline" | "url" | "file" | "package";
 // 脚本配置接口
 export interface CustomRouteScript {
   sourceType: ScriptSourceType; // 脚本来源类型：inline(内联代码), url(远程URL), file(上传文件), package(脚本包)
-  content: string; // 脚本内容、URL或文件路径
+  folder: string; // 脚本目录、URL或文件路径
   timeout?: number; // 脚本执行超时时间（毫秒）
 }
 
@@ -32,6 +32,15 @@ export interface DynamicRouteConfig {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+// 默认的type参数配置
+export const DEFAULT_TYPE_PARAM: RouteParam = {
+  name: "type",
+  type: "string",
+  required: false,
+  default: "rss",
+  description: "返回数据格式：rss 或 json"
+};
 
 // 后端数据库模型属性接口
 export interface DynamicRouteConfigAttributes

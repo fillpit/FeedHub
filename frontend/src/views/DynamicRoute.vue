@@ -63,6 +63,7 @@
           </template>
         </el-table-column>
 
+         <el-table-column prop="script.folder" label="存放目录" min-width="60" align="center"></el-table-column>
         <el-table-column prop="path" label="路径" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="route-path">
@@ -70,14 +71,6 @@
                 <el-link type="primary" underline="never" @click="copyRssLink(row)">/dynamic{{ row.path }}</el-link>
               </el-tooltip>
             </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="script.sourceType" label="脚本来源" width="90" align="center">
-          <template #default="{ row }">
-            <el-tag size="small" :type="getScriptSourceTagType(row.script.sourceType)">
-              {{ getScriptSourceLabel(row.script.sourceType) }}
-            </el-tag>
           </template>
         </el-table-column>
 
@@ -226,31 +219,24 @@
         <!-- 脚本配置 -->
         <el-divider content-position="left">脚本配置</el-divider>
 
-        <el-form-item label="脚本来源" prop="script.sourceType">
-          <el-radio-group v-model="form.script.sourceType">
-            <el-radio-button label="inline">内联脚本</el-radio-button>
-          </el-radio-group>
-          <div class="script-source-info">
-            <el-icon><InfoFilled /></el-icon>
-            <span>统一使用内联脚本管理，支持多文件项目结构</span>
-          </div>
-        </el-form-item>
-
-        <el-form-item label="脚本内容" prop="script.content">
+        <el-form-item label="脚本目录" >
           <!-- 内联脚本 -->
-          <el-input v-model="form.script.content" placeholder="脚本目录标识符（系统自动生成）" readonly/>
+          <el-input v-model="form.script.folder" placeholder="脚本目录标识符（系统自动生成）" readonly/>
           <div class="script-help">
-            <el-button type="primary" link @click="showScriptHelp">脚本帮助指南</el-button>
-            <el-button v-if="form.id" type="success" link @click="openInlineScriptEditor" style="margin-left: 12px;">
+            <el-button v-if="form.id && form.script.folder" type="success" link @click="openInlineScriptEditor">
               <el-icon><Edit /></el-icon>
               在线编辑
             </el-button>
-            <span class="editor-tips">支持语法高亮、自动补全、错误检查等功能</span>
+            <el-button v-if="form.id && (!form.script.folder || form.script.folder.trim() === '')" type="warning" link @click="showInitScriptDialog" style="margin-left: 12px;">
+              <el-icon><Setting /></el-icon>
+              初始化脚本
+            </el-button>
+            
           </div>
           
           <div style="margin-top: 16px; padding: 12px; background-color: #f5f7fa; border-radius: 4px; font-size: 12px; color: #606266;">
             <el-icon style="margin-right: 4px;"><InfoFilled /></el-icon>
-            使用内联脚本编辑器管理多文件项目，支持创建、编辑、删除文件，入口文件从 package.json 的 main 字段读取
+            先保存再初始化脚本，入口文件从 package.json 的 main 字段读取
           </div>
         </el-form-item>
 
@@ -272,98 +258,19 @@
       </el-form>
     </el-drawer>
 
-    <!-- 调试抽屉 -->
-    <el-drawer v-model="debugDrawerVisible" title="调试动态路由脚本" direction="rtl" size="50%">
-      <div class="debug-container">
-        <div class="debug-form">
-          <h3>测试参数</h3>
-          <div v-if="debugForm.params && debugForm.params.length > 0">
-            <div v-for="(param, index) in debugForm.params" :key="index" class="debug-param-item">
-              <el-form-item :label="param.name" :prop="`testParams.${param.name}`">
-                <el-input
-                  v-model="testParams[param.name]"
-                  :placeholder="`${param.description || '请输入参数值'} ${param.required ? '(必填)' : ''}`"
-                />
-              </el-form-item>
-            </div>
-          </div>
-          <div v-else class="no-params">该路由没有配置参数</div>
+    <!-- 路由调试组件 -->
+    <RouteDebugger 
+      v-model="debugDrawerVisible" 
+      :route="debugRoute"
+    />
 
-          <div class="debug-actions">
-            <el-button type="primary" @click="debugScript" :loading="debugging">执行调试</el-button>
-          </div>
-        </div>
-
-        <el-divider />
-
-        <div class="debug-result" v-if="debugResult">
-          <h3>调试结果</h3>
-          <el-alert
-            :type="debugResult.success ? 'success' : 'error'"
-            :title="debugResult.success ? '脚本执行成功' : '脚本执行失败'"
-            :description="
-              debugResult.success ? `耗时: ${debugResult.executionTime}ms` : debugResult.error
-            "
-            show-icon
-          />
-
-          <el-tabs v-model="activeDebugTab" class="debug-tabs">
-            <el-tab-pane label="执行结果" name="result">
-              <div v-if="debugResult.success && debugResult.result">
-                <el-table :data="debugResult.result.items" style="width: 100%">
-                  <el-table-column prop="title" label="标题" min-width="150" />
-                  <el-table-column prop="link" label="链接" min-width="200">
-                    <template #default="{ row }">
-                      <el-link :href="row.link" target="_blank" type="primary">{{
-                        row.link
-                      }}</el-link>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="pubDate" label="发布日期" width="180" />
-                  <el-table-column prop="author" label="作者" width="120" />
-                </el-table>
-              </div>
-              <div v-else-if="debugResult.success">
-                <el-empty description="脚本执行成功，但没有返回数据" />
-              </div>
-              <div v-else>
-                <el-empty description="脚本执行失败，请查看错误信息" />
-              </div>
-            </el-tab-pane>
-
-            <el-tab-pane label="日志输出" name="logs">
-              <div class="debug-logs">
-                <div v-for="(log, index) in debugResult.logs" :key="index" class="log-item">
-                  <span
-                    :class="{
-                      'log-info': typeof log === 'string' && log.includes('[INFO]'),
-                      'log-warn': log.includes('[WARN]'),
-                      'log-error': log.includes('[ERROR]') || log.includes('[FATAL]'),
-                      'log-debug': log.includes('[DEBUG]'),
-                    }"
-                  >
-                    {{ log }}
-                  </span>
-                </div>
-              </div>
-            </el-tab-pane>
-
-            <el-tab-pane label="JSON视图" name="json">
-              <pre class="json-view">{{ JSON.stringify(debugResult.result, null, 2) }}</pre>
-            </el-tab-pane>
-          </el-tabs>
-        </div>
-      </div>
-    </el-drawer>
-
-    <!-- 脚本帮助指南对话框 -->
-    <ScriptHelpGuide mode="dialog" v-model="scriptHelpVisible" />
-
-
-
-
-
-
+    <!-- 脚本初始化组件 -->
+    <ScriptInitializer 
+      v-model="scriptInitVisible" 
+      :route-id="currentEditingRouteId"
+      @success="onScriptInitSuccess"
+      @skip="onScriptInitSkip"
+    />
 
     <!-- 内联脚本在线编辑器组件 -->
     <InlineScriptEditor 
@@ -376,22 +283,22 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
-import { Search, Download, Upload, Folder, Document, Warning, CircleClose, InfoFilled, Refresh, DocumentCopy, CaretRight } from "@element-plus/icons-vue";
+import { Search, Download, Upload, InfoFilled, Setting } from "@element-plus/icons-vue";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
   updateDynamicRoute,
   deleteDynamicRoute,
-  debugDynamicRouteScript,
   type DynamicRouteConfig,
 } from "@/api/dynamicRoute";
+import { DEFAULT_TYPE_PARAM } from "../../../shared/src/types/dynamicRoute";
 import { authCredentialApi } from "@/api/authCredential";
 import type { AuthCredential } from "@feedhub/shared";
 import { copyToClipboard } from "@/utils";
-import { STORAGE_KEYS } from "@/constants/storage";
-import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
-import CodeEditor from "@/components/CodeEditor.vue";
+
 import InlineScriptEditor from "@/components/InlineScriptEditor.vue";
+import ScriptInitializer from "@/components/ScriptInitializer.vue";
+import RouteDebugger from "@/components/RouteDebugger.vue";
 
 // 状态
 const loading = ref(false);
@@ -402,35 +309,20 @@ const drawerVisible = ref(false);
 const isEdit = ref(false);
 const formRef = ref<FormInstance>();
 const debugDrawerVisible = ref(false);
-const debugging = ref(false);
-const debugResult = ref<Record<string, any>>();
-const activeDebugTab = ref("result");
-const scriptHelpVisible = ref(false);
-
-// 脚本包预览和验证相关
-
-
 // 模板管理相关
-const testParams = ref<Record<string, unknown>>({});
-const debugForm = ref<DynamicRouteConfig>({} as DynamicRouteConfig);
+const debugRoute = ref<DynamicRouteConfig>({} as DynamicRouteConfig);
 const fileInputRef = ref<HTMLInputElement>();
 const selectedRoutes = ref<DynamicRouteConfig[]>([]);
-
-// 在线编辑相关
-
 
 // 内联脚本在线编辑相关
 const inlineScriptEditorVisible = ref(false);
 const currentEditingRouteId = ref<number>(0);
 
+// 脚本初始化相关
+const scriptInitVisible = ref(false);
+
 // 基础URL
 const baseUrl = window.location.origin;
-
-// 上传认证头
-const uploadHeaders = computed(() => {
-  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-  return token ? { Authorization: `Bearer ${token}` } : {};
-});
 
 // 表单数据
 const form = reactive<DynamicRouteConfig>({
@@ -444,7 +336,7 @@ const form = reactive<DynamicRouteConfig>({
   params: [],
   script: {
     sourceType: "inline",
-    content: "",
+    folder: "",
     timeout: 30000,
   },
 });
@@ -470,30 +362,6 @@ const rules = {
     { required: true, message: "请设置刷新间隔", trigger: "blur" },
     { type: "number", min: 1, max: 1440, message: "刷新间隔必须在1-1440分钟之间", trigger: "blur" },
   ],
-  "script.sourceType": [{ required: true, message: "请选择脚本来源类型", trigger: "change" }],
-  "script.content": [
-    {
-      required: true,
-      validator: (rule: any, value: string, callback: Function) => {
-        if (!value || value.trim() === '') {
-          const sourceType = form.script.sourceType;
-          if (sourceType === 'inline') {
-            callback(new Error('请输入脚本内容'));
-          } else if (sourceType === 'url') {
-            callback(new Error('请输入脚本URL'));
-          } else if (sourceType === 'file') {
-            callback(new Error('请上传脚本文件'));
-  
-          } else {
-            callback(new Error('请输入脚本内容'));
-          }
-        } else {
-          callback();
-        }
-      },
-       trigger: 'blur'
-     }
-   ],
    "script.timeout": [
     { required: true, message: "请输入超时时间", trigger: "blur" },
     {
@@ -552,15 +420,22 @@ const openEditDrawer = (row: any) => {
   isEdit.value = true;
   resetForm();
   Object.assign(form, row);
+  
+  // 确保编辑的路由也有type参数
+  if (!form.params) {
+    form.params = [];
+  }
+  const hasTypeParam = form.params.some(param => param.name === 'type');
+  if (!hasTypeParam) {
+    form.params.push({ ...DEFAULT_TYPE_PARAM });
+  }
+  
   drawerVisible.value = true;
 };
 
 // 打开调试抽屉
 const openDebugDrawer = (row: any) => {
-  debugForm.value = row;
-  testParams.value = {};
-  debugResult.value = {};
-  activeDebugTab.value = "result";
+  debugRoute.value = row;
   debugDrawerVisible.value = true;
 };
 
@@ -593,10 +468,10 @@ const resetForm = () => {
   form.description = "";
   form.refreshInterval = 60;
   form.authCredentialId = undefined;
-  form.params = [];
+  form.params = [{ ...DEFAULT_TYPE_PARAM }]; // 添加默认的type参数
   form.script = {
     sourceType: "inline",
-    content: "",
+    folder: "",
     timeout: 30000,
   };
 };
@@ -642,6 +517,12 @@ const submitForm = async () => {
           ElMessage.success(isEdit.value ? "更新成功" : "添加成功");
           drawerVisible.value = false;
           fetchRoutes();
+          
+          // 如果是新建路由且脚本目录为空，提示用户初始化脚本
+          if (!isEdit.value && (!form.script.folder || form.script.folder.trim() === '')) {
+            currentEditingRouteId.value = (res.data as any)?.id;
+            scriptInitVisible.value = true;
+          }
         } else {
           ElMessage.error(res.message || (isEdit.value ? "更新失败" : "添加失败"));
         }
@@ -685,22 +566,7 @@ const copyRssLink = (row: DynamicRouteConfig) => {
     });
 };
 
-// 获取脚本来源标签类型
-const getScriptSourceTagType = (sourceType: string) => {
-  return "";
-};
 
-// 获取脚本来源标签文本
-const getScriptSourceLabel = (sourceType: string) => {
-  return "内联脚本";
-};
-
-
-
-// 显示脚本帮助
-const showScriptHelp = () => {
-  scriptHelpVisible.value = true;
-};
 
 
 
@@ -724,29 +590,40 @@ const openInlineScriptEditor = async () => {
   inlineScriptEditorVisible.value = true;
 };
 
+// 关闭内联脚本编辑器
 
 
+// 脚本初始化成功回调
+const onScriptInitSuccess = () => {
+  // 初始化成功后跳转到在线编辑器
+  inlineScriptEditorVisible.value = true;
+  // 刷新路由列表以更新脚本状态
+  fetchRoutes();
+};
 
+// 跳过脚本初始化回调
+const onScriptInitSkip = () => {
+  // 直接进入在线编辑器
+  inlineScriptEditorVisible.value = true;
+};
 
-// 调试脚本
-const debugScript = async () => {
-  debugging.value = true;
-  try {
-    const res = await debugDynamicRouteScript(debugForm.value!, testParams.value);
-
-    if (res.code === 0) {
-      debugResult.value = res.data as Record<string, unknown> | undefined;
-      activeDebugTab.value = "result";
-    } else {
-      ElMessage.error(res.message || "脚本调试失败");
-    }
-  } catch (error) {
-    console.error("调试脚本出错:", error);
-    ElMessage.error("调试脚本出错");
-  } finally {
-    debugging.value = false;
+// 显示初始化脚本对话框
+const showInitScriptDialog = () => {
+  if (form.id) {
+    currentEditingRouteId.value = form.id;
+    scriptInitVisible.value = true;
+  } else {
+    ElMessage.warning('请先保存路由配置后再初始化脚本');
   }
 };
+
+
+
+
+
+
+
+
 
 // 处理表格选择变化
 const handleSelectionChange = (selection: DynamicRouteConfig[]) => {
@@ -996,85 +873,7 @@ onMounted(() => {
     }
   }
 
-  .debug-container {
-    padding: 20px;
 
-    .debug-form {
-      margin-bottom: 20px;
-
-      h3 {
-        margin-top: 0;
-        margin-bottom: 15px;
-      }
-
-      .debug-param-item {
-        margin-bottom: 15px;
-      }
-
-      .no-params {
-        color: #909399;
-        font-style: italic;
-      }
-
-      .debug-actions {
-        margin-top: 20px;
-      }
-    }
-
-    .debug-result {
-      h3 {
-        margin-top: 20px;
-        margin-bottom: 15px;
-      }
-
-      .debug-tabs {
-        margin-top: 20px;
-      }
-
-      .debug-logs {
-        height: 300px;
-        overflow-y: auto;
-        background-color: #1e1e1e;
-        color: #d4d4d4;
-        padding: 10px;
-        border-radius: 4px;
-        font-family: monospace;
-
-        .log-item {
-          margin-bottom: 5px;
-          white-space: pre-wrap;
-          word-break: break-all;
-        }
-
-        .log-info {
-          color: #6a9955;
-        }
-
-        .log-warn {
-          color: #dcdcaa;
-        }
-
-        .log-error {
-          color: #f44336;
-        }
-
-        .log-debug {
-          color: #569cd6;
-        }
-      }
-
-      .json-view {
-        background-color: #1e1e1e;
-        color: #d4d4d4;
-        padding: 10px;
-        border-radius: 4px;
-        font-family: monospace;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        word-break: break-all;
-      }
-    }
-  }
 
   .script-help-content {
     h3 {
@@ -1260,4 +1059,6 @@ onMounted(() => {
     }
   }
 }
+
+
 </style>
