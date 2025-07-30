@@ -6,11 +6,11 @@ import { UserController } from "../controllers/user";
 import { WebsiteRssController } from "../controllers/websiteRss";
 import { DynamicRouteController } from "../controllers/dynamicRoute";
 import { BackupController } from "../controllers/backup";
-import AuthCredentialController from "../controllers/authCredential";
 import websiteRssRoutes from "./websiteRss";
 import dynamicRouteRoutes from "./dynamicRoute";
 import npmPackageRoutes from "./npmPackage";
 import notificationRoutes from "./notification";
+import authCredentialRoutes from "./authCredential";
 
 import uploadRoutes from "./upload";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
@@ -83,6 +83,7 @@ router.use("/npm-package", npmPackageRoutes);
 router.use("/notification", notificationRoutes);
 
 // 脚本包路由
+router.use("/auth-credential", authCredentialRoutes);
 
 
 // 文件上传路由
@@ -94,30 +95,7 @@ router.get("/rss/:key", (req, res) => websiteRssController.getRssFeed(req, res))
 // 网站RSS JSON订阅地址（公开访问）
 router.get("/json/:key", (req, res) => websiteRssController.getRssFeedJson(req, res));
 
-// 授权信息管理
-router.get(
-  "/auth-credential",
-  asyncHandler(AuthCredentialController.getAll.bind(AuthCredentialController))
-);
-router.get(
-  "/auth-credential/:id",
-  createValidationMiddleware([commonValidationRules.id]),
-  asyncHandler(AuthCredentialController.getById.bind(AuthCredentialController))
-);
-router.post(
-  "/auth-credential",
-  asyncHandler(AuthCredentialController.create.bind(AuthCredentialController))
-);
-router.put(
-  "/auth-credential/:id",
-  createValidationMiddleware([commonValidationRules.id]),
-  asyncHandler(AuthCredentialController.update.bind(AuthCredentialController))
-);
-router.delete(
-  "/auth-credential/:id",
-  createValidationMiddleware([commonValidationRules.id]),
-  asyncHandler(AuthCredentialController.delete.bind(AuthCredentialController))
-);
+
 
 // 自定义路由执行（公开访问）
 router.get("/dynamic/*", (req, res) => dynamicRouteController.executeRouteScript(req, res));

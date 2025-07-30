@@ -1,8 +1,0 @@
-{
-  "name": "test-script-package",
-  "version": "1.0.0",
-  "description": "测试脚本包，用于验证自动读取main字段功能",
-  "main": "main.js",
-  "author": "FeedHub",
-  "keywords": ["test", "feedhub", "script-package"]
-}

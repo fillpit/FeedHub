@@ -1,7 +1,6 @@
 import { injectable } from "inversify";
 import NpmPackage, {
-  NpmPackageAttributes,
-  NpmPackageCreationAttributes,
+  NpmPackageAttributes
 } from "../models/NpmPackage";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";

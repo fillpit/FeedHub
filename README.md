@@ -30,6 +30,8 @@ FeedHub 是一个现代化的 RSS 订阅管理平台，支持多种内容抓取�
 - **授权集成**: 支持与授权凭证系统的无缝集成
 - **调试支持**: 提供完整的脚本调试和日志输出功能
 - **内联编辑**: 支持在线编辑内联脚本，提供语法高亮和代码提示
+- **脚本编辑入口**: 在调试页面直接提供脚本编辑入口，便于快速修改和测试
+- **多格式链接**: 路径列支持悬浮选择复制RSS或JSON格式链接
 
 ### 🔐 授权凭证管理
 - **多种认证方式**: 支持 Bearer Token、Basic Auth、Cookie、自定义请求头
@@ -115,7 +117,7 @@ docker-compose logs -f
 docker-compose down
 ```
 
-#### docker 环境变量
+#### 环境变量配置
 
 | 变量名 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -125,6 +127,13 @@ docker-compose down
 | BASIC_AUTH_USERNAME | Basic Auth 用户名 | admin |
 | BASIC_AUTH_PASSWORD | Basic Auth 密码 | admin@123 |
 | API_BASE_URL | API 基础 URL | http://localhost:8008 |
+| SCRIPTS_DIR | 脚本存放目录 | 项目根目录/scripts |
+
+**SCRIPTS_DIR 说明**：
+- 可以设置为绝对路径：`/path/to/custom/scripts`
+- 可以设置为相对路径：`custom-scripts`（相对于项目根目录）
+- 如果不设置，默认使用项目根目录下的 `scripts` 目录
+- 该目录用于存放动态路由的内联脚本文件
 
 ## 特别声明
 

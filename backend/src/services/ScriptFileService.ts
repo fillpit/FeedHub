@@ -13,14 +13,26 @@ export class ScriptFileService {
   private readonly scriptsDir: string;
 
   constructor() {
-    // 如果当前工作目录已经是 backend 目录，直接使用 scripts
-    // 否则使用 backend/scripts
-    const cwd = process.cwd();
-    if (cwd.endsWith('/backend') || cwd.endsWith('\\backend')) {
-      this.scriptsDir = path.join(cwd, "scripts");
+    // 优先从环境变量读取脚本存放目录
+    const envScriptsDir = process.env.SCRIPTS_DIR;
+    
+    if (envScriptsDir) {
+      // 如果环境变量设置了脚本目录，使用绝对路径或相对于当前工作目录的路径
+      this.scriptsDir = path.isAbsolute(envScriptsDir) 
+        ? envScriptsDir 
+        : path.join(process.cwd(), envScriptsDir);
     } else {
-      this.scriptsDir = path.join(cwd, "backend", "scripts");
+      // 如果环境变量未设置，默认使用项目根目录下的scripts目录
+      const cwd = process.cwd();
+      if (cwd.endsWith('/backend') || cwd.endsWith('\\backend')) {
+        // 如果当前在backend目录，则使用上级目录的scripts
+        this.scriptsDir = path.join(path.dirname(cwd), "scripts");
+      } else {
+        // 否则使用当前目录的scripts
+        this.scriptsDir = path.join(cwd, "scripts");
+      }
     }
+    
     this.ensureScriptsDirectory();
   }
 

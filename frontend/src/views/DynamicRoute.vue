@@ -6,20 +6,18 @@
         <el-button type="primary" @click="openAddDrawer">添加路由</el-button>
         <el-button @click="refreshRoutes">刷新</el-button>
         <el-button type="success" @click="exportRoutes" :disabled="selectedRoutes.length === 0">
-          <el-icon><Download /></el-icon>
+          <el-icon>
+            <Download />
+          </el-icon>
           导出选中配置 ({{ selectedRoutes.length }})
         </el-button>
         <el-button type="warning" @click="triggerImport">
-          <el-icon><Upload /></el-icon>
+          <el-icon>
+            <Upload />
+          </el-icon>
           导入配置
         </el-button>
-        <input
-          ref="fileInputRef"
-          type="file"
-          accept=".json"
-          style="display: none"
-          @change="handleFileImport"
-        />
+        <input ref="fileInputRef" type="file" accept=".json" style="display: none" @change="handleFileImport" />
       </div>
     </div>
 
@@ -28,14 +26,11 @@
       <template #header>
         <div class="card-header">
           <span>动态路由列表</span>
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索路由名称或路径"
-            clearable
-            class="search-input"
-          >
+          <el-input v-model="searchKeyword" placeholder="搜索路由名称或路径" clearable class="search-input">
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </div>
@@ -45,13 +40,7 @@
       <el-empty v-if="filteredRoutes.length === 0" description="暂无动态路由配置" />
 
       <!-- 路由列表 -->
-      <el-table
-        v-else
-        :data="filteredRoutes"
-        border
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
+      <el-table v-else :data="filteredRoutes" border style="width: 100%" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
         <el-table-column prop="name" label="名称" min-width="110">
           <template #default="{ row }">
@@ -63,13 +52,30 @@
           </template>
         </el-table-column>
 
-         <el-table-column prop="script.folder" label="存放目录" min-width="60" align="center"></el-table-column>
+        <el-table-column prop="script.folder" label="存放目录" min-width="60" align="center"></el-table-column>
         <el-table-column prop="path" label="路径" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="route-path">
-              <el-tooltip :content="`${baseUrl}/api/dynamic${row.path}`" placement="top">
-                <el-link type="primary" underline="never" @click="copyRssLink(row)">/dynamic{{ row.path }}</el-link>
-              </el-tooltip>
+              <el-popover
+                placement="top"
+                :width="200"
+                trigger="hover"
+                :content="`${baseUrl}/api/dynamic${row.path}`"
+              >
+                <template #reference>
+                  <el-link type="primary" underline="never">/dynamic{{ row.path }}</el-link>
+                </template>
+                <div class="link-copy-options">
+                  <div class="copy-option" @click="copyRssLink(row)">
+                    <el-icon><Link /></el-icon>
+                    <span>复制 RSS 链接</span>
+                  </div>
+                  <div class="copy-option" @click="copyJsonLink(row)">
+                    <el-icon><Document /></el-icon>
+                    <span>复制 JSON 链接</span>
+                  </div>
+                </div>
+              </el-popover>
             </div>
           </template>
         </el-table-column>
@@ -85,12 +91,8 @@
             <div class="route-actions">
               <el-button type="primary" link @click="openDebugDrawer(row)">调试</el-button>
               <el-button type="primary" link @click="openEditDrawer(row)">编辑</el-button>
-              <el-popconfirm
-                title="确定要删除此路由配置吗？"
-                @confirm="deleteRoute(row.id)"
-                confirm-button-text="确定"
-                cancel-button-text="取消"
-              >
+              <el-popconfirm title="确定要删除此路由配置吗？" @confirm="deleteRoute(row.id)" confirm-button-text="确定"
+                cancel-button-text="取消">
                 <template #reference>
                   <el-button type="danger" link>删除</el-button>
                 </template>
@@ -102,23 +104,15 @@
     </el-card>
 
     <!-- 添加/编辑抽屉 -->
-    <el-drawer
-      v-model="drawerVisible"
-      :title="isEdit ? '编辑动态路由' : '添加动态路由'"
-      direction="rtl"
-      size="50%"
-      :before-close="closeDrawer"
-    >
+    <el-drawer v-model="drawerVisible" :title="isEdit ? '编辑动态路由' : '添加动态路由'" direction="rtl" size="50%"
+      :before-close="closeDrawer">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" class="route-form">
         <el-form-item label="路由名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入路由名称" />
         </el-form-item>
 
         <el-form-item label="路由路径" prop="path">
-          <el-input
-            v-model="form.path"
-            placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid"
-          >
+          <el-input v-model="form.path" placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid">
             <template #prepend>/dynamic</template>
           </el-input>
           <div style="font-size: 12px; color: #909399; margin-top: 4px">
@@ -135,12 +129,7 @@
         </el-form-item>
 
         <el-form-item label="描述" prop="description">
-          <el-input
-            v-model="form.description"
-            type="textarea"
-            placeholder="请输入路由描述"
-            :rows="2"
-          />
+          <el-input v-model="form.description" type="textarea" placeholder="请输入路由描述" :rows="2" />
         </el-form-item>
 
         <el-form-item label="刷新间隔(分钟)" prop="refreshInterval">
@@ -153,12 +142,8 @@
         <el-form-item label="授权信息" prop="authCredentialId">
           <el-select v-model="form.authCredentialId" placeholder="请选择授权信息（可选）" clearable>
             <el-option label="无授权" :value="undefined" />
-            <el-option
-              v-for="auth in authCredentials"
-              :key="auth.id"
-              :label="`${auth.name} (${auth.authType})`"
-              :value="auth.id"
-            />
+            <el-option v-for="auth in authCredentials" :key="auth.id" :label="`${auth.name} (${auth.authType})`"
+              :value="auth.id" />
           </el-select>
           <div style="font-size: 12px; color: #909399; margin-top: 4px">
             选择授权信息后，脚本中可以通过 utils.getAuthInfo() 获取授权信息，utils.fetchApi()
@@ -219,35 +204,40 @@
         <!-- 脚本配置 -->
         <el-divider content-position="left">脚本配置</el-divider>
 
-        <el-form-item label="脚本目录" >
+        <el-form-item label="脚本目录">
           <!-- 内联脚本 -->
-          <el-input v-model="form.script.folder" placeholder="脚本目录标识符（系统自动生成）" readonly/>
-          <div class="script-help">
-            <el-button v-if="form.id && form.script.folder" type="success" link @click="openInlineScriptEditor">
-              <el-icon><Edit /></el-icon>
-              在线编辑
-            </el-button>
-            <el-button v-if="form.id && (!form.script.folder || form.script.folder.trim() === '')" type="warning" link @click="showInitScriptDialog" style="margin-left: 12px;">
-              <el-icon><Setting /></el-icon>
-              初始化脚本
-            </el-button>
-            
+          <div>
+            <el-input v-model="form.script.folder" placeholder="脚本目录标识符（系统自动生成）" readonly />
+            <div class="script-help">
+              <el-button v-if="form.id && form.script.folder" type="success" link @click="openInlineScriptEditor">
+                <el-icon>
+                  <Edit />
+                </el-icon>
+                在线编辑
+              </el-button>
+              <el-button v-if="form.id && (!form.script.folder || form.script.folder.trim() === '')" type="warning" link
+                @click="showInitScriptDialog" style="margin-left: 12px;">
+                <el-icon>
+                  <Setting />
+                </el-icon>
+                初始化脚本
+              </el-button>
+
+            </div>
+
+            <div
+              style="margin-top: 16px; padding: 12px; background-color: #f5f7fa; border-radius: 4px; font-size: 12px; color: #606266;">
+              <el-icon style="margin-right: 4px;">
+                <InfoFilled />
+              </el-icon>
+              先保存再初始化脚本，入口文件从 package.json 的 main 字段读取
+            </div>
           </div>
-          
-          <div style="margin-top: 16px; padding: 12px; background-color: #f5f7fa; border-radius: 4px; font-size: 12px; color: #606266;">
-            <el-icon style="margin-right: 4px;"><InfoFilled /></el-icon>
-            先保存再初始化脚本，入口文件从 package.json 的 main 字段读取
-          </div>
+
         </el-form-item>
 
         <el-form-item label="超时时间" prop="script.timeout">
-          <el-input-number
-            v-model="form.script.timeout"
-            :min="1000"
-            :max="60000"
-            :step="1000"
-            :step-strictly="true"
-          />
+          <el-input-number v-model="form.script.timeout" :min="1000" :max="60000" :step="1000" :step-strictly="true" />
           <span class="timeout-unit">毫秒</span>
         </el-form-item>
 
@@ -259,31 +249,21 @@
     </el-drawer>
 
     <!-- 路由调试组件 -->
-    <RouteDebugger 
-      v-model="debugDrawerVisible" 
-      :route="debugRoute"
-    />
+    <RouteDebugger v-model="debugDrawerVisible" :route="debugRoute" />
 
     <!-- 脚本初始化组件 -->
-    <ScriptInitializer 
-      v-model="scriptInitVisible" 
-      :route-id="currentEditingRouteId"
-      @success="onScriptInitSuccess"
-      @skip="onScriptInitSkip"
-    />
+    <ScriptInitializer v-model="scriptInitVisible" :route-id="currentEditingRouteId" @success="onScriptInitSuccess"
+      @skip="onScriptInitSkip" />
 
     <!-- 内联脚本在线编辑器组件 -->
-    <InlineScriptEditor 
-      v-model="inlineScriptEditorVisible" 
-      :route-id="currentEditingRouteId"
-    />
+    <InlineScriptEditor v-model="inlineScriptEditorVisible" :route-id="currentEditingRouteId" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
-import { Search, Download, Upload, InfoFilled, Setting } from "@element-plus/icons-vue";
+import { Search, Download, Upload, InfoFilled, Setting, Link, Document } from "@element-plus/icons-vue";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
@@ -362,7 +342,7 @@ const rules = {
     { required: true, message: "请设置刷新间隔", trigger: "blur" },
     { type: "number", min: 1, max: 1440, message: "刷新间隔必须在1-1440分钟之间", trigger: "blur" },
   ],
-   "script.timeout": [
+  "script.timeout": [
     { required: true, message: "请输入超时时间", trigger: "blur" },
     {
       type: "number",
@@ -420,7 +400,7 @@ const openEditDrawer = (row: any) => {
   isEdit.value = true;
   resetForm();
   Object.assign(form, row);
-  
+
   // 确保编辑的路由也有type参数
   if (!form.params) {
     form.params = [];
@@ -429,7 +409,7 @@ const openEditDrawer = (row: any) => {
   if (!hasTypeParam) {
     form.params.push({ ...DEFAULT_TYPE_PARAM });
   }
-  
+
   drawerVisible.value = true;
 };
 
@@ -517,7 +497,7 @@ const submitForm = async () => {
           ElMessage.success(isEdit.value ? "更新成功" : "添加成功");
           drawerVisible.value = false;
           fetchRoutes();
-          
+
           // 如果是新建路由且脚本目录为空，提示用户初始化脚本
           if (!isEdit.value && (!form.script.folder || form.script.folder.trim() === '')) {
             currentEditingRouteId.value = (res.data as any)?.id;
@@ -552,7 +532,7 @@ const deleteRoute = async (id: number) => {
 
 // 复制RSS链接
 const copyRssLink = (row: DynamicRouteConfig) => {
-  const link = `${baseUrl}/api/dynamic${row.path}`;
+  const link = `${baseUrl}/api/dynamic${row.path}?type=rss`;
   copyToClipboard(link)
     .then((success) => {
       if (success) {
@@ -566,18 +546,21 @@ const copyRssLink = (row: DynamicRouteConfig) => {
     });
 };
 
-
-
-
-
-
-
-
-
-
-  
-
-
+// 复制JSON链接
+const copyJsonLink = (row: DynamicRouteConfig) => {
+  const link = `${baseUrl}/api/dynamic${row.path}?type=json`;
+  copyToClipboard(link)
+    .then((success) => {
+      if (success) {
+        ElMessage.success("JSON链接已复制到剪贴板");
+      } else {
+        ElMessage.warning("无法复制JSON链接，请手动复制");
+      }
+    })
+    .catch(() => {
+      ElMessage.warning("无法复制JSON链接，请手动复制");
+    });
+};
 
 // 打开内联脚本编辑器
 const openInlineScriptEditor = async () => {
@@ -585,7 +568,7 @@ const openInlineScriptEditor = async () => {
     ElMessage.warning('请先保存路由配置');
     return;
   }
-  
+
   currentEditingRouteId.value = form.id;
   inlineScriptEditorVisible.value = true;
 };
@@ -789,15 +772,39 @@ onMounted(() => {
     .route-path {
       display: flex;
       align-items: center;
-      gap: 8px;
+    }
 
-      .path-text {
-        word-break: break-all;
+    .link-copy-options {
+      .copy-option {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        
+        &:hover {
+          background-color: #f5f7fa;
+        }
+        
+        .el-icon {
+          margin-right: 8px;
+          font-size: 14px;
+        }
+        
+        span {
+          font-size: 14px;
+          color: #606266;
+        }
       }
+    }
 
-      .copy-btn {
-        margin-left: auto;
-      }
+    .path-text {
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      margin-left: auto;
     }
 
     .description-text {
@@ -904,16 +911,16 @@ onMounted(() => {
       align-items: center;
       padding: 8px 0;
       border-bottom: 1px solid #f0f0f0;
-      
+
       &:last-child {
         border-bottom: none;
       }
-      
+
       .el-icon {
         margin-right: 8px;
         flex-shrink: 0;
       }
-      
+
       span {
         flex: 1;
         line-height: 1.4;
@@ -931,13 +938,13 @@ onMounted(() => {
       display: flex;
       gap: 16px;
       height: 600px;
-      
+
       .file-tree-panel {
         width: 300px;
         border: 1px solid #e4e7ed;
         border-radius: 4px;
         overflow: hidden;
-        
+
         .panel-header {
           display: flex;
           justify-content: space-between;
@@ -945,27 +952,27 @@ onMounted(() => {
           padding: 12px;
           background: #f5f7fa;
           border-bottom: 1px solid #e4e7ed;
-          
+
           h4 {
             margin: 0;
             font-size: 14px;
             font-weight: 600;
           }
         }
-        
+
         .el-tree {
           padding: 8px;
-          
+
           .tree-node {
             display: flex;
             align-items: center;
             width: 100%;
-            
+
             &.active {
               color: #409eff;
               font-weight: 500;
             }
-            
+
             .file-size {
               margin-left: auto;
               font-size: 12px;
@@ -974,13 +981,13 @@ onMounted(() => {
           }
         }
       }
-      
+
       .code-editor-panel {
         flex: 1;
         border: 1px solid #e4e7ed;
         border-radius: 4px;
         overflow: hidden;
-        
+
         .panel-header {
           display: flex;
           justify-content: space-between;
@@ -988,22 +995,22 @@ onMounted(() => {
           padding: 12px;
           background: #f5f7fa;
           border-bottom: 1px solid #e4e7ed;
-          
+
           h4 {
             margin: 0;
             font-size: 14px;
             font-weight: 600;
           }
-          
+
           .panel-actions {
             display: flex;
             gap: 8px;
           }
         }
-        
+
         .editor-content {
           height: calc(100% - 49px);
-          
+
           .no-file-selected {
             display: flex;
             align-items: center;
@@ -1013,44 +1020,44 @@ onMounted(() => {
         }
       }
     }
-    
+
     .debug-result {
       border: 1px solid #e4e7ed;
       border-radius: 4px;
       padding: 16px;
-      
+
       h4 {
         margin: 0 0 16px 0;
         font-size: 16px;
         font-weight: 600;
       }
-      
+
       .result-content {
         background: #f5f7fa;
         border-radius: 4px;
         padding: 12px;
         margin-top: 12px;
-        
+
         pre {
           margin: 0;
           white-space: pre-wrap;
           word-break: break-all;
         }
       }
-      
+
       .logs-content {
         background: #f5f7fa;
         border-radius: 4px;
         padding: 12px;
         max-height: 300px;
         overflow-y: auto;
-        
+
         .log-item {
           padding: 4px 0;
           border-bottom: 1px solid #e4e7ed;
           font-family: monospace;
           font-size: 12px;
-          
+
           &:last-child {
             border-bottom: none;
           }
@@ -1059,6 +1066,4 @@ onMounted(() => {
     }
   }
 }
-
-
 </style>

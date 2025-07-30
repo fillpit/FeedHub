@@ -1,16 +1,27 @@
+import { injectable, inject } from "inversify";
 import AuthCredential, { AuthCredentialAttributes } from "../models/AuthCredential";
 // import { ApiResponseData } from "../core/ApiResponse";
 import { logger } from "../utils/logger";
+import axios from "axios";
+import { AxiosInstance } from "axios";
+import { ApiResponseData } from "../utils/apiResponse";
 
-// 定义API响应数据类型
-type ApiResponseData<T> = {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-};
 
-class AuthCredentialService {
+@injectable()
+export class AuthCredentialService {
+
+  private axiosInstance: AxiosInstance;
+
+  constructor() {
+      this.axiosInstance = axios.create({
+        timeout: 30000,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        },
+      });
+  }
+
   /** 获取所有授权信息 */
   async getAll(): Promise<ApiResponseData<AuthCredentialAttributes[]>> {
     try {

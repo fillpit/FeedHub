@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
-import * as cheerio from "cheerio";
 import * as util from "util";
 import * as vm from "vm";
+import * as path from "path";
+import * as fs from "fs";
 import dayjs from "dayjs";
 import { logger } from "./logger";
 import { sanitizeCookie } from "./requestUtils";
@@ -284,6 +285,88 @@ export function createScriptContext(
   };
 }
 
+/**
+ * 执行脚本包 - 直接使用Node.js require系统
+ */
+export async function executeScriptPackage(
+  packageDir: string,
+  entryPoint: string,
+  context: any,
+  timeout: number = 30000
+): Promise<any> {
+  const { authInfo, createUtils, createConsole, routeParams } = context;
+  
+  // 清理模块缓存以确保脚本更新后能重新加载
+  const entryFilePath = path.resolve(packageDir, entryPoint);
+  const modulePattern = new RegExp(`^${packageDir.replace(/[\\\[\]{}()*+?.^$|]/g, '\\$&')}`);
+  
+  // 清理相关模块的缓存
+  Object.keys(require.cache).forEach(key => {
+    if (modulePattern.test(key)) {
+      delete require.cache[key];
+    }
+  });
+  
+  try {
+    // 直接require脚本包的入口文件
+    const scriptModule = require(entryFilePath);
+    
+    // 验证是否导出了main函数
+    if (!scriptModule || typeof scriptModule.main !== 'function') {
+      throw new Error('脚本包必须导出一个名为"main"的函数。请参考脚本规范文档：SCRIPT_STANDARDS.md');
+    }
+    
+    // 创建安全的require函数，限制只能访问脚本包内的模块
+    const createSafeRequire = () => {
+      return (modulePath: string) => {
+        // 只允许相对路径引用（脚本包内的模块）
+        if (modulePath.startsWith('./') || modulePath.startsWith('../')) {
+          const resolvedPath = path.resolve(packageDir, modulePath);
+          
+          // 确保解析后的路径仍在脚本包目录内
+          if (!resolvedPath.startsWith(packageDir)) {
+            throw new Error(`不允许访问脚本包外的模块: ${modulePath}`);
+          }
+          
+          return require(resolvedPath);
+        }
+        
+        // 对于非相对路径，抛出错误（安全考虑）
+        throw new Error(`不允许访问外部模块: ${modulePath}`);
+      };
+    };
+    
+    // 创建脚本执行上下文
+    const scriptContext = {
+      routeParams: routeParams || {},
+      utils: createUtils(),
+      auth: authInfo,
+      console: createConsole(),
+      dayjs: dayjs,
+      require: createSafeRequire()
+    };
+    
+    // 使用Promise.race实现超时控制
+    const result = await Promise.race([
+      scriptModule.main(scriptContext),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`脚本执行超时 (${timeout}ms)`)), timeout)
+      )
+    ]);
+    
+    return result;
+  } catch (error) {
+    // 清理可能的模块缓存
+    Object.keys(require.cache).forEach(key => {
+      if (modulePattern.test(key)) {
+        delete require.cache[key];
+      }
+    });
+    
+    throw error;
+  }
+}
+
 export async function executeScript(
   config: any,
   context: any,
@@ -301,42 +384,68 @@ export async function executeScript(
         throw new Error("npm包功能未启用");
       };
     }
+
     return (packageName: string) => {
-      console.log("加载npm包:", packageName);
-    }
-    // return (packageName: string) => {
-    //   try {
-    //     // 验证包名格式
-    //     const packageNameRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
-    //     if (!packageNameRegex.test(packageName)) {
-    //       throw new Error(`无效的包名: ${packageName}`);
-    //     }
+      try {
+        // 验证包名格式
+        const packageNameRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+        if (!packageNameRegex.test(packageName)) {
+          throw new Error(`无效的包名: ${packageName}`);
+        }
 
-    //     // 尝试加载包
-    //     const packagesDir = npmPackageService.getPackagesDirectory();
-    //     const packagePath = require.resolve(packageName, { paths: [packagesDir] });
-    //     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    //     const loadedPackage = require(packagePath);
+        // 尝试加载包
+        const packagesDir = npmPackageService.getPackagesDirectory();
+        const packagePath = require.resolve(packageName, { paths: [packagesDir] });
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const loadedPackage = require(packagePath);
 
-    //     // 更新使用统计
-    //     npmPackageService.updatePackageUsage(packageName).catch((error: any) => {
-    //       logger.warn(`更新包使用统计失败: ${packageName}`, error);
-    //     });
+        // 更新使用统计
+        npmPackageService.updatePackageUsage(packageName).catch((error: any) => {
+          logger.warn(`更新包使用统计失败: ${packageName}`, error);
+        });
 
-    //     if (logs) {
-    //       logs.push(formatMultilineLog("INFO", `成功加载npm包: ${packageName}`));
-    //     }
+        if (logs) {
+          logs.push(formatMultilineLog("INFO", `成功加载npm包: ${packageName}`));
+        }
 
-    //     return loadedPackage;
-    //   } catch (error) {
-    //     const errorMessage = `加载npm包失败: ${packageName} - ${(error as Error).message}`;
-    //     if (logs) {
-    //       logs.push(formatMultilineLog("ERROR", errorMessage));
-    //     }
-    //     throw new Error(errorMessage);
-    //   }
-    // };
+        return loadedPackage;
+      } catch (error) {
+        const errorMessage = `加载npm包失败: ${packageName} - ${(error as Error).message}`;
+        if (logs) {
+          logs.push(formatMultilineLog("ERROR", errorMessage));
+        }
+        throw new Error(errorMessage);
+      }
+    };
   };
+  const timeout = config.script?.timeout || 30000;
+  const scriptContent = config.script?.script;
+
+  console.log("config.script?.script", scriptContent);
+
+  // 检测脚本类型：如果包含脚本包标识，使用新的执行方式
+  if (scriptContent && scriptContent.includes('__SCRIPT_PACKAGE__')) {
+    // 解析脚本包信息
+    const packageInfoMatch = scriptContent.match(/__SCRIPT_PACKAGE__:(.+?)__/);
+    if (packageInfoMatch) {
+      try {
+        const packageInfo = JSON.parse(packageInfoMatch[1]);
+        const { packageDir, entryPoint } = packageInfo;
+        
+        // 使用新的脚本包执行方式
+        return await executeScriptPackage(
+          packageDir,
+          entryPoint,
+          context,
+          timeout
+        );
+      } catch (error) {
+        throw new Error(`解析脚本包信息失败: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  // 传统的内联脚本执行方式
   const scriptContext = {
     url: config.url,
     axios: axiosInstance,
@@ -348,9 +457,8 @@ export async function executeScript(
     requirex: createSafeRequire(),
   };
   const vmContext = vm.createContext(scriptContext);
-  const timeout = config.script?.timeout || 30000;
 
-  const script = new vm.Script(config.script?.script);
+  const script = new vm.Script(scriptContent);
   const result = await Promise.race([
     script.runInContext(vmContext, { timeout }),
     new Promise((_, reject) =>

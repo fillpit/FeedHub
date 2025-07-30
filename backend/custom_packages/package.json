@@ -2,8 +2,5 @@
   "name": "feedhub-custom-packages",
   "version": "1.0.0",
   "description": "Custom packages for FeedHub scripts",
-  "private": true,
-  "dependencies": {
-    "requests": "^0.3.0"
-  }
+  "private": true
 }

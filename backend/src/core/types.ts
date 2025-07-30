@@ -7,18 +7,19 @@ export const TYPES = {
   NotificationService: Symbol.for("NotificationService"),
   RssFeedService: Symbol.for("RssFeedService"),
   WebsiteRssService: Symbol.for("WebsiteRssService"),
-
+  AuthCredentialService: Symbol.for("AuthCredentialService"),
   DynamicRouteService: Symbol.for("DynamicRouteService"),
 
   ScriptFileService: Symbol.for("ScriptFileService"),
   NpmPackageService: Symbol.for("NpmPackageService"),
+  ScriptTemplateService: Symbol.for("ScriptTemplateService"),
 
   SettingController: Symbol.for("SettingController"),
   UserController: Symbol.for("UserController"),
   SponsorsController: Symbol.for("SponsorsController"),
   RssFeedController: Symbol.for("RssFeedController"),
   WebsiteRssController: Symbol.for("WebsiteRssController"),
-
+  AuthCredentialController: Symbol.for("AuthCredentialController"),
   DynamicRouteController: Symbol.for("DynamicRouteController"),
   NpmPackageController: Symbol.for("NpmPackageController"),
   NotificationController: Symbol.for("NotificationController"),

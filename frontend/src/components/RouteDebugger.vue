@@ -17,6 +17,10 @@
 
         <div class="debug-actions">
           <el-button type="primary" @click="executeDebug" :loading="loading">执行调试</el-button>
+          <el-button type="success" @click="openScriptEditor">
+            <el-icon><Edit /></el-icon>
+            编辑脚本
+          </el-button>
         </div>
       </div>
 
@@ -80,13 +84,18 @@
         </el-tabs>
       </div>
     </div>
+    
+    <!-- 内联脚本在线编辑器 -->
+    <InlineScriptEditor v-model="scriptEditorVisible" :route-id="props.route.id || 0" />
   </el-drawer>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
+import { Edit } from '@element-plus/icons-vue';
 import { debugDynamicRouteScript, type DynamicRouteConfig } from '@/api/dynamicRoute';
+import InlineScriptEditor from './InlineScriptEditor.vue';
 
 interface Props {
   modelValue: boolean;
@@ -105,6 +114,7 @@ const loading = ref(false);
 const testParams = ref<Record<string, unknown>>({});
 const debugResult = ref<Record<string, any>>();
 const activeTab = ref('result');
+const scriptEditorVisible = ref(false);
 
 // 计算属性
 const visible = computed({
@@ -137,6 +147,15 @@ const executeDebug = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// 打开脚本编辑器
+const openScriptEditor = () => {
+  if (!props.route.id) {
+    ElMessage.warning('请先保存路由配置');
+    return;
+  }
+  scriptEditorVisible.value = true;
 };
 
 // 监听对话框显示状态，重置调试状态
