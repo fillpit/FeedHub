@@ -264,17 +264,32 @@ export function createScriptContext(
     },
   });
   const createConsole = () => {
+    // 格式化参数的辅助函数
+    const formatArgs = (...args: any[]): string => {
+      return args.map(arg => {
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch (error) {
+            // 如果JSON.stringify失败（如循环引用），使用util.inspect
+            return util.inspect(arg, { depth: 3, colors: false });
+          }
+        }
+        return String(arg);
+      }).join(' ');
+    };
+
     if (logs) {
       return {
-        log: (...args: any[]) => logs.push(formatMultilineLog("LOG", util.format(...args))),
-        error: (...args: any[]) => logs.push(formatMultilineLog("ERROR", util.format(...args))),
-        warn: (...args: any[]) => logs.push(formatMultilineLog("WARN", util.format(...args))),
+        log: (...args: any[]) => logs.push(formatMultilineLog("LOG", formatArgs(...args))),
+        error: (...args: any[]) => logs.push(formatMultilineLog("ERROR", formatArgs(...args))),
+        warn: (...args: any[]) => logs.push(formatMultilineLog("WARN", formatArgs(...args))),
       };
     } else {
       return {
-        log: (...args: any[]) => logger.info(formatMultilineLog("Script", args.join(" "))),
-        error: (...args: any[]) => logger.error(formatMultilineLog("Script", args.join(" "))),
-        warn: (...args: any[]) => logger.warn(formatMultilineLog("Script", args.join(" "))),
+        log: (...args: any[]) => logger.info(formatMultilineLog("Script", formatArgs(...args))),
+        error: (...args: any[]) => logger.error(formatMultilineLog("Script", formatArgs(...args))),
+        warn: (...args: any[]) => logger.warn(formatMultilineLog("Script", formatArgs(...args))),
       };
     }
   };

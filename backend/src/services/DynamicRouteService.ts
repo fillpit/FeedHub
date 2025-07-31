@@ -270,52 +270,6 @@ export class DynamicRouteService {
       if (existingRoute && existingRoute.id !== id) throw new Error("该路由路径已存在");
     }
 
-    // 如果更新了脚本配置，验证脚本配置
-    if (routeData.script) {
-      this.validateScriptConfig(routeData.script);
-      
-      // 处理内联脚本更新
-      if (routeData.script.sourceType === 'inline') {
-        try {
-          // 如果原来也是内联脚本，更新现有脚本目录
-          if (route.script.sourceType === 'inline' && route.script.folder) {
-            // 检查脚本目录是否存在
-            if (this.scriptFileService.scriptDirectoryExists(route.script.folder)) {
-              // 更新脚本目录
-              if (routeData.script.folder && routeData.script.folder.trim()) {
-                await this.scriptFileService.writeScriptFile(route.script.folder, 'main.js', routeData.script.folder);
-              }
-              // 保持原有的脚本目录名称
-              routeData.script.folder = route.script.folder;
-            } else {
-              // 原脚本目录不存在，创建新的
-              const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name || route.name);
-              if (routeData.script.folder && routeData.script.folder.trim()) {
-                await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.folder);
-              }
-              routeData.script.folder = scriptDirName;
-            }
-          } else {
-            // 从其他类型转换为内联脚本，创建新的脚本目录
-            const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name || route.name);
-            if (routeData.script.folder && routeData.script.folder.trim()) {
-              await this.scriptFileService.writeScriptFile(scriptDirName, 'main.js', routeData.script.folder);
-            }
-            routeData.script.folder = scriptDirName;
-          }
-          
-          logger.info(`[DynamicRouteService] 更新内联脚本路由 "${route.name}" 的脚本目录`);
-        } catch (error) {
-          logger.error(`[DynamicRouteService] 更新脚本目录失败:`, error);
-          throw new Error(`更新脚本目录失败: ${(error as Error).message}`);
-        }
-      } else if (route.script.sourceType === 'inline' && route.script.folder) {
-        // 从内联脚本转换为其他类型，可以选择保留或删除脚本目录
-        // 这里选择保留，以防用户误操作
-        logger.info(`[DynamicRouteService] 路由 "${route.name}" 从内联脚本转换为 ${routeData.script.sourceType}，保留原脚本目录: ${route.script.folder}`);
-      }
-    }
-
     // 更新数据库
     await DynamicRouteConfig.update(routeData, { where: { id } });
 
