@@ -18,13 +18,33 @@ export class NpmPackageService {
   private readonly maxDependencies = 20;
 
   constructor() {
-    this.packagesDir = path.join(process.cwd(), "custom_packages");
+    // 优先从环境变量读取自定义包存放目录
+    const envPackagesDir = process.env.CUSTOM_PACKAGES_DIR;
+    
+    if (envPackagesDir) {
+      // 如果环境变量设置了自定义包目录，使用绝对路径或相对于当前工作目录的路径
+      this.packagesDir = path.isAbsolute(envPackagesDir) 
+        ? envPackagesDir 
+        : path.join(process.cwd(), envPackagesDir);
+    } else {
+      // 如果环境变量未设置，默认使用项目根目录下的custom_packages目录
+      const cwd = process.cwd();
+      if (cwd.endsWith('/backend') || cwd.endsWith('\\backend')) {
+        // 如果当前在backend目录，则使用上级目录的custom_packages
+        this.packagesDir = path.join(path.dirname(cwd), "custom_packages");
+      } else {
+        // 否则使用当前目录的custom_packages
+        this.packagesDir = path.join(cwd, "custom_packages");
+      }
+    }
+    
     this.ensurePackagesDirectory();
   }
 
   private ensurePackagesDirectory(): void {
     if (!fs.existsSync(this.packagesDir)) {
       fs.mkdirSync(this.packagesDir, { recursive: true });
+      logger.info(`[NpmPackageService] 创建自定义包目录: ${this.packagesDir}`);
       // 创建package.json
       const packageJson = {
         name: "feedhub-custom-packages",
@@ -36,6 +56,8 @@ export class NpmPackageService {
         path.join(this.packagesDir, "package.json"),
         JSON.stringify(packageJson, null, 2)
       );
+    } else {
+      logger.info(`[NpmPackageService] 使用自定义包目录: ${this.packagesDir}`);
     }
   }
 

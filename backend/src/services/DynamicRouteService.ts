@@ -334,9 +334,16 @@ export class DynamicRouteService {
   /**
    * 获取内联脚本的文件列表
    * @param routeId 路由ID
-   * @returns 文件列表
+   * @returns 文件和目录的详细信息列表
    */
-  async getInlineScriptFiles(routeId: number): Promise<ApiResponseData<string[]>> {
+  async getInlineScriptFiles(routeId: number): Promise<ApiResponseData<Array<{
+    name: string;
+    path: string;
+    type: 'file' | 'directory';
+    extension?: string;
+    size?: number;
+    lastModified?: Date;
+  }>>> {
     const route = await DynamicRouteConfig.findByPk(routeId);
     if (!route) throw new Error(`未找到ID为${routeId}的动态路由配置`);
     
@@ -435,7 +442,7 @@ export class DynamicRouteService {
     }
     
     // 检查文件是否已存在
-    const existingFiles = await this.scriptFileService.getScriptFiles(scriptDirName);
+    const existingFiles = await this.scriptFileService.getScriptFilePaths(scriptDirName);
     if (existingFiles.includes(fileName)) {
       throw new Error(`文件 ${fileName} 已存在`);
     }

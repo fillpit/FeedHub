@@ -23,35 +23,17 @@
               </el-button>
             </div>
           </div>
-          <el-tree
-            :data="files"
-            :props="{ label: 'name', children: 'children' }"
-            default-expand-all
-            :expand-on-click-node="false"
-            @node-click="handleFileClick"
-          >
-            <template #default="{ data }">
-              <div class="tree-node" :class="{ active: selectedFile === data.path }">
-                <span class="file-info" @click="handleFileClick(data)">
-                  <el-icon style="margin-right: 4px;">
-                    <Document />
-                  </el-icon>
-                  {{ data.name }}
-                </span>
-                <div class="file-actions" v-if="data.name !== 'main.js' && data.name !== 'index.js'">
-                  <el-button 
-                    size="small" 
-                    type="danger" 
-                    text 
-                    @click.stop="deleteFile(data.path)"
-                    title="删除文件"
-                  >
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
-              </div>
-            </template>
-          </el-tree>
+          <div class="custom-file-tree">
+            <FileTreeNode 
+              v-for="node in files" 
+              :key="node.path"
+              :node="node"
+              :selected-file="selectedFile"
+              :level="0"
+              @file-click="handleFileClick"
+              @delete-file="deleteFile"
+            />
+          </div>
         </div>
         
         <!-- 右侧代码编辑器 -->
@@ -82,7 +64,7 @@
             <CodeEditor
               v-if="selectedFile"
               v-model="fileContent"
-              :language="selectedFile.endsWith('.json') ? 'json' : 'javascript'"
+              :language="getLanguageFromFileName(selectedFile)"
               theme="vs-dark"
               :height="500"
               :options="{
@@ -154,9 +136,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Refresh, Document, DocumentCopy, Plus, Delete, QuestionFilled } from '@element-plus/icons-vue';
+import { Refresh, DocumentCopy, Plus } from '@element-plus/icons-vue';
 import CodeEditor from '@/components/CodeEditor.vue';
 import ScriptHelpGuide from '@/components/ScriptHelpGuide.vue';
+import FileTreeNode from '@/components/FileTreeNode.vue';
 import {
   getInlineScriptFiles,
   getInlineScriptFileContent,
@@ -223,17 +206,13 @@ const loadFiles = async () => {
     loading.value = true;
     const result = await getInlineScriptFiles(props.routeId) as any;
     if (result.success) {
-      // 转换文件列表为树形结构
-      const fileList = result.data.map((file: string) => ({
-        name: file,
-        path: file,
-        type: 'file'
-      }));
-      files.value = fileList;
+      // 构建树形结构
+      files.value = buildFileTree(result.data);
       
       // 默认选择第一个文件
-      if (fileList.length > 0) {
-        await selectFile(fileList[0].path);
+      const firstFile = findFirstFile(files.value);
+      if (firstFile) {
+        await selectFile(firstFile.path);
       }
     } else {
       ElMessage.error(result.message || '获取文件列表失败');
@@ -244,6 +223,123 @@ const loadFiles = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// 构建文件树结构
+const buildFileTree = (fileList: any[]) => {
+  const tree: any[] = [];
+  const pathMap = new Map();
+  
+  // 按路径深度排序，确保父目录在子项之前处理
+  const sortedFiles = fileList.sort((a, b) => {
+    const aDepth = a.path.split('/').length;
+    const bDepth = b.path.split('/').length;
+    return aDepth - bDepth;
+  });
+  
+  for (const item of sortedFiles) {
+    const pathParts = item.path.split('/');
+    const fileName = pathParts[pathParts.length - 1];
+    
+    const treeNode = {
+      name: fileName,
+      path: item.path,
+      type: item.type,
+      extension: item.extension,
+      size: item.size,
+      lastModified: item.lastModified,
+      children: item.type === 'directory' ? [] : undefined
+    };
+    
+    if (pathParts.length === 1) {
+      // 根级文件或目录
+      tree.push(treeNode);
+      pathMap.set(item.path, treeNode);
+    } else {
+      // 子文件或目录
+      const parentPath = pathParts.slice(0, -1).join('/');
+      const parent = pathMap.get(parentPath);
+      if (parent && parent.children) {
+        parent.children.push(treeNode);
+        pathMap.set(item.path, treeNode);
+      }
+    }
+  }
+  
+  // 递归排序所有层级的节点：目录在前，文件在后，同类型按A-Z排序
+  const sortTreeNodes = (nodes: any[]) => {
+    nodes.sort((a, b) => {
+      // 目录优先
+      if (a.type === 'directory' && b.type === 'file') return -1;
+      if (a.type === 'file' && b.type === 'directory') return 1;
+      
+      // 同类型按名称A-Z排序
+      return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    });
+    
+    // 递归排序子节点
+    nodes.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        sortTreeNodes(node.children);
+      }
+    });
+  };
+  
+  sortTreeNodes(tree);
+  return tree;
+};
+
+// 查找第一个文件
+const findFirstFile = (tree: any[]): any => {
+  for (const node of tree) {
+    if (node.type === 'file') {
+      return node;
+    }
+    if (node.children && node.children.length > 0) {
+      const found = findFirstFile(node.children);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// 根据文件扩展名获取语言模式
+const getLanguageFromFileName = (fileName: string): string => {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  const languageMap: Record<string, string> = {
+    'js': 'javascript',
+    'jsx': 'javascript',
+    'ts': 'typescript',
+    'tsx': 'typescript',
+    'json': 'json',
+    'html': 'html',
+    'htm': 'html',
+    'css': 'css',
+    'scss': 'scss',
+    'sass': 'sass',
+    'less': 'less',
+    'md': 'markdown',
+    'markdown': 'markdown',
+    'xml': 'xml',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'sql': 'sql',
+    'py': 'python',
+    'php': 'php',
+    'java': 'java',
+    'c': 'c',
+    'cpp': 'cpp',
+    'cs': 'csharp',
+    'go': 'go',
+    'rs': 'rust',
+    'rb': 'ruby',
+    'sh': 'shell',
+    'bash': 'shell',
+    'zsh': 'shell',
+    'txt': 'plaintext',
+    'log': 'plaintext'
+  };
+  return languageMap[ext || ''] || 'javascript';
 };
 
 // 选择文件
@@ -288,9 +384,11 @@ const saveFile = async () => {
 
 // 处理文件点击
 const handleFileClick = (data: any) => {
-  if (data.type === 'file') {
+  // 只有文件可以被选择，目录不处理点击事件
+  if (data.type === 'file' && data.path) {
     selectFile(data.path);
   }
+  // 目录的展开/折叠由el-tree自动处理
 };
 
 // 显示新建文件对话框
@@ -393,21 +491,22 @@ const handleClose = () => {
     
     .file-tree-panel {
       width: 300px;
-      border-right: 1px solid #e4e7ed;
-      background: #fafafa;
+      border-right: 1px solid #3c3c3c;
+      background: #252526;
       
       .panel-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 12px 16px;
-        border-bottom: 1px solid #e4e7ed;
-        background: #f5f7fa;
+        border-bottom: 1px solid #3c3c3c;
+        background: #2d2d30;
         
         h4 {
           margin: 0;
           font-size: 14px;
-          color: #303133;
+          color: #cccccc;
+          font-weight: 600;
         }
         
         .panel-actions {
@@ -416,60 +515,28 @@ const handleClose = () => {
         }
       }
       
-      .tree-node {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        padding: 4px 0;
+      .custom-file-tree {
+        background-color: #252526;
+        color: #cccccc;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 13px;
+        overflow-y: auto;
+        height: calc(100% - 60px);
         
-        &.active {
-          .file-info {
-            color: #409eff;
-            font-weight: 500;
-          }
+        &::-webkit-scrollbar {
+          width: 10px;
         }
         
-        .file-info {
-          display: flex;
-          align-items: center;
-          flex: 1;
-          cursor: pointer;
+        &::-webkit-scrollbar-track {
+          background: #2d2d30;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+          background: #424242;
+          border-radius: 5px;
           
           &:hover {
-            color: #409eff;
-          }
-        }
-        
-        .file-actions {
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-        
-        &:hover .file-actions {
-          opacity: 1;
-        }
-      }
-      
-      .el-tree {
-        padding: 8px;
-        background: transparent;
-        
-        .tree-node {
-          display: flex;
-          align-items: center;
-          padding: 4px 8px;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-          
-          &:hover {
-            background: #e6f7ff;
-          }
-          
-          &.active {
-            background: #1890ff;
-            color: white;
+            background: #4f4f4f;
           }
         }
       }

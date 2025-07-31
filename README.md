@@ -128,12 +128,19 @@ docker-compose down
 | BASIC_AUTH_PASSWORD | Basic Auth 密码 | admin@123 |
 | API_BASE_URL | API 基础 URL | http://localhost:8008 |
 | SCRIPTS_DIR | 脚本存放目录 | 项目根目录/scripts |
+| CUSTOM_PACKAGES_DIR | 自定义包存放目录 | 项目根目录/custom_packages |
 
 **SCRIPTS_DIR 说明**：
 - 可以设置为绝对路径：`/path/to/custom/scripts`
 - 可以设置为相对路径：`custom-scripts`（相对于项目根目录）
 - 如果不设置，默认使用项目根目录下的 `scripts` 目录
 - 该目录用于存放动态路由的内联脚本文件
+
+**CUSTOM_PACKAGES_DIR 说明**：
+- 可以设置为绝对路径：`/path/to/custom/packages`
+- 可以设置为相对路径：`custom-packages`（相对于项目根目录）
+- 如果不设置，默认使用项目根目录下的 `custom_packages` 目录
+- 该目录用于存放通过包管理功能安装的npm包
 
 ## 特别声明
 

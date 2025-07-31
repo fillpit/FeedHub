@@ -1,0 +1,6 @@
+{
+  "name": "feedhub-custom-packages",
+  "version": "1.0.0",
+  "description": "Custom packages for FeedHub scripts",
+  "private": true
+}

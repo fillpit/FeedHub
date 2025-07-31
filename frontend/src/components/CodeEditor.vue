@@ -150,6 +150,19 @@ watch(
   }
 );
 
+// 监听语言变化
+watch(
+  () => props.language,
+  (newLanguage) => {
+    if (editor && isEditorReady) {
+      const model = editor.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, newLanguage);
+      }
+    }
+  }
+);
+
 // 监听主题变化
 watch(
   () => props.theme,

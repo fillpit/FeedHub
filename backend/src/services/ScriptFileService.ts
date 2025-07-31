@@ -256,11 +256,33 @@ module.exports = {
   }
 
   /**
-   * 获取脚本目录中的所有文件
+   * 获取脚本目录中的所有文件和目录
    * @param scriptDirName 脚本目录名称
-   * @returns 文件列表
+   * @returns 文件和目录的详细信息列表
    */
-  async getScriptFiles(scriptDirName: string): Promise<string[]> {
+  async getScriptFiles(scriptDirName: string): Promise<Array<{
+    name: string;
+    path: string;
+    type: 'file' | 'directory';
+    extension?: string;
+    size?: number;
+    lastModified?: Date;
+  }>> {
+    const scriptDir = this.getScriptDirectoryPath(scriptDirName);
+    
+    if (!fs.existsSync(scriptDir)) {
+      throw new Error(`脚本目录不存在: ${scriptDirName}`);
+    }
+    
+    return this.getFileTreeRecursively(scriptDir, scriptDir);
+  }
+
+  /**
+   * 获取脚本目录中的所有文件路径（兼容旧接口）
+   * @param scriptDirName 脚本目录名称
+   * @returns 文件路径列表
+   */
+  async getScriptFilePaths(scriptDirName: string): Promise<string[]> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
     
     if (!fs.existsSync(scriptDir)) {
@@ -271,7 +293,62 @@ module.exports = {
   }
 
   /**
-   * 递归获取目录中的所有文件
+   * 递归获取目录中的所有文件和目录信息
+   */
+  private getFileTreeRecursively(dir: string, baseDir: string): Array<{
+    name: string;
+    path: string;
+    type: 'file' | 'directory';
+    extension?: string;
+    size?: number;
+    lastModified?: Date;
+  }> {
+    const items: Array<{
+      name: string;
+      path: string;
+      type: 'file' | 'directory';
+      extension?: string;
+      size?: number;
+      lastModified?: Date;
+    }> = [];
+    
+    const dirItems = fs.readdirSync(dir);
+    
+    for (const item of dirItems) {
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
+      const relativePath = path.relative(baseDir, fullPath);
+      
+      if (stat.isDirectory()) {
+        // 添加目录信息
+        items.push({
+          name: item,
+          path: relativePath,
+          type: 'directory',
+          lastModified: stat.mtime
+        });
+        
+        // 递归获取子目录内容
+        items.push(...this.getFileTreeRecursively(fullPath, baseDir));
+      } else {
+        // 添加文件信息
+        const extension = path.extname(item).toLowerCase();
+        items.push({
+          name: item,
+          path: relativePath,
+          type: 'file',
+          extension: extension || undefined,
+          size: stat.size,
+          lastModified: stat.mtime
+        });
+      }
+    }
+    
+    return items;
+  }
+
+  /**
+   * 递归获取目录中的所有文件路径（兼容旧接口）
    */
   private getFilesRecursively(dir: string, baseDir: string): string[] {
     const files: string[] = [];
