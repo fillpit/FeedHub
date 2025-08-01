@@ -5,6 +5,8 @@ import { DynamicRouteService } from "../services/DynamicRouteService";
 import { NotificationService } from "../services/NotificationService";
 import { BaseController } from "./BaseController";
 import { logger } from "../utils/logger";
+import { ExceptionHandler } from "winston";
+import { AppError, ValidationError } from "@feedhub/shared";
 
 @injectable()
 export class DynamicRouteController extends BaseController {
@@ -134,7 +136,7 @@ export class DynamicRouteController extends BaseController {
   async initializeRouteScript(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       const routeId = Number(req.params.id);
-      const { initType, templateName, gitUrl, gitBranch } = req.body;
+      const { initType, templateName, gitUrl, gitBranch, gitSubPath } = req.body;
       
       let zipBuffer: Buffer | undefined;
       if (req.file) {
@@ -145,9 +147,56 @@ export class DynamicRouteController extends BaseController {
         templateName,
         zipBuffer,
         gitUrl,
-        gitBranch
+        gitBranch,
+        gitSubPath
       });
     });
+  }
+
+  /**
+   * 同步Git仓库
+   */
+  async syncGitRepository(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const routeId = Number(req.params.id);
+      return await this.dynamicRouteService.syncGitRepository(routeId);
+    });
+  }
+
+  /**
+   * 导出路由配置和脚本文件
+   */
+  async exportRoutesWithScripts(req: Request, res: Response): Promise<void> {
+    try {
+      const routeIds = req.body.routeIds as number[];
+      if (!Array.isArray(routeIds) || routeIds.length === 0) {
+        res.status(400).json({ success: false, message: '请提供有效的路由ID列表' });
+        return;
+      }
+
+      const zipBuffer = await this.dynamicRouteService.exportRoutesWithScripts(routeIds);
+      
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="routes-export-${Date.now()}.zip"`);
+      res.send(zipBuffer);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '导出失败';
+      logger.error('[DynamicRouteController] 导出路由失败:', error);
+      res.status(500).json({ success: false, message: errorMessage });
+    }
+  }
+
+  /**
+   * 导入路由配置和脚本文件
+   */
+  async importRoutesWithScripts(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+     if (!req.file) {
+        throw new AppError('请上传ZIP文件');
+      }
+
+      return await this.dynamicRouteService.importRoutesWithScripts(req.file.buffer);
+    })
   }
 
   /**

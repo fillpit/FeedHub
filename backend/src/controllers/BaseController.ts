@@ -19,7 +19,7 @@ export abstract class BaseController {
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
-      res.status(200).json(ApiResponse.error(errorMessage));
+      res.status(500).json(ApiResponse.error(errorMessage));
     }
   }
 }

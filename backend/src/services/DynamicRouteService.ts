@@ -3,7 +3,7 @@ import DynamicRouteConfig, {
   DynamicRouteConfigAttributes,
   RouteParam,
 } from "../models/DynamicRouteConfig";
-import { DEFAULT_TYPE_PARAM } from "@feedhub/shared";
+import { GitConfig } from "@feedhub/shared";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import axios from "axios";
@@ -18,6 +18,7 @@ import AuthCredentialService from "./AuthCredentialService";
 import { AuthCredentialAttributes } from "../models/AuthCredential";
 import { ICacheService, getCacheService } from "./cache";
 import AdmZip from "adm-zip";
+import { simpleGit } from "simple-git";
 
 import { ScriptFileService } from "./ScriptFileService";
 import { ScriptTemplateService } from "./ScriptTemplateService";
@@ -240,12 +241,7 @@ export class DynamicRouteService {
       routeData.params = [];
     }
 
-    // 检查是否已经存在type参数，如果不存在则添加默认的type参数
-    const hasTypeParam = routeData.params.some(param => param.name === 'type');
-    if (!hasTypeParam) {
-      routeData.params.push(DEFAULT_TYPE_PARAM);
-      logger.info(`[DynamicRouteService] 为路由 "${routeData.name}" 添加默认type参数`);
-    }
+    // 不再自动添加默认的type参数，type参数只在访问/dynamic/xxxx路由时从查询参数中获取
 
     // 创建新配置
     const newRoute = await DynamicRouteConfig.create(routeData);
@@ -448,6 +444,7 @@ export class DynamicRouteService {
       zipBuffer?: Buffer;
       gitUrl?: string;
       gitBranch?: string;
+      gitSubPath?: string;
     }
   ): Promise<ApiResponseData<void>> {
     try {
@@ -479,7 +476,7 @@ export class DynamicRouteService {
 
       switch (initType) {
         case 'template':
-          await this.initializeFromTemplate(scriptDirName, options.templateName || 'basic');
+          await this.initializeFromTemplate(scriptDirName, options.templateName || 'basic', route);
           logger.info(`[DynamicRouteService] 模板初始化完成: ${options.templateName || 'basic'}`);
           break;
         case 'upload':
@@ -494,8 +491,17 @@ export class DynamicRouteService {
           if (!options.gitUrl) {
             throw new Error('Git仓库地址不能为空');
           }
-          await this.initializeFromGit(scriptDirName, options.gitUrl, options.gitBranch || 'main');
-          logger.info(`[DynamicRouteService] Git初始化完成: ${options.gitUrl}`);
+          await this.initializeFromGit(scriptDirName, options.gitUrl, options.gitBranch || 'main', options.gitSubPath);
+          
+          // 保存Git配置信息
+          const gitConfig = {
+            gitUrl: options.gitUrl,
+            gitBranch: options.gitBranch || 'main',
+            gitSubPath: options.gitSubPath,
+            lastSyncAt: new Date()
+          };
+          
+          logger.info(`[DynamicRouteService] Git初始化完成: ${options.gitUrl}${options.gitSubPath ? ` (子目录: ${options.gitSubPath})` : ''}`);
           break;
         default:
           throw new Error('不支持的初始化类型');
@@ -503,11 +509,24 @@ export class DynamicRouteService {
 
       // 更新路由配置
       logger.info(`[DynamicRouteService] 准备更新路由配置，scriptDirName: ${scriptDirName}`);
+      
+      const updatedScript = {
+        ...route.script,
+        folder: scriptDirName
+      };
+      
+      // 如果是Git初始化，添加Git配置
+      if (initType === 'git' && options.gitUrl) {
+        updatedScript.gitConfig = {
+          gitUrl: options.gitUrl,
+          gitBranch: options.gitBranch || 'main',
+          gitSubPath: options.gitSubPath,
+          lastSyncAt: new Date()
+        };
+      }
+      
       const updatedRoute = await route.update({
-        script: {
-          ...route.script,
-          folder: scriptDirName
-        }
+        script: updatedScript
       });
       logger.info(`[DynamicRouteService] 路由配置更新完成，新的folder: ${updatedRoute.script.folder}`);
 
@@ -531,8 +550,8 @@ export class DynamicRouteService {
   /**
    * 从模板初始化脚本
    */
-  private async initializeFromTemplate(scriptDirName: string, templateName: string): Promise<void> {
-    await this.scriptTemplateService.initializeFromTemplate(scriptDirName, templateName);
+  private async initializeFromTemplate(scriptDirName: string, templateName: string, routeConfig?: any): Promise<void> {
+    await this.scriptTemplateService.initializeFromTemplate(scriptDirName, templateName, routeConfig);
   }
 
   /**
@@ -583,9 +602,148 @@ export class DynamicRouteService {
   /**
    * 从Git仓库初始化脚本
    */
-  private async initializeFromGit(scriptDirName: string, gitUrl: string, branch: string): Promise<void> {
-    // 这里需要实现Git克隆功能，暂时抛出错误提示需要安装git依赖
-    throw new Error('Git初始化功能需要额外配置，请使用模板或上传方式');
+  private async initializeFromGit(scriptDirName: string, gitUrl: string, branch: string, subPath?: string): Promise<void> {
+    const git = simpleGit();
+    const tempDir = path.join(process.cwd(), 'temp', `git-clone-${Date.now()}`);
+    const scriptDir = this.scriptFileService.getScriptDirectoryPath(scriptDirName);
+    
+    try {
+      // 确保临时目录存在
+      if (!fs.existsSync(path.dirname(tempDir))) {
+        fs.mkdirSync(path.dirname(tempDir), { recursive: true });
+      }
+      
+      logger.info(`[DynamicRouteService] 开始克隆Git仓库: ${gitUrl}, 分支: ${branch}`);
+      
+      // 克隆仓库到临时目录
+      await git.clone(gitUrl, tempDir, {
+        '--branch': branch,
+        '--depth': '1', // 浅克隆，只获取最新提交
+        '--single-branch': null
+      });
+      
+      logger.info(`[DynamicRouteService] Git仓库克隆完成`);
+      
+      // 确定源目录路径
+      const sourceDir = subPath ? path.join(tempDir, subPath) : tempDir;
+      
+      // 检查源目录是否存在
+      if (!fs.existsSync(sourceDir)) {
+        throw new Error(`指定的目录路径不存在: ${subPath || '根目录'}`);
+      }
+      
+      // 检查源目录是否为目录
+      const sourceStat = fs.statSync(sourceDir);
+      if (!sourceStat.isDirectory()) {
+        throw new Error(`指定的路径不是目录: ${subPath || '根目录'}`);
+      }
+      
+      // 复制文件到脚本目录（排除.git目录）
+      await this.copyDirectoryContents(sourceDir, scriptDir, ['.git', '.gitignore']);
+      
+      logger.info(`[DynamicRouteService] 文件复制完成，从 ${sourceDir} 到 ${scriptDir}`);
+      
+    } catch (error) {
+      logger.error(`[DynamicRouteService] Git初始化失败:`, error);
+      throw new Error(`Git初始化失败: ${(error as Error).message}`);
+    } finally {
+      // 清理临时目录
+      if (fs.existsSync(tempDir)) {
+        try {
+          fs.rmSync(tempDir, { recursive: true, force: true });
+          logger.info(`[DynamicRouteService] 临时目录清理完成: ${tempDir}`);
+        } catch (cleanupError) {
+          logger.warn(`[DynamicRouteService] 临时目录清理失败: ${tempDir}`, cleanupError);
+        }
+      }
+    }
+   }
+   
+   /**
+    * 同步Git仓库
+    */
+   async syncGitRepository(routeId: number): Promise<ApiResponseData<void>> {
+     try {
+       const route = await DynamicRouteConfig.findByPk(routeId);
+       if (!route) {
+         return {
+           success: false,
+           message: "路由不存在",
+           data: undefined,
+         };
+       }
+
+       if (route.script.sourceType !== 'inline' || !route.script.gitConfig) {
+         return {
+           success: false,
+           message: "该路由不是从Git仓库导入的，无法同步",
+           data: undefined,
+         };
+       }
+
+       const gitConfig = route.script.gitConfig;
+       const scriptDirName = route.script.folder;
+       
+       logger.info(`[DynamicRouteService] 开始同步Git仓库: ${gitConfig.gitUrl}`);
+       
+       // 重新从Git克隆
+       await this.initializeFromGit(scriptDirName, gitConfig.gitUrl, gitConfig.gitBranch, gitConfig.gitSubPath);
+       
+       // 更新最后同步时间
+       const updatedScript = {
+         ...route.script,
+         gitConfig: {
+           ...gitConfig,
+           lastSyncAt: new Date()
+         }
+       };
+       
+       await route.update({ script: updatedScript });
+       
+       logger.info(`[DynamicRouteService] Git仓库同步完成: ${gitConfig.gitUrl}`);
+       
+       return {
+         success: true,
+         message: "Git仓库同步成功",
+         data: undefined,
+       };
+     } catch (error) {
+       logger.error(`[DynamicRouteService] 同步Git仓库失败:`, error);
+       return {
+         success: false,
+         message: `同步失败: ${(error as Error).message}`,
+         data: undefined,
+       };
+     }
+   }
+   
+   /**
+    * 复制目录内容（排除指定文件/目录）
+    */
+  private async copyDirectoryContents(sourceDir: string, targetDir: string, excludes: string[] = []): Promise<void> {
+    const items = fs.readdirSync(sourceDir);
+    
+    for (const item of items) {
+      // 跳过排除的文件/目录
+      if (excludes.includes(item)) {
+        continue;
+      }
+      
+      const sourcePath = path.join(sourceDir, item);
+      const targetPath = path.join(targetDir, item);
+      const stat = fs.statSync(sourcePath);
+      
+      if (stat.isDirectory()) {
+        // 创建目录并递归复制
+        if (!fs.existsSync(targetPath)) {
+          fs.mkdirSync(targetPath, { recursive: true });
+        }
+        await this.copyDirectoryContents(sourcePath, targetPath, excludes);
+      } else {
+        // 复制文件
+        fs.copyFileSync(sourcePath, targetPath);
+      }
+    }
   }
 
   /**
@@ -721,8 +879,8 @@ export class DynamicRouteService {
     // 验证结果
     const validatedResult = validateScriptResult(result);
 
-    // 检查type参数，决定返回格式
-    const responseType = processedParams.type || 'rss';
+    // 检查type参数，决定返回格式（直接从查询参数获取，不通过路由参数配置）
+    const responseType = (queryParams.type as string) || 'rss';
     let responseContent: string;
 
     if (responseType === 'json') {
@@ -1121,5 +1279,159 @@ export class DynamicRouteService {
     });
 
     return feed.xml({ indent: true });
+  }
+
+  /**
+   * 导出路由配置和脚本文件为ZIP包
+   */
+  async exportRoutesWithScripts(routeIds: number[]): Promise<Buffer> {
+    const zip = new AdmZip();
+    const exportData: any = {
+      version: "1.0",
+      exportTime: new Date().toISOString(),
+      routes: []
+    };
+
+    for (const routeId of routeIds) {
+      const route = await DynamicRouteConfig.findByPk(routeId);
+      if (!route) {
+        logger.warn(`[DynamicRouteService] 导出时未找到路由ID: ${routeId}`);
+        continue;
+      }
+
+      // 添加路由配置到导出数据
+      exportData.routes.push({
+        name: route.name,
+        path: route.path,
+        method: route.method,
+        description: route.description,
+        authCredentialId: route.authCredentialId,
+        params: route.params,
+        script: route.script,
+        refreshInterval: route.refreshInterval
+      });
+
+      // 如果是内联脚本且有脚本目录，添加脚本文件到ZIP
+      if (route.script.sourceType === 'inline' && route.script.folder) {
+        try {
+          const scriptFiles = await this.scriptFileService.getScriptFiles(route.script.folder);
+          
+          for (const file of scriptFiles) {
+            if (file.type === 'file') {
+              const fileContent = await this.scriptFileService.readScriptFile(route.script.folder, file.path);
+              const zipPath = `scripts/${route.name}/${file.path}`;
+              zip.addFile(zipPath, Buffer.from(fileContent, 'utf8'));
+            }
+          }
+          
+          logger.info(`[DynamicRouteService] 已添加路由 "${route.name}" 的脚本文件到导出包`);
+        } catch (error) {
+          logger.warn(`[DynamicRouteService] 导出路由 "${route.name}" 的脚本文件失败:`, error);
+        }
+      }
+    }
+
+    // 添加配置文件到ZIP
+    zip.addFile('routes.json', Buffer.from(JSON.stringify(exportData, null, 2), 'utf8'));
+    
+    logger.info(`[DynamicRouteService] 成功导出 ${exportData.routes.length} 个路由配置和脚本文件`);
+    return zip.toBuffer();
+  }
+
+  /**
+   * 从ZIP包导入路由配置和脚本文件
+   */
+  async importRoutesWithScripts(zipBuffer: Buffer): Promise<ApiResponseData<{ successCount: number; failCount: number; errors: string[] }>> {
+    const zip = new AdmZip(zipBuffer);
+    const entries = zip.getEntries();
+    
+    let successCount = 0;
+    let failCount = 0;
+    const errors: string[] = [];
+
+    // 查找配置文件
+    const configEntry = entries.find(entry => entry.entryName === 'routes.json');
+    if (!configEntry) {
+      throw new Error('导入包中未找到routes.json配置文件');
+    }
+
+    try {
+      const configContent = configEntry.getData().toString('utf8');
+      const importData = JSON.parse(configContent);
+
+      if (!importData.routes || !Array.isArray(importData.routes)) {
+        throw new Error('配置文件格式不正确，缺少routes数组');
+      }
+
+      // 导入每个路由
+      for (const routeData of importData.routes) {
+        try {
+          // 确保路径以/开头
+          if (!routeData.path.startsWith('/')) {
+            routeData.path = '/' + routeData.path;
+          }
+
+          // 检查路径是否已存在
+          const existingRoute = await DynamicRouteConfig.findOne({ where: { path: routeData.path } });
+          if (existingRoute) {
+            errors.push(`路由路径 "${routeData.path}" 已存在，跳过导入`);
+            failCount++;
+            continue;
+          }
+
+          // 如果是内联脚本，创建脚本目录并导入脚本文件
+          if (routeData.script.sourceType === 'inline') {
+            const scriptDirName = await this.scriptFileService.createRouteScriptDirectory(routeData.name);
+            
+            // 查找该路由的脚本文件
+            const scriptPrefix = `scripts/${routeData.name}/`;
+            const scriptEntries = entries.filter(entry => 
+              entry.entryName.startsWith(scriptPrefix) && !entry.isDirectory
+            );
+
+            if (scriptEntries.length > 0) {
+              // 导入脚本文件
+              for (const scriptEntry of scriptEntries) {
+                const relativePath = scriptEntry.entryName.substring(scriptPrefix.length);
+                const fileContent = scriptEntry.getData().toString('utf8');
+                
+                // 确保目录存在
+                const dirPath = relativePath.substring(0, relativePath.lastIndexOf('/'));
+                if (dirPath) {
+                  await this.scriptFileService.ensureDirectoryExists(scriptDirName, dirPath);
+                }
+                
+                await this.scriptFileService.writeScriptFile(scriptDirName, relativePath, fileContent);
+              }
+              
+              logger.info(`[DynamicRouteService] 已导入路由 "${routeData.name}" 的 ${scriptEntries.length} 个脚本文件`);
+            }
+            
+            // 更新脚本配置
+            routeData.script.folder = scriptDirName;
+          }
+
+          // 创建路由配置
+          await DynamicRouteConfig.create(routeData);
+          successCount++;
+          
+          logger.info(`[DynamicRouteService] 成功导入路由: ${routeData.name}`);
+        } catch (error) {
+          const errorMsg = `导入路由 "${routeData.name}" 失败: ${(error as Error).message}`;
+          errors.push(errorMsg);
+          failCount++;
+          logger.error(`[DynamicRouteService] ${errorMsg}`, error);
+        }
+      }
+
+      return {
+        success: true,
+        data: { successCount, failCount, errors },
+        message: `导入完成：成功 ${successCount} 个，失败 ${failCount} 个`
+      };
+    } catch (error) {
+      logger.error(`[DynamicRouteService] 解析导入包失败:`, error);
+      throw new Error(`解析导入包失败: ${(error as Error).message}`);
+    }
   }
 }

@@ -114,7 +114,31 @@ export function createInlineScriptFile(routeId: number, fileName: string, templa
  * @param fileName 文件名
  */
 export function deleteInlineScriptFile(routeId: number, fileName: string) {
-  return request.delete(`/api/dynamic-route/${routeId}/inline-script/files/${fileName}`);
+  return request.delete(`/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`);
+}
+
+/**
+ * 导出路由配置和脚本文件
+ * @param routeIds 路由ID列表
+ */
+export function exportRoutesWithScripts(routeIds: number[]) {
+  return request.post('/api/dynamic-route/export-with-scripts', { routeIds }, {
+    responseType: 'blob'
+  });
+}
+
+/**
+ * 导入路由配置和脚本文件
+ * @param zipFile ZIP文件
+ */
+export function importRoutesWithScripts(zipFile: File) {
+  const formData = new FormData();
+  formData.append('zipFile', zipFile);
+  return request.post('/api/dynamic-route/import-with-scripts', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
 }
 
 /**
@@ -131,6 +155,7 @@ export function initializeRouteScript(
     zipFile?: File;
     gitUrl?: string;
     gitBranch?: string;
+    gitSubPath?: string;
   }
 ) {
   // 对于文件上传，使用FormData
@@ -158,5 +183,17 @@ export function initializeRouteScript(
     data.gitBranch = options.gitBranch;
   }
   
+  if (options.gitSubPath) {
+    data.gitSubPath = options.gitSubPath;
+  }
+  
   return request.post(`/api/dynamic-route/${routeId}/initialize-script`, data);
+}
+
+/**
+ * 同步Git仓库
+ * @param routeId 路由ID
+ */
+export function syncGitRepository(routeId: number) {
+  return request.post(`/api/dynamic-route/${routeId}/sync-git`, {});
 }

@@ -161,6 +161,11 @@ axiosInstance.interceptors.response.use(
       console.warn(`慢请求警告: ${response.config.url} 耗时 ${duration}ms`);
     }
 
+    // 如果是blob响应类型，直接返回response，不进行success检查
+    if (response.config.responseType === 'blob') {
+      return response;
+    }
+
     const res = response.data;
 
     if (!res.success) {

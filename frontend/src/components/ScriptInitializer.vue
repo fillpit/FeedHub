@@ -17,10 +17,13 @@
       <!-- 模板选择 -->
       <div v-if="initType === 'template'" class="init-option">
         <el-select v-model="selectedTemplate" placeholder="选择模板">
-          <el-option label="基础模板" value="basic" />
-          <el-option label="RSS模板" value="rss" />
-          <el-option label="API模板" value="api" />
+          <el-option label="基础模版" value="basic" />
+          <el-option label="复杂模版" value="complex" />
         </el-select>
+        <div class="template-description">
+          <p v-if="selectedTemplate === 'basic'" class="template-desc">基础模版：只包含 package.json 和入口文件 main.js</p>
+          <p v-if="selectedTemplate === 'complex'" class="template-desc">复杂模版：在基础模版基础上增加 utils 工具目录和工具脚本</p>
+        </div>
       </div>
       
       <!-- 文件上传 -->
@@ -39,7 +42,13 @@
       <!-- Git导入 -->
       <div v-if="initType === 'git'" class="init-option">
         <el-input v-model="gitUrl" placeholder="Git仓库地址" class="git-input" />
-        <el-input v-model="gitBranch" placeholder="分支名称" class="git-input" />
+        <el-input v-model="gitBranch" placeholder="分支名称（默认：main）" class="git-input" />
+        <el-input v-model="gitSubPath" placeholder="子目录路径（可选，如：scripts/rss）" class="git-input" />
+        <div class="git-help-text">
+          <p>• 仓库地址：支持 HTTPS 和 SSH 格式</p>
+          <p>• 子目录路径：指定仓库中的特定目录，留空则使用根目录</p>
+          <p>• 示例：scripts/bilibili 表示使用仓库中的 scripts/bilibili 目录</p>
+        </div>
       </div>
     </div>
     
@@ -81,6 +90,7 @@ const selectedTemplate = ref('basic');
 const uploadFile = ref<File>();
 const gitUrl = ref('');
 const gitBranch = ref('main');
+const gitSubPath = ref('');
 const scriptFileInputRef = ref<HTMLInputElement>();
 
 // 计算属性
@@ -96,6 +106,7 @@ const resetForm = () => {
   uploadFile.value = undefined;
   gitUrl.value = '';
   gitBranch.value = 'main';
+  gitSubPath.value = '';
 };
 
 // 处理文件上传
@@ -138,6 +149,9 @@ const handleInit = async () => {
       }
       options.gitUrl = gitUrl.value;
       options.gitBranch = gitBranch.value;
+      if (gitSubPath.value.trim()) {
+        options.gitSubPath = gitSubPath.value.trim();
+      }
     }
     
     const res = await initializeRouteScript(props.routeId, initType.value, options);
@@ -196,6 +210,35 @@ watch(visible, (newValue) => {
     
     .git-input {
       margin-bottom: 10px;
+    }
+    
+    .git-help-text {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f5f7fa;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #606266;
+      
+      p {
+        margin: 4px 0;
+        line-height: 1.4;
+      }
+    }
+    
+    .template-description {
+      margin-top: 10px;
+      
+      .template-desc {
+        margin: 0;
+        padding: 8px 12px;
+        background-color: #f0f9ff;
+        border-left: 3px solid #409eff;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #606266;
+        line-height: 1.4;
+      }
     }
   }
 }

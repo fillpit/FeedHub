@@ -66,7 +66,7 @@
               v-model="fileContent"
               :language="getLanguageFromFileName(selectedFile)"
               theme="vs-dark"
-              :height="500"
+              height="100%"
               :options="{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,

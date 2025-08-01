@@ -1,11 +1,20 @@
 // 脚本来源类型
 export type ScriptSourceType = "inline" | "url" | "file" | "package";
 
+// Git配置接口
+export interface GitConfig {
+  gitUrl: string; // Git仓库地址
+  gitBranch: string; // Git分支
+  gitSubPath?: string; // Git子目录路径
+  lastSyncAt?: Date; // 最后同步时间
+}
+
 // 脚本配置接口
 export interface CustomRouteScript {
   sourceType: ScriptSourceType; // 脚本来源类型：inline(内联代码), url(远程URL), file(上传文件), package(脚本包)
   folder: string; // 脚本目录、URL或文件路径
   timeout?: number; // 脚本执行超时时间（毫秒）
+  gitConfig?: GitConfig; // Git配置信息（当sourceType为inline且从git导入时使用）
 }
 
 // 路由参数配置

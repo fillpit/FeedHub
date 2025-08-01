@@ -98,7 +98,7 @@
       <!-- 操作按钮 -->
       <div 
         class="file-actions"
-        v-if="node.type === 'file' && node.name !== 'main.js' && node.name !== 'index.js'"
+        v-if="node.type === 'file' && node.name !== 'main.js' && node.name !== 'index.js' && node.name != 'package.json' "
       >
         <button 
           class="action-btn delete-btn"

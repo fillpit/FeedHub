@@ -98,21 +98,15 @@ module.exports = { main };
   /**
    * 从模板初始化脚本目录
    */
-  async initializeFromTemplate(scriptDirName: string, templateName: string): Promise<void> {
+  async initializeFromTemplate(scriptDirName: string, templateName: string, routeConfig?: any): Promise<void> {
     const templates = {
       basic: {
         'main.js': this.getMainFileTemplate(),
-        'package.json': this.getPackageJsonTemplate(),
-        'utils/helper.js': this.getUtilsFileTemplate()
+        'package.json': this.getPackageJsonTemplate(routeConfig)
       },
-      rss: {
-        'main.js': this.getRssTemplate(),
-        'package.json': this.getPackageJsonTemplate(),
-        'utils/helper.js': this.getUtilsFileTemplate()
-      },
-      api: {
-        'main.js': this.getApiTemplate(),
-        'package.json': this.getPackageJsonTemplate(),
+      complex: {
+        'main.js': this.getMainFileTemplate(),
+        'package.json': this.getPackageJsonTemplate(routeConfig),
         'utils/helper.js': this.getUtilsFileTemplate()
       }
     };
@@ -130,11 +124,41 @@ module.exports = { main };
   /**
    * 获取package.json模板
    */
-  getPackageJsonTemplate(): string {
+  getPackageJsonTemplate(routeConfig?: any): string {
+    const name = routeConfig?.name ? `route-${routeConfig.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}` : 'dynamic-route-script';
+    const description = routeConfig?.description || '动态路由脚本包';
+    const version = '1.0.0';
+    
+    // 构建路由配置信息
+    const routeInfo: any = {
+      name: routeConfig?.name || '',
+      path: routeConfig?.path || '',
+      method: routeConfig?.method || 'GET',
+      description: routeConfig?.description || '',
+      refreshInterval: routeConfig?.refreshInterval || 60
+    };
+    
+    // 添加参数信息
+    if (routeConfig?.params && routeConfig.params.length > 0) {
+      routeInfo.params = routeConfig.params.map((param: any) => ({
+        name: param.name,
+        type: param.type,
+        required: param.required,
+        defaultValue: param.defaultValue,
+        description: param.description
+      }));
+    }
+    
+    // 添加授权信息
+    if (routeConfig?.authCredentialId) {
+      routeInfo.requiresAuth = true;
+      routeInfo.authCredentialId = routeConfig.authCredentialId;
+    }
+    
     return `{
-  "name": "dynamic-route-script",
-  "version": "1.0.0",
-  "description": "动态路由脚本包",
+  "name": "${name}",
+  "version": "${version}",
+  "description": "${description}",
   "main": "main.js",
   "scripts": {
     "test": "echo \\"Error: no test specified\\" && exit 1"
@@ -143,7 +167,8 @@ module.exports = { main };
     
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "routeConfig": ${JSON.stringify(routeInfo, null, 4).replace(/\n/g, '\n  ')}
 }
 `;
   }

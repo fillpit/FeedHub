@@ -60,4 +60,13 @@ router.post("/:id/initialize-script", (req, res, next) => {
   }
 }, (req, res) => controller.initializeRouteScript(req, res));
 
+// 同步Git仓库
+router.post("/:id/sync-git", (req, res) => controller.syncGitRepository(req, res));
+
+// 导出路由配置和脚本文件
+router.post("/export-with-scripts", (req, res) => controller.exportRoutesWithScripts(req, res));
+
+// 导入路由配置和脚本文件
+router.post("/import-with-scripts", upload.single('zipFile'), (req, res) => controller.importRoutesWithScripts(req, res));
+
 export default router;
