@@ -3,7 +3,7 @@ import DynamicRouteConfig, {
   DynamicRouteConfigAttributes,
   RouteParam,
 } from "../models/DynamicRouteConfig";
-import { GitConfig } from "@feedhub/shared";
+import { AppError, HTTP_STATUS } from "@feedhub/shared";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import axios from "axios";
@@ -539,11 +539,7 @@ export class DynamicRouteService {
       };
     } catch (error) {
       logger.error(`[DynamicRouteService] 初始化路由脚本目录失败:`, error);
-      return {
-        success: false,
-        message: `初始化失败: ${(error as Error).message}`,
-        data: undefined,
-      };
+      throw new AppError('初始化路由脚本目录失败', 500, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
 

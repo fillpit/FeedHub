@@ -48,8 +48,8 @@ RUN pnpm run build:backend
 # 生产镜像
 FROM node:20-alpine AS production
 
-# 安装 nginx
-RUN apk add --no-cache nginx
+# 安装 nginx 和 git
+RUN apk add --no-cache nginx git
 
 # 创建应用目录
 WORKDIR /app
