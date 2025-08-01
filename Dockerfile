@@ -1,5 +1,5 @@
 # 多阶段构建 Dockerfile
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # 设置工作目录
 WORKDIR /app
@@ -46,7 +46,7 @@ COPY --from=shared-builder /app/shared/dist ./shared/dist
 RUN pnpm run build:backend
 
 # 生产镜像
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 # 安装 nginx
 RUN apk add --no-cache nginx
