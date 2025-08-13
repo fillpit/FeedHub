@@ -2,7 +2,7 @@ import * as cheerio from "cheerio";
 import * as xpath from "xpath";
 import { DOMParser } from "xmldom";
 import { v4 as uuidv4 } from "uuid";
-import { WebsiteRssSelector, SelectorField } from "../models/WebsiteRssConfig";
+import { WebsiteRssSelector, SelectorField } from "@feedhub/shared";
 import { logger } from "./logger";
 import { formatDate } from "../utils/dateUtils";
 
@@ -93,6 +93,8 @@ function extractWithSelectorField($element: any, field: SelectorField, logs?: st
   let text = "";
   if (field.extractType === "attr" && field.attrName) {
     text = elements.attr(field.attrName) || "";
+  } else if (field.extractType === "html") {
+    text = elements.html() || "";
   } else {
     text = elements.text().trim();
   }
@@ -131,6 +133,12 @@ function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField
           }
         }
       }
+    }
+  } else if (field.extractType === "html") {
+    if (isElementNode(node)) {
+      text = node.toString() || "";
+    } else {
+      text = getNodeText(node);
     }
   } else {
     text = getNodeText(node);
@@ -218,15 +226,8 @@ export function extractContentWithCSS(
     // 提取内容（如果有）
     const contentText = extractWithSelectorField($element, selector.content, logs);
     if (contentText) {
-      // 对于内容，如果是文本提取，我们需要获取HTML内容
-      if (selector.content.extractType === "text") {
-        const contentElement = $element.find(selector.content.selector);
-        item.content = contentElement.html() || "";
-        item.contentSnippet = contentText.substring(0, 300);
-      } else {
-        item.content = contentText;
-        item.contentSnippet = contentText.substring(0, 300);
-      }
+      item.content = contentText;
+      item.contentSnippet = contentText.substring(0, 300);
       if (logs)
         logs.push(
           `[DEBUG] 内容选择器: ${selector.content.selector}, 提取类型: ${selector.content.extractType}, 内容长度: ${item.content.length} 字符`
@@ -374,22 +375,8 @@ export function extractContentWithXPath(
     // 提取内容（如果有）
     const contentText = extractWithSelectorFieldXPath(containerNode as Node, selector.content, logs);
     if (contentText) {
-      // 对于内容，如果是文本提取，我们需要获取HTML内容
-      if (selector.content.extractType === "text") {
-        const contentNodesResult = xpath.select(selector.content.selector, containerNode as Node);
-        const contentNodes = Array.isArray(contentNodesResult)
-          ? contentNodesResult
-          : [contentNodesResult];
-        if (contentNodes.length > 0 && contentNodes[0] && isElementNode(contentNodes[0])) {
-          item.content = contentNodes[0].toString() || "";
-        } else {
-          item.content = contentText;
-        }
-        item.contentSnippet = contentText.substring(0, 300);
-      } else {
-        item.content = contentText;
-        item.contentSnippet = contentText.substring(0, 300);
-      }
+      item.content = contentText;
+      item.contentSnippet = contentText.substring(0, 300);
       if (logs)
         logs.push(
           `[DEBUG] 内容选择器: ${selector.content.selector}, 提取类型: ${selector.content.extractType}, 内容长度: ${item.content.length} 字符`

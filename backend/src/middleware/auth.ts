@@ -23,7 +23,8 @@ export const authMiddleware = async (
     req.path.startsWith("/rss/") ||
     req.path.startsWith("/json/") ||
     req.path.startsWith("/dynamic") ||
-    req.path.startsWith("/book-rss/feed")
+    req.path.startsWith("/book-rss/feed") ||
+    req.path.startsWith("/book-rss/")
   ) {
     return next();
   }

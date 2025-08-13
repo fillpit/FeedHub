@@ -75,7 +75,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="script.folder" label="存放目录" min-width="70"  show-overflow-tooltip>
+        <el-table-column prop="script.folder" label="存放目录" min-width="70" show-overflow-tooltip>
           <template #default="{ row }">
             <el-link v-if="row.id && row.script.folder" type="success" @click="openInlineScriptEditor(row.id)">
               {{ row.script.folder }}
@@ -84,46 +84,37 @@
         </el-table-column>
         <el-table-column prop="path" label="路径" min-width="130" show-overflow-tooltip>
           <template #default="{ row }">
-                          <el-popover
-                placement="top"
-                :width="200"
-                trigger="hover"
-                :content="`${baseUrl}/api/dynamic${row.path}`"
-              >
-                <template #reference>
-                  <el-link type="primary" underline="never">/dynamic{{ row.path }}</el-link>
-                </template>
-                <div class="link-copy-options">
-                  <div class="copy-option" @click="copyRssLink(row)">
-                    <el-icon><Link /></el-icon>
-                    <span>复制 RSS 链接</span>
-                  </div>
-                  <div class="copy-option" @click="copyJsonLink(row)">
-                    <el-icon><Document /></el-icon>
-                    <span>复制 JSON 链接</span>
-                  </div>
+            <el-popover placement="top" :width="200" trigger="hover" :content="`${baseUrl}/api/dynamic${row.path}`">
+              <template #reference>
+                <el-link type="primary" underline="never">/dynamic{{ row.path }}</el-link>
+              </template>
+              <div class="link-copy-options">
+                <div class="copy-option" @click="copyRssLink(row)">
+                  <el-icon>
+                    <Link />
+                  </el-icon>
+                  <span>复制 RSS 链接</span>
                 </div>
-              </el-popover>
+                <div class="copy-option" @click="copyJsonLink(row)">
+                  <el-icon>
+                    <Document />
+                  </el-icon>
+                  <span>复制 JSON 链接</span>
+                </div>
+              </div>
+            </el-popover>
           </template>
         </el-table-column>
 
         <el-table-column label="参数信息" min-width="200">
           <template #default="{ row }">
-            <div class="route-info">              
+            <div class="route-info">
               <!-- 参数信息 -->
               <div v-if="row.params && row.params.length > 0" class="route-params">
-                <div 
-                  v-for="param in row.params" 
-                  :key="param.name" 
-                  class="param-item"
-                >
+                <div v-for="param in row.params" :key="param.name" class="param-item">
                   <div class="param-header">
                     <span class="param-name">{{ param.name }}</span>
-                    <el-tag 
-                      size="small" 
-                      :type="param.required ? 'danger' : 'info'"
-                      class="param-required-tag"
-                    >
+                    <el-tag size="small" :type="param.required ? 'danger' : 'info'" class="param-required-tag">
                       {{ param.required ? '必需' : '可选' }}
                     </el-tag>
                   </div>
@@ -137,7 +128,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="描述" min-width="200"  show-overflow-tooltip>
+        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="description-text">{{ row.description || "无描述" }}</span>
           </template>
@@ -147,21 +138,20 @@
           <template #default="{ row }">
             <div v-if="row.script.gitConfig" class="git-info">
               <div class="git-url">
-                <el-icon><Link /></el-icon>
+                <el-icon>
+                  <Link />
+                </el-icon>
                 <span class="git-repo">{{ getRepoName(row.script.gitConfig.gitUrl) }}</span>
               </div>
               <div class="git-details">
                 <el-tag size="small" type="info">{{ row.script.gitConfig.gitBranch }}</el-tag>
-                <span v-if="row.script.gitConfig.gitSubPath" class="git-subpath">{{ row.script.gitConfig.gitSubPath }}</span>
+                <span v-if="row.script.gitConfig.gitSubPath" class="git-subpath">{{ row.script.gitConfig.gitSubPath
+                  }}</span>
               </div>
               <div v-if="row.script.gitConfig.lastSyncAt" class="git-sync-time">
                 <span class="sync-time">{{ formatSyncTime(row.script.gitConfig.lastSyncAt) }}</span>
-                <el-link
-                  class="sync-button"
-                  type="success"
-                  @click="syncGitRepo(row)"
-                  :loading="syncingRoutes.includes(row.id)"
-                >
+                <el-link class="sync-button" type="success" @click="syncGitRepo(row)"
+                  :loading="syncingRoutes.includes(row.id)">
                   同步Git
                 </el-link>
               </div>
@@ -293,7 +283,8 @@
           <div>
             <el-input v-model="form.script.folder" placeholder="脚本目录标识符（系统自动生成）" readonly />
             <div class="script-help">
-              <el-button v-if="form.id && form.script.folder" type="success" link @click="openInlineScriptEditor(form.id)">
+              <el-button v-if="form.id && form.script.folder" type="success" link
+                @click="openInlineScriptEditor(form.id)">
                 <el-icon>
                   <Edit />
                 </el-icon>
@@ -707,7 +698,7 @@ const formatSyncTime = (timestamp: string) => {
   const minutes = Math.floor(diff / (1000 * 60));
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  
+
   if (minutes < 1) return '刚刚';
   if (minutes < 60) return `${minutes}分钟前`;
   if (hours < 24) return `${hours}小时前`;
@@ -717,7 +708,7 @@ const formatSyncTime = (timestamp: string) => {
 
 const syncGitRepo = async (route: DynamicRouteConfig) => {
   if (!route.id) return;
-  
+
   try {
     syncingRoutes.value.push(route.id);
     await syncGitRepository(route.id);
@@ -884,9 +875,9 @@ const exportRoutesWithScriptsHandler = async () => {
 
     const routeIds = selectedRoutes.value.map(route => route.id!).filter(id => id !== undefined);
     const response = await exportRoutesWithScripts(routeIds);
-    
+
     // 创建下载链接
-     const blob = response.data as Blob;
+    const blob = response.data as Blob;
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -917,13 +908,13 @@ const handleZipFileImport = async (event: Event) => {
 
   try {
     const result = await importRoutesWithScripts(file);
-    
+
     if (result.code === 0) {
       const { successCount, failCount, errors } = result.data as { successCount: number; failCount: number; errors: string[] };
-      
+
       // 刷新路由列表
       await fetchRoutes();
-      
+
       // 显示导入结果
       if (successCount > 0) {
         ElMessage.success(
@@ -932,7 +923,7 @@ const handleZipFileImport = async (event: Event) => {
       } else {
         ElMessage.error(`导入失败，共 ${failCount} 个路由配置导入失败`);
       }
-      
+
       // 如果有错误，显示详细信息
       if (errors && errors.length > 0) {
         console.warn('导入过程中的错误:', errors);
@@ -1010,16 +1001,16 @@ onMounted(() => {
         cursor: pointer;
         border-radius: 4px;
         transition: background-color 0.2s;
-        
+
         &:hover {
           background-color: #f5f7fa;
         }
-        
+
         .el-icon {
           margin-right: 8px;
           font-size: 14px;
         }
-        
+
         span {
           font-size: 14px;
           color: #606266;
@@ -1292,112 +1283,113 @@ onMounted(() => {
         }
       }
     }
+  }
+}
+
+// 路由信息样式
+.route-info {
+  .auth-info {
+    margin-bottom: 8px;
+
+    .auth-tag {
+      margin: 0;
     }
   }
 
-  // 路由信息样式
-  .route-info {
-    .auth-info {
-      margin-bottom: 8px;
-      
-      .auth-tag {
-        margin: 0;
-      }
-    }
-    
-    .route-params {
-      .param-item {
-        margin-bottom: 6px;
-        padding: 4px 6px;
-        background: #e1e6f0;
-        border-radius: 4px;
-        border-left: 3px solid #9e9e9e;
-        
-        &:last-child {
-          margin-bottom: 0;
-        }
-        
-        .param-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 2px;
-          
-          .param-name {
-            font-weight: 500;
-            color: #303133;
-            font-size: 12px;
-          }
-          
-          .param-required-tag {
-            margin: 0;
-          }
-        }
-        
-        .param-description {
-          font-size: 11px;
-          color: #606266;
-          line-height: 1.4;
-          overflow: hidden;
-        }
-      }
-    }
-    
-    .no-params {
-      color: #909399;
-      font-size: 12px;
-      margin-top: 4px;
-    }
-  }
+  .route-params {
+    .param-item {
+      margin-bottom: 6px;
+      padding: 4px 6px;
+      background: #e1e6f0;
+      border-radius: 4px;
+      border-left: 3px solid #9e9e9e;
 
-  // Git信息样式
-  .git-info {
-    .git-url {
-      display: flex;
-      align-items: center;
-      margin-bottom: 4px;
-      
-      .el-icon {
-        margin-right: 4px;
-        color: #909399;
+      &:last-child {
+        margin-bottom: 0;
       }
-      
-      .git-repo {
-        font-size: 12px;
+
+      .param-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2px;
+
+        .param-name {
+          font-weight: 500;
+          color: #303133;
+          font-size: 12px;
+        }
+
+        .param-required-tag {
+          margin: 0;
+        }
+      }
+
+      .param-description {
+        font-size: 11px;
         color: #606266;
-        font-weight: 500;
-      }
-    }
-    
-    .git-details {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 4px;
-      
-      .git-subpath {
-        font-size: 11px;
-        color: #909399;
-        background: #f5f7fa;
-        padding: 1px 4px;
-        border-radius: 2px;
-      }
-    }
-    
-    .git-sync-time {
-      .sync-time {
-        font-size: 11px;
-        color: #909399;
-      }
-      .sync-button {
-        font-size: 11px;
-        margin-left: 10px;
+        line-height: 1.4;
+        overflow: hidden;
       }
     }
   }
-  
-  .no-git-info {
-    color: #c0c4cc;
+
+  .no-params {
+    color: #909399;
     font-size: 12px;
+    margin-top: 4px;
   }
+}
+
+// Git信息样式
+.git-info {
+  .git-url {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+
+    .el-icon {
+      margin-right: 4px;
+      color: #909399;
+    }
+
+    .git-repo {
+      font-size: 12px;
+      color: #606266;
+      font-weight: 500;
+    }
+  }
+
+  .git-details {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+
+    .git-subpath {
+      font-size: 11px;
+      color: #909399;
+      background: #f5f7fa;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+  }
+
+  .git-sync-time {
+    .sync-time {
+      font-size: 11px;
+      color: #909399;
+    }
+
+    .sync-button {
+      font-size: 11px;
+      margin-left: 10px;
+    }
+  }
+}
+
+.no-git-info {
+  color: #c0c4cc;
+  font-size: 12px;
+}
 </style>

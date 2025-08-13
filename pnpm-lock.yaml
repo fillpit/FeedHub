@@ -51,9 +51,6 @@ importers:
       '@feedhub/shared':
         specifier: file:../shared
         version: link:../shared
-      '@types/adm-zip':
-        specifier: ^0.5.7
-        version: 0.5.7
       '@types/multer':
         specifier: ^2.0.0
         version: 2.0.0
@@ -145,6 +142,9 @@ importers:
         specifier: ^0.0.34
         version: 0.0.34
     devDependencies:
+      '@types/adm-zip':
+        specifier: ^0.5.7
+        version: 0.5.7
       '@types/bcrypt':
         specifier: ^5.0.2
         version: 5.0.2

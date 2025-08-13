@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import path from "path";
 import { container } from "../inversify.config";
 import { TYPES } from "../core/types";
 import { BookController } from "../controllers/BookController";
@@ -9,7 +10,23 @@ import { OpdsController } from "../controllers/OpdsController";
 import { BookRssController } from "../controllers/bookRss";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB
+  },
+  fileFilter: (req, file, cb) => {
+    // 支持的文件格式
+    const allowedTypes = ['.epub', '.txt', '.pdf', '.mobi', '.azw', '.azw3'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`不支持的文件格式: ${ext}。支持的格式: ${allowedTypes.join(', ')}`));
+    }
+  }
+});
 
 // 获取控制器实例
 const bookController = container.get<BookController>(TYPES.BookController);

@@ -1,134 +1,172 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
 import {
-  Book as BookInterface,
-  BookSourceType,
+  BookRssConfig as BookRssConfigInterface,
+  BookFilter,
 } from '@feedhub/shared/src/types/bookRss';
+import Book from './Book';
 
 // Sequelize 模型创建属性接口
-interface BookCreationAttributes
-  extends Optional<BookInterface, "id" | "createdAt" | "updatedAt" | "totalChapters" | "lastChapterTitle" | "lastChapterTime"> {}
+interface BookRssConfigCreationAttributes
+  extends Optional<BookRssConfigInterface, "id" | "createdAt" | "updatedAt" | "key" | "lastUpdateTime" | "lastBooks"> {}
 
 // 重新导出类型
-export { BookInterface as BookAttributes, BookCreationAttributes };
+export { BookRssConfigInterface as BookRssConfigAttributes, BookRssConfigCreationAttributes };
 
-class Book
-  extends Model<BookInterface, BookCreationAttributes>
-  implements BookInterface
+class BookRssConfig
+  extends Model<BookRssConfigInterface, BookRssConfigCreationAttributes>
+  implements BookRssConfigInterface
 {
   public id!: number;
+  public key?: string;
   public title!: string;
-  public author!: string;
   public description!: string;
-  public coverUrl!: string;
-  public sourceType!: BookSourceType;
-  public sourcePath!: string;
-  public sourceUrl!: string;
-  public opdsConfigId!: number;
-  public language!: string;
-  public isbn!: string;
-  public categories!: string[];
-  public fileFormat!: string;
-  public fileSize!: number;
-  public totalChapters!: number;
-  public lastChapterTitle!: string;
-  public lastChapterTime!: Date;
-  public updateFrequency!: number;
-  public isActive!: boolean;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  public opdsConfig!: any; // 这里将改为引用全局设置
+  public bookFilter!: BookFilter;
+  public maxBooks!: number;
+  public updateInterval!: number;
+  public favicon?: string;
+  public lastUpdateTime?: string;
+  public lastBooks?: any[];
+  // 新增章节订阅相关字段
+  public bookId?: number;
+  public includeContent?: boolean;
+  public maxChapters?: number;
+  // 章节解析状态字段
+  public parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
+  public parseError?: string;
+  public lastParseTime?: Date | string;
+  public lastFeedTime?: Date | string;
+  public minReturnChapters?: number;
+  public forceFullUpdate?: boolean;
+  public readonly createdAt!: Date | string;
+  public readonly updatedAt!: Date | string;
 }
 
-Book.init(
+BookRssConfig.init(
   {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    title: {
+    key: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
+      unique: true,
     },
-    author: {
+    title: {
       type: DataTypes.STRING,
       allowNull: false,
     },
     description: {
       type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    coverUrl: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    sourceType: {
-      type: DataTypes.ENUM('upload', 'opds', 'url'),
       allowNull: false,
     },
-    sourcePath: {
-      type: DataTypes.STRING,
-      allowNull: true,
+    opdsConfig: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      comment: '已弃用：现在使用全局设置中的OPDS配置',
     },
-    sourceUrl: {
-      type: DataTypes.STRING,
-      allowNull: true,
+    bookFilter: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: {
+        title: '',
+        author: '',
+        categories: [],
+        language: '',
+        fileFormats: []
+      },
     },
-    opdsConfigId: {
+    maxBooks: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
+      defaultValue: 50,
     },
-    language: {
+    updateInterval: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1, // 默认1天
+      comment: '更新间隔（天）',
+    },
+    favicon: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    isbn: {
+    lastUpdateTime: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    categories: {
+    lastBooks: {
       type: DataTypes.JSON,
       allowNull: true,
       defaultValue: [],
     },
-    fileFormat: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    fileSize: {
+    // 新增章节订阅相关字段
+    bookId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      comment: '订阅的书籍ID',
     },
-    totalChapters: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    lastChapterTitle: {
-      type: DataTypes.STRING,
+    includeContent: {
+      type: DataTypes.BOOLEAN,
       allowNull: true,
+      defaultValue: false,
+      comment: '是否在RSS中包含章节内容',
     },
-    lastChapterTime: {
+    maxChapters: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 50,
+      comment: '最大章节数',
+    },
+    parseStatus: {
+      type: DataTypes.ENUM('pending', 'parsing', 'completed', 'failed'),
+      allowNull: true,
+      defaultValue: 'pending',
+      comment: '章节解析状态',
+    },
+    parseError: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: '解析错误信息',
+    },
+    lastParseTime: {
       type: DataTypes.DATE,
       allowNull: true,
+      comment: '最后解析时间',
     },
-    updateFrequency: {
+    lastFeedTime: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '最后RSS生成时间',
+    },
+    minReturnChapters: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 60, // 默认60分钟检查一次
+      allowNull: true,
+      defaultValue: 3,
+      comment: '最小返回章节数',
     },
-    isActive: {
+    forceFullUpdate: {
       type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
+      allowNull: true,
+      defaultValue: false,
+      comment: '强制全量更新',
     },
-  } as any, // 使用类型断言绕过Sequelize类型检查问题
+  },
   {
     sequelize,
-    modelName: "Book",
-    tableName: "books",
+    modelName: "BookRssConfig",
+    tableName: "book_rss_configs",
     timestamps: true,
   }
 );
 
-export default Book;
+// 定义关联关系
+BookRssConfig.belongsTo(Book, {
+  foreignKey: 'bookId',
+  as: 'book'
+});
+
+export default BookRssConfig;

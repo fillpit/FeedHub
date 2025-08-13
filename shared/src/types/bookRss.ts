@@ -66,7 +66,7 @@ export interface Chapter {
 }
 
 // 章节订阅配置类型
-interface BookChapterRssConfig {
+export interface BookChapterRssConfig {
   id: number;
   key: string;
   title: string;
@@ -75,7 +75,9 @@ interface BookChapterRssConfig {
   bookInfo?: Book;
   includeContent: boolean;
   maxChapters: number;
-  updateInterval: number;
+  updateInterval: number; // 更新间隔（天）
+  minReturnChapters?: number; // 最小返回章节数，默认3
+  forceFullUpdate?: boolean; // 强制全量更新，默认false
   lastUpdateTime?: string;
   createdAt: string;
   updatedAt: string;
@@ -198,10 +200,17 @@ export interface BookRssConfig {
   favicon?: string;
   lastUpdateTime?: string;
   lastBooks?: any[];
-  // 新增字段
+  // 新增章节订阅相关字段
   bookId?: number;
   includeContent?: boolean;
   maxChapters?: number;
+  minReturnChapters?: number; // 最小返回章节数，默认3
+  forceFullUpdate?: boolean; // 强制全量更新，默认false
+  // 章节解析状态字段
+  parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
+  parseError?: string;
+  lastParseTime?: Date | string;
+  lastFeedTime?: Date | string;
   bookInfo?: {
     id: number;
     title: string;

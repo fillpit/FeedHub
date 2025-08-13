@@ -32,6 +32,10 @@ class BookRssConfig
   public bookId?: number;
   public includeContent?: boolean;
   public maxChapters?: number;
+  // 章节解析状态字段
+  public parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
+  public parseError?: string;
+  public lastParseTime?: Date | string;
   public readonly createdAt!: Date | string;
   public readonly updatedAt!: Date | string;
 }
@@ -112,6 +116,22 @@ BookRssConfig.init(
       allowNull: true,
       defaultValue: 50,
       comment: '最大章节数',
+    },
+    parseStatus: {
+      type: DataTypes.ENUM('pending', 'parsing', 'completed', 'failed'),
+      allowNull: true,
+      defaultValue: 'pending',
+      comment: '章节解析状态',
+    },
+    parseError: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: '解析错误信息',
+    },
+    lastParseTime: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '最后解析时间',
     },
   },
   {

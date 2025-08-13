@@ -50,7 +50,7 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="updateInterval" label="更新间隔(分钟)" width="120" />
+      <el-table-column prop="updateInterval" label="更新间隔(天)" width="120" />
       <el-table-column label="最后更新" width="150">
         <template #default="{ row }">
           {{ row.lastUpdateTime ? formatDate(row.lastUpdateTime) : '未更新' }}
@@ -119,27 +119,78 @@
         </el-form-item>
         
         <!-- 手动上传模式 -->
-        <el-form-item v-if="bookSelectionMode === 'upload'" label="选择书籍" prop="bookId">
-          <el-select
-            v-model="form.bookId"
-            placeholder="请选择要订阅的书籍"
-            style="width: 100%"
-            filterable
-            @change="handleBookChange"
-          >
-            <el-option
-              v-for="book in availableBooks"
-              :key="book.id"
-              :label="`${book.title} - ${book.author}`"
-              :value="book.id"
+        <template v-if="bookSelectionMode === 'upload'">
+          <!-- 书籍上传 -->
+          <el-form-item label="上传书籍">
+            <div class="upload-section">
+              <el-upload
+                ref="uploadRef"
+                class="book-upload"
+                drag
+                :action="uploadAction"
+                :headers="uploadHeaders"
+                :before-upload="beforeUpload"
+                :on-success="handleUploadSuccess"
+                :on-error="handleUploadError"
+                :on-progress="handleUploadProgress"
+                :show-file-list="false"
+                accept=".epub,.txt,.pdf,.mobi,.azw,.azw3"
+              >
+                <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                <div class="el-upload__text">
+                  将书籍文件拖到此处，或<em>点击上传</em>
+                </div>
+                <template #tip>
+                  <div class="el-upload__tip">
+                    支持格式：epub、txt、pdf、mobi、azw、azw3，文件大小不超过100MB
+                  </div>
+                </template>
+              </el-upload>
+              
+              <!-- 上传进度 -->
+              <el-progress 
+                v-if="uploadProgress > 0 && uploadProgress < 100"
+                :percentage="uploadProgress"
+                :status="uploadStatus"
+                class="upload-progress"
+              />
+            </div>
+          </el-form-item>
+          
+          <!-- 书籍选择 -->
+          <el-form-item label="选择书籍" prop="bookId">
+            <div v-if="availableBooks.length === 0" class="empty-books-notice">
+              <el-empty description="暂无已上传的书籍">
+                <template #image>
+                  <el-icon size="60" color="#909399"><document /></el-icon>
+                </template>
+                <el-button type="primary" @click="() => {}">
+                  请先上传书籍文件
+                </el-button>
+              </el-empty>
+            </div>
+            <el-select
+              v-else
+              v-model="form.bookId"
+              placeholder="请选择要订阅的书籍"
+              style="width: 100%"
+              filterable
+              @change="handleBookChange"
             >
-              <div>
-                <div>{{ book.title }}</div>
-                <div class="text-sm text-gray-500">作者: {{ book.author }} | 章节: {{ book.totalChapters }}</div>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
+              <el-option
+                v-for="book in availableBooks"
+                :key="book.id"
+                :label="`${book.title} - ${book.author}`"
+                :value="book.id"
+              >
+                <div>
+                  <div>{{ book.title }}</div>
+                  <div class="text-sm text-gray-500">作者: {{ book.author }} | 章节: {{ book.totalChapters }}</div>
+                </div>
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </template>
         
         <!-- OPDS模式 -->
         <el-form-item v-if="bookSelectionMode === 'opds'" label="OPDS书籍">
@@ -177,12 +228,32 @@
         <el-form-item label="更新间隔" prop="updateInterval">
           <el-input-number
             v-model="form.updateInterval"
-            :min="5"
-            :max="10080"
-            placeholder="更新间隔(分钟)"
+            :min="1"
+            :max="365"
+            placeholder="更新间隔(天)"
           />
-          <span class="ml-2 text-sm text-gray-500">分钟</span>
+          <span class="ml-2 text-sm text-gray-500">天</span>
           <div class="text-sm text-gray-500 mt-1">检查新章节的时间间隔</div>
+        </el-form-item>
+
+        <el-form-item label="最小返回章节数" prop="minReturnChapters">
+          <el-input-number
+            v-model="form.minReturnChapters"
+            :min="1"
+            :max="20"
+            placeholder="最小返回章节数"
+          />
+          <span class="ml-2 text-sm text-gray-500">章</span>
+          <div class="text-sm text-gray-500 mt-1">当没有新章节时，返回的最少章节数量</div>
+        </el-form-item>
+
+        <el-form-item label="强制全量更新">
+          <el-switch
+            v-model="form.forceFullUpdate"
+            active-text="开启"
+            inactive-text="关闭"
+          />
+          <div class="text-sm text-gray-500 mt-1">开启后每次都返回最新的章节，忽略增量更新逻辑</div>
         </el-form-item>
       </el-form>
       
@@ -201,7 +272,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
-import { Plus, Refresh, ArrowDown } from '@element-plus/icons-vue';
+import { Plus, Refresh, ArrowDown, UploadFilled, Document } from '@element-plus/icons-vue';
 import { Book, OpdsBook } from '@feedhub/shared';
 import * as bookRssApi from '@/api/bookRss';
 import { formatDate } from '@feedhub/shared/src/utils/date';
@@ -263,6 +334,8 @@ interface BookChapterRssConfig {
   includeContent: boolean;
   maxChapters: number;
   updateInterval: number;
+  minReturnChapters?: number;
+  forceFullUpdate?: boolean;
   lastUpdateTime?: string;
   createdAt: string;
   updatedAt: string;
@@ -283,13 +356,24 @@ const currentEditId = ref<number | null>(null);
 // 选择相关
 const selectedConfigs = ref<BookChapterRssConfig[]>([]);
 
+// 上传相关
+const uploadRef = ref();
+const uploadProgress = ref(0);
+const uploadStatus = ref<'success' | 'exception' | 'warning' | ''>('');
+const uploadAction = '/api/book-rss/books/upload';
+const uploadHeaders = {
+  'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+};
+
 const getInitialFormState = (): Omit<BookChapterRssConfig, 'id' | 'key' | 'createdAt' | 'updatedAt'> => ({
   title: '',
   description: '',
   bookId: null,
   includeContent: true,
   maxChapters: 50,
-  updateInterval: 60
+  updateInterval: 1,
+  minReturnChapters: 3,
+  forceFullUpdate: false
 });
 
 const form = ref<Omit<BookChapterRssConfig, 'id' | 'key' | 'createdAt' | 'updatedAt'>>(getInitialFormState());
@@ -591,11 +675,73 @@ const exportSelectedConfigs = async () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    ElMessage.success(`已导出 ${selectedConfigs.value.length} 个选中配置`);
+    ElMessage.success(`成功导出 ${selectedConfigs.value.length} 个配置`);
   } catch (error: any) {
     console.error('导出配置失败:', error);
-    ElMessage.error(`导出配置失败: ${error.message || '操作失败'}`);
+    ElMessage.error(`导出配置失败: ${error.message || '网络错误'}`);
   }
+};
+
+// 上传相关方法
+const beforeUpload = (file: File) => {
+  const isValidFormat = [
+    'application/epub+zip',
+    'text/plain',
+    'application/pdf',
+    'application/x-mobipocket-ebook',
+    'application/vnd.amazon.ebook'
+  ].includes(file.type) || /\.(epub|txt|pdf|mobi|azw|azw3)$/i.test(file.name);
+  
+  if (!isValidFormat) {
+    ElMessage.error('只支持 epub、txt、pdf、mobi、azw、azw3 格式的文件');
+    return false;
+  }
+  
+  const isLt100M = file.size / 1024 / 1024 < 100;
+  if (!isLt100M) {
+    ElMessage.error('文件大小不能超过 100MB');
+    return false;
+  }
+  
+  uploadProgress.value = 0;
+  uploadStatus.value = '';
+  return true;
+};
+
+const handleUploadProgress = (event: any) => {
+  uploadProgress.value = Math.round((event.loaded / event.total) * 100);
+};
+
+const handleUploadSuccess = async (response: any) => {
+  uploadProgress.value = 100;
+  uploadStatus.value = 'success';
+  
+  if (response.success) {
+    ElMessage.success('书籍上传成功');
+    // 刷新书籍列表
+    await fetchBooks();
+    // 自动选中刚上传的书籍
+    if (response.data && response.data.id) {
+      form.value.bookId = response.data.id;
+      handleBookChange(response.data.id);
+    }
+  } else {
+    ElMessage.error(response.error || '上传失败');
+    uploadStatus.value = 'exception';
+  }
+  
+  // 3秒后隐藏进度条
+  setTimeout(() => {
+    uploadProgress.value = 0;
+    uploadStatus.value = '';
+  }, 3000);
+};
+
+const handleUploadError = (error: any) => {
+  uploadProgress.value = 0;
+  uploadStatus.value = 'exception';
+  console.error('上传失败:', error);
+  ElMessage.error('书籍上传失败，请重试');
 };
 
 
@@ -689,5 +835,26 @@ const exportSelectedConfigs = async () => {
 
 .mt-1 {
   margin-top: 4px;
+}
+
+/* 上传相关样式 */
+.upload-section {
+  width: 100%;
+}
+
+.book-upload {
+  width: 100%;
+}
+
+.upload-progress {
+  margin-top: 16px;
+}
+
+.empty-books-notice {
+  text-align: center;
+  padding: 20px;
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+  background-color: #fafafa;
 }
 </style>

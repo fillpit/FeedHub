@@ -6,59 +6,86 @@ import GlobalSetting from "../models/GlobalSetting";
 import { BookRssConfig as BookRssConfigInterface, Book, Chapter } from '@feedhub/shared/src/types/bookRss';
 import { OpdsService } from "./OpdsService";
 import { ChapterService } from "./ChapterService";
+import { BookService } from "./BookService";
 import BookModel from "../models/Book";
+import ChapterModel from "../models/Chapter";
 import { TYPES } from "../core/types";
 
 @injectable()
 export class BookRssService {
   constructor(
     @inject(TYPES.OpdsService) private opdsService: OpdsService,
-    @inject(TYPES.ChapterService) private chapterService: ChapterService
+    @inject(TYPES.ChapterService) private chapterService: ChapterService,
+    @inject(TYPES.BookService) private bookService: BookService
   ) {}
   /**
    * 获取所有图书RSS配置
    */
   async getAllConfigs(): Promise<ApiResponseData<BookRssConfigInterface[]>> {
-    const configs = await BookRssConfig.findAll({
-      include: [
-        {
-          model: BookModel,
-          as: 'book',
-          attributes: ['id', 'title', 'author', 'totalChapters', 'description', 'sourceType', 'opdsConfigId'],
-          required: false
-        }
-      ]
-    });
-    const globalSetting = await GlobalSetting.findOne();
-    
-    // 将全局OPDS设置注入到每个配置中，并添加书籍信息
-    const configsWithGlobalOpds = configs.map(config => {
-      const configData = config.toJSON() as any;
-      configData.opdsConfig = {
-        name: 'Global OPDS',
-        url: globalSetting?.opdsServerUrl || '',
-        username: globalSetting?.opdsUsername || '',
-        password: globalSetting?.opdsPassword || '',
-        authType: 'basic' as const,
-        enabled: globalSetting?.opdsEnabled || false
-      };
+    try {
+      console.log('[BookRssService] 开始获取所有图书RSS配置');
       
-      // 添加书籍信息
-      if (configData.book) {
-        configData.bookInfo = {
-          id: configData.book.id,
-          title: configData.book.title,
-          author: configData.book.author,
-          totalChapters: configData.book.totalChapters,
-          sourceType: configData.book.sourceType,
-          opdsConfigId: configData.book.opdsConfigId
+      console.log('[BookRssService] 查询BookRssConfig数据...');
+      const configs = await BookRssConfig.findAll({
+        include: [
+          {
+            model: BookModel,
+            as: 'book',
+            attributes: ['id', 'title', 'author', 'totalChapters', 'description', 'sourceType', 'opdsConfigId'],
+            required: false
+          }
+        ]
+      });
+      console.log(`[BookRssService] 查询到 ${configs.length} 个配置`);
+      
+      console.log('[BookRssService] 查询全局设置...');
+      const globalSetting = await GlobalSetting.findOne();
+      console.log(`[BookRssService] 全局设置查询完成: ${globalSetting ? '存在' : '不存在'}`);
+      
+      console.log('[BookRssService] 开始处理配置数据...');
+      // 将全局OPDS设置注入到每个配置中，并添加书籍信息
+      const configsWithGlobalOpds = configs.map((config, index) => {
+        console.log(`[BookRssService] 处理配置 ${index + 1}/${configs.length}, ID: ${config.id}`);
+        
+        const configData = config.toJSON() as any;
+        console.log(`[BookRssService] 配置 ${config.id} 原始数据:`, JSON.stringify(configData, null, 2));
+        
+        configData.opdsConfig = {
+          name: 'Global OPDS',
+          url: globalSetting?.opdsServerUrl || '',
+          username: globalSetting?.opdsUsername || '',
+          password: globalSetting?.opdsPassword || '',
+          authType: 'basic' as const,
+          enabled: globalSetting?.opdsEnabled || false
         };
-      }
+        
+        // 添加书籍信息
+        if (configData.book) {
+          console.log(`[BookRssService] 配置 ${config.id} 包含书籍信息:`, configData.book);
+          configData.bookInfo = {
+            id: configData.book.id,
+            title: configData.book.title,
+            author: configData.book.author,
+            totalChapters: configData.book.totalChapters,
+            sourceType: configData.book.sourceType,
+            opdsConfigId: configData.book.opdsConfigId
+          };
+        } else {
+          console.log(`[BookRssService] 配置 ${config.id} 不包含书籍信息`);
+        }
+        
+        console.log(`[BookRssService] 配置 ${config.id} 处理后数据:`, JSON.stringify(configData, null, 2));
+        return configData;
+      });
       
-      return configData;
-    });
-    
-    return { success: true, data: configsWithGlobalOpds, message: "获取图书RSS配置列表成功" };
+      console.log(`[BookRssService] 所有配置处理完成，返回 ${configsWithGlobalOpds.length} 个配置`);
+      return { success: true, data: configsWithGlobalOpds, message: "获取图书RSS配置列表成功" };
+      
+    } catch (error: any) {
+      console.error('[BookRssService] getAllConfigs 发生错误:', error);
+      console.error('[BookRssService] 错误堆栈:', error.stack);
+      throw error;
+    }
   }
 
   /**
@@ -126,8 +153,14 @@ export class BookRssService {
       // 确保新字段被正确保存
       bookId: configData.bookId,
       includeContent: configData.includeContent || false,
-      maxChapters: configData.maxChapters || 50
+      maxChapters: configData.maxChapters || 50,
+      parseStatus: 'pending'
     });
+    
+    // 如果配置了书籍ID，触发异步章节解析
+    if (configData.bookId) {
+      this.parseBookChaptersAsync(newConfig.id, configData.bookId);
+    }
     
     const globalSetting = await GlobalSetting.findOne();
     const configWithGlobalOpds = newConfig.toJSON() as BookRssConfigInterface;
@@ -163,7 +196,16 @@ export class BookRssService {
       maxChapters: configData.maxChapters
     };
     
+    // 检查是否更新了bookId
+    const oldBookId = config.bookId;
+    const newBookId = configData.bookId;
+    
     await config.update(updateData);
+    
+    // 如果bookId发生变化且新的bookId存在，触发异步章节解析
+    if (newBookId && newBookId !== oldBookId) {
+      this.parseBookChaptersAsync(id, newBookId);
+    }
     
     const globalSetting = await GlobalSetting.findOne();
     const updatedConfigData = config.toJSON() as BookRssConfigInterface;
@@ -260,21 +302,87 @@ export class BookRssService {
          return { chapters: [], book: {} as Book };
        }
 
-       // 获取章节列表
-        const maxChapters = config.maxChapters || 50;
-        const chaptersResult = await this.chapterService.getChaptersByBookId(config.bookId, {
-          page: 1,
-          limit: maxChapters,
-          sortBy: 'chapterNumber',
-          sortOrder: 'desc' // 最新的在前
-        });
-        
-        if (!chaptersResult.success || !chaptersResult.data) {
-          return { chapters: [], book: book.toJSON() as Book };
-        }
+       // 计算时间窗口进行增量更新
+       const now = new Date();
+       const updateIntervalDays = config.updateInterval || 1;
+       const lastFeedTime = config.lastFeedTime ? new Date(config.lastFeedTime) : null;
+       const minReturnChapters = config.minReturnChapters || 3;
+       
+       let chapters: Chapter[] = [];
+       const maxChapters = config.maxChapters || 50;
+       
+       // 如果强制全量更新，直接返回最新章节
+       if (config.forceFullUpdate) {
+         const chaptersResult = await this.chapterService.getChaptersByBookId(config.bookId, {
+           page: 1,
+           limit: maxChapters,
+           sortBy: 'chapterNumber',
+           sortOrder: 'desc'
+         });
+         
+         if (chaptersResult.success && chaptersResult.data) {
+           chapters = chaptersResult.data.list;
+           console.log(`配置${config.id}强制全量更新，返回最新${chapters.length}章`);
+         }
+         
+         // 更新lastFeedTime
+         await BookRssConfig.update(
+           { lastFeedTime: now },
+           { where: { id: config.id } }
+         );
+         
+         return { chapters, book: book.toJSON() as Book };
+       }
+       
+       if (lastFeedTime) {
+         // 计算时间窗口：从上次生成RSS的时间开始
+         const timeWindowStart = new Date(lastFeedTime.getTime() - (updateIntervalDays * 24 * 60 * 60 * 1000));
+         
+         // 获取时间窗口内的新章节
+         const newChaptersResult = await this.chapterService.getChaptersByBookId(config.bookId, {
+           page: 1,
+           limit: maxChapters,
+           sortBy: 'chapterNumber',
+           sortOrder: 'desc'
+         });
+         
+         if (newChaptersResult.success && newChaptersResult.data) {
+           // 过滤出在时间窗口内创建或更新的章节
+           chapters = newChaptersResult.data.list.filter(chapter => {
+             const chapterTime = new Date(chapter.createdAt || chapter.updatedAt || 0);
+             return chapterTime >= timeWindowStart;
+           });
+           
+           // 如果没有新章节，返回最近的指定数量章节避免空RSS
+           if (chapters.length === 0) {
+             chapters = newChaptersResult.data.list.slice(0, minReturnChapters);
+             console.log(`配置${config.id}在时间窗口内无新章节，返回最近${minReturnChapters}章`);
+           } else {
+             console.log(`配置${config.id}在时间窗口内找到${chapters.length}个新章节`);
+           }
+         }
+       } else {
+         // 首次生成RSS，返回最新的章节
+         const chaptersResult = await this.chapterService.getChaptersByBookId(config.bookId, {
+           page: 1,
+           limit: maxChapters,
+           sortBy: 'chapterNumber',
+           sortOrder: 'desc'
+         });
+         
+         if (chaptersResult.success && chaptersResult.data) {
+           chapters = chaptersResult.data.list;
+           console.log(`配置${config.id}首次生成RSS，返回最新${chapters.length}章`);
+         }
+       }
+       
+       // 更新lastFeedTime
+       await BookRssConfig.update(
+         { lastFeedTime: now },
+         { where: { id: config.id } }
+       );
 
-        const chapters = chaptersResult.data.list;
-        return { chapters, book: book.toJSON() as Book };
+       return { chapters, book: book.toJSON() as Book };
      } catch (error) {
        console.error('获取章节数据失败:', error);
        return { chapters: [], book: {} as Book };
@@ -334,7 +442,7 @@ export class BookRssService {
     <lastBuildDate>${now}</lastBuildDate>
     <generator>FeedHub Chapter RSS</generator>
     <language>zh-cn</language>
-    <ttl>${config.updateInterval || 60}</ttl>
+    <ttl>${(config.updateInterval || 1) * 1440}</ttl>
     <image>
       <title>${this.escapeXml(book.title)}</title>
       <url>${book.coverUrl || `${baseUrl}/default-book-cover.png`}</url>
@@ -431,5 +539,84 @@ export class BookRssService {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * 异步解析书籍章节
+   */
+  private async parseBookChaptersAsync(configId: number, bookId: number): Promise<void> {
+    try {
+      console.log(`开始异步解析书籍章节，配置ID: ${configId}, 书籍ID: ${bookId}`);
+      
+      // 更新解析状态为进行中
+      await BookRssConfig.update(
+        { parseStatus: 'parsing', lastParseTime: new Date() },
+        { where: { id: configId } }
+      );
+      
+      // 获取书籍信息
+      const book = await BookModel.findByPk(bookId);
+      if (!book) {
+        throw new Error(`未找到ID为${bookId}的书籍`);
+      }
+      
+      if (!book.sourcePath) {
+        throw new Error(`书籍${bookId}缺少文件路径`);
+      }
+      
+      // 检查是否已有章节，如果有则跳过解析
+      const existingChapters = await ChapterModel.count({ where: { bookId } });
+      if (existingChapters > 0) {
+        console.log(`书籍${bookId}已有${existingChapters}个章节，跳过解析`);
+        await BookRssConfig.update(
+          { parseStatus: 'completed', lastParseTime: new Date() },
+          { where: { id: configId } }
+        );
+        return;
+      }
+      
+      // 调用BookService的解析方法
+      const parseResult = await this.bookService.parseBookFile(book.sourcePath, book.fileFormat || 'unknown');
+      
+      // 创建章节记录
+      if (parseResult.chapters.length > 0) {
+        const chaptersToCreate = parseResult.chapters.map((chapter: any) => ({
+          ...chapter,
+          bookId: book.id,
+        }));
+        await ChapterModel.bulkCreate(chaptersToCreate);
+        
+        // 更新书籍的章节统计
+        await BookModel.update(
+          {
+            totalChapters: parseResult.totalChapters,
+            lastChapterTitle: parseResult.lastChapterTitle,
+            lastChapterTime: parseResult.lastChapterTitle ? new Date() : undefined,
+          },
+          { where: { id: bookId } }
+        );
+        
+        console.log(`书籍${bookId}章节解析完成，共${parseResult.chapters.length}个章节`);
+      }
+      
+      // 更新解析状态为完成
+      await BookRssConfig.update(
+        { parseStatus: 'completed', lastParseTime: new Date() },
+        { where: { id: configId } }
+      );
+      
+    } catch (error) {
+      console.error(`书籍章节解析失败，配置ID: ${configId}, 书籍ID: ${bookId}`, error);
+      
+      // 更新解析状态为失败
+      await BookRssConfig.update(
+        {
+          parseStatus: 'failed',
+          parseError: error instanceof Error ? error.message : '未知错误',
+          lastParseTime: new Date()
+        },
+        { where: { id: configId } }
+      );
+    }
   }
 }

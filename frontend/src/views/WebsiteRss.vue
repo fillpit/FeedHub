@@ -138,10 +138,11 @@
             />
             <el-select
               v-model="form.selector.title.extractType"
-              style="width: 100px; margin-right: 8px"
+              style="width: 120px; margin-right: 8px"
             >
               <el-option label="文本" value="text" />
               <el-option label="属性" value="attr" />
+              <el-option label="HTML内容" value="html" />
             </el-select>
             <el-input
               v-if="form.selector.title.extractType === 'attr'"
@@ -200,10 +201,11 @@
             />
             <el-select
               v-model="form.selector.link!.extractType"
-              style="width: 100px; margin-right: 8px"
+              style="width: 120px; margin-right: 8px"
             >
               <el-option label="文本" value="text" />
               <el-option label="属性" value="attr" />
+              <el-option label="HTML内容" value="html" />
             </el-select>
             <el-input
               v-if="form.selector.link!.extractType === 'attr'"
@@ -262,10 +264,11 @@
             />
             <el-select
               v-model="form.selector.content.extractType"
-              style="width: 100px; margin-right: 8px"
+              style="width: 120px; margin-right: 8px"
             >
               <el-option label="文本" value="text" />
               <el-option label="属性" value="attr" />
+              <el-option label="HTML内容" value="html" />
             </el-select>
             <el-input
               v-if="form.selector.content.extractType === 'attr'"
@@ -324,10 +327,11 @@
             />
             <el-select
               v-model="form.selector.author!.extractType"
-              style="width: 100px; margin-right: 8px"
+              style="width: 120px; margin-right: 8px"
             >
               <el-option label="文本" value="text" />
               <el-option label="属性" value="attr" />
+              <el-option label="HTML内容" value="html" />
             </el-select>
             <el-input
               v-if="form.selector.author!.extractType === 'attr'"
@@ -386,10 +390,11 @@
             />
             <el-select
               v-model="form.selector.date!.extractType"
-              style="width: 100px; margin-right: 8px"
+              style="width: 120px; margin-right: 8px"
             >
               <el-option label="文本" value="text" />
               <el-option label="属性" value="attr" />
+              <el-option label="HTML内容" value="html" />
             </el-select>
             <el-input
               v-if="form.selector.date!.extractType === 'attr'"

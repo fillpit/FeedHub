@@ -743,18 +743,6 @@ export class DynamicRouteService {
   }
 
   /**
-   * 获取文件模板内容
-   * @param fileName 文件名
-   * @param template 模板类型
-
-
-
-
-
-
-
-
-  /**
    * 删除动态路由配置
    */
   async deleteRoute(id: number): Promise<ApiResponseData<void>> {
