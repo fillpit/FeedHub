@@ -135,6 +135,9 @@ importers:
       winston:
         specifier: ^3.17.0
         version: 3.17.0
+      xml2js:
+        specifier: ^0.6.2
+        version: 0.6.2
       xmldom:
         specifier: ^0.6.0
         version: 0.6.0
@@ -172,6 +175,9 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
+      '@types/xml2js':
+        specifier: ^0.4.14
+        version: 0.4.14
       '@types/xmldom':
         specifier: ^0.1.34
         version: 0.1.34
@@ -1493,6 +1499,9 @@ packages:
 
   '@types/web-bluetooth@0.0.16':
     resolution: {integrity: sha512-oh8q2Zc32S6gd/j50GowEjKLoOVOwHP/bWVjKJInBwQqdOYMdPrf1oVlelTlyfFK3CKxL1uahMDAr+vy8T7yMQ==}
+
+  '@types/xml2js@0.4.14':
+    resolution: {integrity: sha512-4YnrRemBShWRO2QjvUin8ESA41rH+9nQGLUGZV/1IDhi3SL9OhdpNC/MrulTWuptXKwhx/aDxE7toV0f/ypIXQ==}
 
   '@types/xmldom@0.1.34':
     resolution: {integrity: sha512-7eZFfxI9XHYjJJuugddV6N5YNeXgQE1lArWOcd1eCOKWb/FGs5SIjacSYuEJuwhsGS3gy4RuZ5EUIcqYscuPDA==}
@@ -4450,6 +4459,10 @@ packages:
     resolution: {integrity: sha512-drPFnkQJik/O+uPKpqSgr22mpuFHqKdbS835iAQrUC73L2F5WkboIRd63ai/2Yg6I1jzifPFKH2NTK+cfglkIA==}
     engines: {node: '>=4.0.0'}
 
+  xml2js@0.6.2:
+    resolution: {integrity: sha512-T4rieHaC1EXcES0Kxxj4JWgaUQHDk+qwHcYOCFHfiwKz7tOVPLq7Hjq9dM1WCMhylqMEfP7hMcOIChvotiZegA==}
+    engines: {node: '>=4.0.0'}
+
   xml@1.0.1:
     resolution: {integrity: sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw==}
 
@@ -5747,6 +5760,10 @@ snapshots:
   '@types/web-animations-js@2.2.16': {}
 
   '@types/web-bluetooth@0.0.16': {}
+
+  '@types/xml2js@0.4.14':
+    dependencies:
+      '@types/node': 20.17.23
 
   '@types/xmldom@0.1.34': {}
 
@@ -9261,6 +9278,11 @@ snapshots:
   xml-name-validator@4.0.0: {}
 
   xml2js@0.5.0:
+    dependencies:
+      sax: 1.4.1
+      xmlbuilder: 11.0.1
+
+  xml2js@0.6.2:
     dependencies:
       sax: 1.4.1
       xmlbuilder: 11.0.1

@@ -16,6 +16,14 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
+// 分页参数
+export interface PaginationParams {
+  page: number;
+  limit: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 // 错误详情
 export interface ValidationError {
   field: string;

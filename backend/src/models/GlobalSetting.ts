@@ -6,8 +6,11 @@ export interface GlobalSettingAttributes {
   httpProxyHost: string;
   httpProxyPort: number;
   isProxyEnabled: boolean;
-  CommonUserCode: number;
-  AdminUserCode: number;
+  // OPDS 设置
+  opdsEnabled?: boolean;
+  opdsServerUrl?: string;
+  opdsUsername?: string;
+  opdsPassword?: string;
 }
 
 interface GlobalSettingCreationAttributes extends Optional<GlobalSettingAttributes, "id"> {}
@@ -20,8 +23,11 @@ class GlobalSetting
   public httpProxyHost!: string;
   public httpProxyPort!: number;
   public isProxyEnabled!: boolean;
-  public CommonUserCode!: number;
-  public AdminUserCode!: number;
+  // OPDS 设置
+  public opdsEnabled?: boolean;
+  public opdsServerUrl?: string;
+  public opdsUsername?: string;
+  public opdsPassword?: string;
 }
 
 GlobalSetting.init(
@@ -46,16 +52,27 @@ GlobalSetting.init(
       allowNull: false,
       defaultValue: true,
     },
-    CommonUserCode: {
-      type: DataTypes.INTEGER,
+    // OPDS 设置
+    opdsEnabled: {
+      type: DataTypes.BOOLEAN,
       allowNull: true,
-      defaultValue: 9527,
+      defaultValue: false,
     },
-    AdminUserCode: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 230713,
+    opdsServerUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
     },
+    opdsUsername: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
+    },
+    opdsPassword: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
+    }
   },
   {
     sequelize,

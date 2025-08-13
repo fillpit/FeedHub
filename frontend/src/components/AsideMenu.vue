@@ -108,7 +108,12 @@ const menuList: MenuItem[] = [
     icon: Link,
     router: "/dynamic-route",
   },
-
+  {
+    index: "3",
+    title: "图书RSS",
+    icon: Link,
+    router: "/book-rss",
+  },
   {
     index: "5",
     title: "NPM包管理",

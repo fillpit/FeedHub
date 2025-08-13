@@ -53,6 +53,11 @@ export interface GlobalSettingAttributes {
   isProxyEnabled: boolean;
   AdminUserCode: number;
   CommonUserCode: number;
+  // OPDS 设置
+  opdsEnabled?: boolean;
+  opdsServerUrl?: string;
+  opdsUsername?: string;
+  opdsPassword?: string;
 }
 
 // 通知设置

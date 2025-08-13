@@ -4,6 +4,12 @@ import GlobalSetting from "../models/GlobalSetting";
 import User from "../models/User";
 import UserSetting from "../models/UserSetting";
 import NotificationSetting from "../models/NotificationSetting";
+// 书籍订阅相关模型
+import Book from "../models/BookRssConfig";
+import BookRssConfig from "../models/BookRssConfigModel";
+import Chapter from "../models/Chapter";
+import Subscription from "../models/Subscription";
+import OpdsConfig from "../models/OpdsConfig";
 import sequelize from "../config/database";
 
 // 全局设置默认值
@@ -11,8 +17,11 @@ const DEFAULT_GLOBAL_SETTINGS = {
   httpProxyHost: "127.0.0.1",
   httpProxyPort: 7890,
   isProxyEnabled: false,
-  CommonUserCode: 9527,
-  AdminUserCode: 230713,
+  // OPDS 设置默认值
+  opdsEnabled: false,
+  opdsServerUrl: "",
+  opdsUsername: "",
+  opdsPassword: ""
 };
 
 export class DatabaseService {
@@ -31,6 +40,10 @@ export class DatabaseService {
       // 同步后再次清理可能产生的备份表
       await this.cleanupBackupTables();
       await this.sequelize.query("PRAGMA foreign_keys = ON");
+      
+      // 等待一下确保表创建完成
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       await this.initializeGlobalSettings();
       await this.initializeAdminUser();
     } catch (error) {
