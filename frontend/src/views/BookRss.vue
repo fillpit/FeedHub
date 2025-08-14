@@ -79,179 +79,175 @@
     </el-table>
 
     <!-- 添加/编辑对话框 -->
-    <el-dialog
+    <el-drawer 
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="850px"
+      size="900px"
       :close-on-click-modal="false"
+      class="book-rss-dialog"
     >
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-width="120px"
-        label-position="left"
-      >
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="form.title" placeholder="请输入图书RSS标题" />
-        </el-form-item>
-        
-        <el-form-item label="描述" prop="description">
-          <el-input
-            v-model="form.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入图书RSS描述"
-          />
-        </el-form-item>
-
-        <!-- 书籍选择 -->
-        <el-divider content-position="left">书籍选择</el-divider>
-        
-        <el-form-item label="选择模式">
-          <el-radio-group v-model="bookSelectionMode" @change="handleModeChange">
-            <el-radio value="upload">手动上传</el-radio>
-            <el-radio value="opds">OPDS服务</el-radio>
-          </el-radio-group>
-          <div class="text-sm text-gray-500 mt-1">
-            {{ bookSelectionMode === 'upload' ? '从已上传的书籍中选择' : '从OPDS服务中选择书籍' }}
-          </div>
-        </el-form-item>
-        
-        <!-- 手动上传模式 -->
-        <template v-if="bookSelectionMode === 'upload'">
-          <!-- 书籍上传 -->
-          <el-form-item label="上传书籍">
-            <div class="upload-section">
-              <el-upload
-                ref="uploadRef"
-                class="book-upload"
-                drag
-                :action="uploadAction"
-                :headers="uploadHeaders"
-                :before-upload="beforeUpload"
-                :on-success="handleUploadSuccess"
-                :on-error="handleUploadError"
-                :on-progress="handleUploadProgress"
-                :show-file-list="false"
-                accept=".epub,.txt,.pdf,.mobi,.azw,.azw3"
-              >
-                <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-                <div class="el-upload__text">
-                  将书籍文件拖到此处，或<em>点击上传</em>
-                </div>
-                <template #tip>
-                  <div class="el-upload__tip">
-                    支持格式：epub、txt、pdf、mobi、azw、azw3，文件大小不超过100MB
-                  </div>
-                </template>
-              </el-upload>
+      <div class="form-container">
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-position="top"
+          class="book-rss-form"
+        >
+          <!-- 基础信息卡片 -->
+          <el-card class="form-section" shadow="never">
+            <template #header>
+              <div class="section-header">
+                <el-icon class="section-icon"><Edit /></el-icon>
+                <span class="section-title">基础信息</span>
+              </div>
+            </template>
+            
+            <div class="form-grid">
+              <el-form-item label="订阅标题" prop="title" class="form-item-full">
+                <el-input 
+                  v-model="form.title" 
+                  placeholder="请输入图书RSS标题"
+                  size="large"
+                  clearable
+                >
+                  <template #prefix>
+                    <el-icon><Document /></el-icon>
+                  </template>
+                </el-input>
+              </el-form-item>
               
-              <!-- 上传进度 -->
-              <el-progress 
-                v-if="uploadProgress > 0 && uploadProgress < 100"
-                :percentage="uploadProgress"
-                :status="uploadStatus"
-                class="upload-progress"
-              />
+              <el-form-item label="订阅描述" prop="description" class="form-item-full">
+                <el-input
+                  v-model="form.description"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="请输入图书RSS描述"
+                  resize="none"
+                  show-word-limit
+                  maxlength="200"
+                />
+              </el-form-item>
             </div>
-          </el-form-item>
-          
-          <!-- 书籍选择 -->
-          <el-form-item label="选择书籍" prop="bookId">
-            <div v-if="availableBooks.length === 0" class="empty-books-notice">
-              <el-empty description="暂无已上传的书籍">
-                <template #image>
-                  <el-icon size="60" color="#909399"><document /></el-icon>
+          </el-card>
+
+          <!-- 书籍配置卡片 -->
+           <el-card class="form-section" shadow="never">
+             <template #header>
+               <div class="section-header">
+                 <el-icon class="section-icon"><Reading /></el-icon>
+                 <span class="section-title">书籍配置</span>
+               </div>
+             </template>
+             
+             <div class="form-grid">
+                <el-form-item label="选择模式" class="form-item-full">
+                  <el-radio-group v-model="bookSelectionMode" @change="handleModeChange" size="large">
+                    <el-radio value="upload">手动上传</el-radio>
+                    <el-radio value="opds">OPDS服务</el-radio>
+                  </el-radio-group>
+                  <div class="form-tip">
+                    {{ bookSelectionMode === 'upload' ? '从已上传的书籍中选择' : '从OPDS服务中选择书籍' }}
+                  </div>
+                </el-form-item>
+        
+                <!-- 手动上传模式 -->
+                <template v-if="bookSelectionMode === 'upload'">
+                  <!-- 书籍上传 -->
+                  <el-form-item label="上传书籍" class="form-item-full">
+                    <div class="upload-section">
+                      <el-upload
+                        ref="uploadRef"
+                        class="book-upload"
+                        drag
+                        :action="uploadAction"
+                        :headers="uploadHeaders"
+                        :before-upload="beforeUpload"
+                        :on-success="handleUploadSuccess"
+                        :on-error="handleUploadError"
+                        :on-progress="handleUploadProgress"
+                        :show-file-list="false"
+                        accept=".epub,.txt,.pdf,.mobi,.azw,.azw3"
+                      >
+                        <el-icon class="upload-icon"><upload-filled /></el-icon>
+                        <div class="upload-text">
+                          将书籍文件拖到此处，或<em>点击上传</em>
+                        </div>
+                        <template #tip>
+                          <div class="upload-tip">
+                            支持格式：epub、txt、pdf、mobi、azw、azw3，文件大小不超过100MB
+                          </div>
+                        </template>
+                      </el-upload>
+                      
+                      <!-- 上传进度 -->
+                      <el-progress 
+                        v-if="uploadProgress > 0 && uploadProgress < 100"
+                        :percentage="uploadProgress"
+                        :status="uploadStatus"
+                        class="upload-progress"
+                      />
+                    </div>
+                  </el-form-item>
+        
                 </template>
-                <el-button type="primary" @click="() => {}">
-                  请先上传书籍文件
-                </el-button>
-              </el-empty>
-            </div>
-            <el-select
-              v-else
-              v-model="form.bookId"
-              placeholder="请选择要订阅的书籍"
-              style="width: 100%"
-              filterable
-              @change="handleBookChange"
-            >
-              <el-option
-                v-for="book in availableBooks"
-                :key="book.id"
-                :label="`${book.title} - ${book.author}`"
-                :value="book.id"
-              >
-                <div>
-                  <div>{{ book.title }}</div>
-                  <div class="text-sm text-gray-500">作者: {{ book.author }} | 章节: {{ book.totalChapters }}</div>
-                </div>
-              </el-option>
-            </el-select>
-          </el-form-item>
-        </template>
         
-        <!-- OPDS模式 -->
-        <el-form-item v-if="bookSelectionMode === 'opds'" label="OPDS书籍">
-          <OpdsBookSelector
-            v-model="selectedOpdsBook"
-            @book-selected="handleOpdsBookSelected"
-          />
-        </el-form-item>
+                <!-- OPDS模式 -->
+                <el-form-item v-if="bookSelectionMode === 'opds'" label="OPDS书籍" class="form-item-full">
+                  <OpdsBookSelector
+                    v-model="selectedOpdsBook"
+                    @book-selected="handleOpdsBookSelected"
+                  />
+                </el-form-item>
+             </div>
+           </el-card>
 
-        <!-- 章节订阅配置 -->
-        <el-divider content-position="left">章节订阅配置</el-divider>
-        
-        <el-form-item label="包含章节内容">
-          <el-switch
-            v-model="form.includeContent"
-            active-text="包含"
-            inactive-text="仅标题"
-          />
-          <div class="text-sm text-gray-500 mt-1">开启后RSS将包含章节的完整内容</div>
-        </el-form-item>
-        
-
-
-        <!-- 其他配置 -->
-        <el-divider content-position="left">其他配置</el-divider>
-        
-        <el-form-item label="更新间隔" prop="updateInterval">
-          <el-input-number
-            v-model="form.updateInterval"
-            :min="1"
-            :max="365"
-            placeholder="更新间隔(天)"
-          />
-          <span class="ml-2 text-sm text-gray-500">天</span>
-          <div class="text-sm text-gray-500 mt-1">检查新章节的时间间隔</div>
-        </el-form-item>
-
-        <el-form-item label="最小返回章节数" prop="minReturnChapters">
-          <el-input-number
-            v-model="form.minReturnChapters"
-            :min="1"
-            :max="20"
-            placeholder="最小返回章节数"
-          />
-          <span class="ml-2 text-sm text-gray-500">章</span>
-          <div class="text-sm text-gray-500 mt-1">当没有新章节时，返回的最少章节数量</div>
-        </el-form-item>
-
-        <el-form-item label="每次更新章节数" prop="chaptersPerUpdate">
-          <el-input-number
-            v-model="form.chaptersPerUpdate"
-            :min="1"
-            :max="20"
-            placeholder="每次更新章节数"
-          />
-          <span class="ml-2 text-sm text-gray-500">章</span>
-          <div class="text-sm text-gray-500 mt-1">每次更新时返回的新章节数量（包含上一次的章节）</div>
-        </el-form-item>
-
-
-      </el-form>
+          <!-- 订阅设置卡片 -->
+          <el-card class="form-section" shadow="never">
+            <template #header>
+              <div class="section-header">
+                <el-icon class="section-icon"><Setting /></el-icon>
+                <span class="section-title">订阅设置</span>
+              </div>
+            </template>
+              
+              <el-form-item label="更新间隔" prop="updateInterval" class="form-item-half">
+                <el-input-number
+                  v-model="form.updateInterval"
+                  :min="1"
+                  :max="365"
+                  placeholder="更新间隔"
+                  size="large"
+                  style="width: 100%"
+                />
+                <div class="form-tip">检查新章节的时间间隔（天）</div>
+              </el-form-item>
+              
+              <el-form-item label="每次更新章节数" prop="chaptersPerUpdate" class="form-item-half">
+                <el-input-number
+                  v-model="form.chaptersPerUpdate"
+                  :min="1"
+                  :max="20"
+                  placeholder="章节数"
+                  size="large"
+                  style="width: 100%"
+                />
+                <div class="form-tip">每次更新时返回的新章节数量</div>
+              </el-form-item>
+              <el-form-item label="最小返回章节数" prop="minReturnChapters" class="form-item-half">
+                <el-input-number
+                  v-model="form.minReturnChapters"
+                  :min="1"
+                  :max="20"
+                  placeholder="章节数"
+                  size="large"
+                  style="width: 100%"
+                />
+                <div class="form-tip">当没有新章节时，返回的最少章节数量</div>
+              </el-form-item>
+          </el-card>
+         </el-form>
+       </div>
       
       <template #footer>
         <div class="dialog-footer">
@@ -261,14 +257,14 @@
           </el-button>
         </div>
       </template>
-    </el-dialog>
+    </el-drawer >
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
-import { Plus, Refresh, ArrowDown, UploadFilled, Document } from '@element-plus/icons-vue';
+import { Plus, Refresh, ArrowDown, UploadFilled, Document, Edit, Reading, Setting, Tools } from '@element-plus/icons-vue';
 import { Book, OpdsBook } from '@feedhub/shared';
 import * as bookRssApi from '@/api/bookRss';
 import { formatDate } from '@feedhub/shared/src/utils/date';
@@ -328,11 +324,10 @@ interface BookChapterRssConfig {
   bookId: number | null;
   bookInfo?: Book;
   includeContent: boolean;
-
   updateInterval: number;
   minReturnChapters?: number;
   chaptersPerUpdate?: number;
-
+  forceFullUpdate?: boolean;
   lastUpdateTime?: string;
   createdAt: string;
   updatedAt: string;
@@ -367,11 +362,10 @@ const getInitialFormState = (): Omit<BookChapterRssConfig, 'id' | 'key' | 'creat
   description: '',
   bookId: null,
   includeContent: true,
-
   updateInterval: 1,
   minReturnChapters: 3,
   chaptersPerUpdate: 3,
-
+  forceFullUpdate: false
 });
 
 const form = ref<Omit<BookChapterRssConfig, 'id' | 'key' | 'createdAt' | 'updatedAt'>>(getInitialFormState());
@@ -481,11 +475,10 @@ const editConfig = (config: BookChapterRssConfig) => {
     bookId: config.bookId,
     bookInfo: config.bookInfo,
     includeContent: config.includeContent,
-
     updateInterval: config.updateInterval,
     minReturnChapters: config.minReturnChapters || 3,
     chaptersPerUpdate: config.chaptersPerUpdate || 3,
-
+    forceFullUpdate: config.forceFullUpdate || false
   };
   // 存储当前编辑的配置ID
   currentEditId.value = config.id;
@@ -757,39 +750,242 @@ const handleUploadError = (error: any) => {
 <style scoped>
 .book-rss-container {
   padding: 20px;
+  background: #f5f7fa;
+  min-height: 100vh;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .header h2 {
   margin: 0;
   color: #303133;
+  font-weight: 600;
+  font-size: 24px;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .batch-actions {
   margin-top: 16px;
 }
 
-.dialog-footer {
-  text-align: right;
+/* 对话框样式 */
+.book-rss-dialog {
+  border-radius: 16px;
 }
 
+.book-rss-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.book-rss-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.book-rss-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.book-rss-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: white;
+  font-size: 20px;
+}
+
+.book-rss-dialog :deep(.el-dialog__body) {
+  padding: 0;
+  background: #f8fafc;
+}
+
+.form-container {
+  padding: 24px;
+}
+
+.book-rss-form {
+  max-width: none;
+}
+
+/* 表单区域卡片 */
+.form-section {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid #e4e7ed;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.form-section:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.form-section :deep(.el-card__header) {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #e4e7ed;
+  padding: 16px 20px;
+}
+
+.form-section :deep(.el-card__body) {
+  padding: 24px;
+  background: white;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  font-size: 18px;
+  color: #667eea;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #2d3748;
+}
+
+/* 表单网格布局 */
+.form-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+.form-item-full {
+  grid-column: 1 / -1;
+}
+
+.form-item-half {
+  grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* 表单项样式 */
+.form-grid :deep(.el-form-item) {
+  margin-bottom: 20px;
+}
+
+.form-grid :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+  margin-bottom: 8px;
+  display: block;
+  line-height: 1.5;
+  width: auto !important;
+}
+
+.form-grid :deep(.el-form-item__content) {
+  line-height: normal;
+  margin-left: 0 !important;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* 上传区域样式 */
+.upload-section {
+  width: 100%;
+}
+
+.book-upload {
+  width: 100%;
+}
+
+.book-upload :deep(.el-upload-dragger) {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  background: #f9fafb;
+  transition: all 0.3s ease;
+  padding: 40px 20px;
+}
+
+.book-upload :deep(.el-upload-dragger:hover) {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.upload-text {
+  font-size: 16px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.upload-text em {
+  color: #667eea;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.upload-progress {
+  margin-top: 16px;
+}
+
+/* 空状态样式 */
+.empty-books-notice {
+  text-align: center;
+  padding: 40px 20px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+/* 对话框底部 */
+.dialog-footer {
+  text-align: right;
+  padding: 20px 24px;
+  background: white;
+  border-top: 1px solid #e4e7ed;
+}
+
+/* 工具类 */
 .text-sm {
   font-size: 12px;
 }
 
 .text-gray-500 {
-  color: #909399;
+  color: #6b7280;
 }
 
 .ml-2 {
@@ -808,12 +1004,16 @@ const handleUploadError = (error: any) => {
   gap: 8px;
 }
 
+.mt-1 {
+  margin-top: 4px;
+}
+
 /* OPDS书籍选择样式 */
 .opds-book-selection {
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
-  padding: 16px;
-  background: #fafafa;
+  border: 1px solid #e4e7ed;
+  border-radius: 12px;
+  padding: 20px;
+  background: #f9fafb;
 }
 
 .opds-controls {
@@ -840,28 +1040,29 @@ const handleUploadError = (error: any) => {
   margin-top: 16px;
 }
 
-.mt-1 {
-  margin-top: 4px;
-}
-
-/* 上传相关样式 */
-.upload-section {
-  width: 100%;
-}
-
-.book-upload {
-  width: 100%;
-}
-
-.upload-progress {
-  margin-top: 16px;
-}
-
-.empty-books-notice {
-  text-align: center;
-  padding: 20px;
-  border: 1px dashed #dcdfe6;
-  border-radius: 6px;
-  background-color: #fafafa;
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .book-rss-container {
+    padding: 12px;
+  }
+  
+  .header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .form-container {
+    padding: 16px;
+  }
+  
+  .form-section :deep(.el-card__body) {
+    padding: 16px;
+  }
 }
 </style>

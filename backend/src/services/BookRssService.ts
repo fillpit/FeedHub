@@ -676,10 +676,6 @@ export class BookRssService {
         throw new Error(`未找到ID为${bookId}的书籍`);
       }
       
-      if (!book.sourcePath) {
-        throw new Error(`书籍${bookId}缺少文件路径`);
-      }
-      
       // 检查是否已有章节，如果有则跳过解析
       const existingChapters = await ChapterModel.count({ where: { bookId } });
       if (existingChapters > 0) {
@@ -689,6 +685,20 @@ export class BookRssService {
           { where: { id: configId } }
         );
         return;
+      }
+      
+      // 对于OPDS书籍，不需要解析文件，因为在创建时已经有默认章节
+      if (book.sourceType === 'opds') {
+        console.log(`书籍${bookId}是OPDS类型，应该已有默认章节，标记为完成`);
+        await BookRssConfig.update(
+          { parseStatus: 'completed', lastParseTime: new Date() },
+          { where: { id: configId } }
+        );
+        return;
+      }
+      
+      if (!book.sourcePath) {
+        throw new Error(`书籍${bookId}缺少文件路径`);
       }
       
       // 调用BookService的解析方法

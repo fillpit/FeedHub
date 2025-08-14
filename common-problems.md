@@ -35,6 +35,51 @@
 
 ---
 
+## 问题3：OPDS书籍添加EPUB解析功能实现
+
+**问题描述：**
+需要在OPDS书籍添加功能中集成EPUB文件下载和解析，使得从OPDS服务添加的EPUB书籍能够自动解析出真实的章节内容，而不是只创建默认章节。
+
+**实现过程中遇到的问题：**
+
+1. **API路由路径错误**
+   - 问题：测试时使用了错误的API路径 `/api/books/opds` 和 `/api/book-rss/books/opds`
+   - 解决：正确的路径是 `/book-rss/books/opds`（无需/api前缀）
+
+2. **请求参数格式错误**
+   - 问题：直接发送书籍数据，但控制器期望 `{ bookData: {...} }` 格式
+   - 解决：将书籍数据包装在 `bookData` 字段中
+
+3. **认证Token获取问题**
+   - 问题：登录响应的token在 `data.data.token` 路径下，而不是 `data.token`
+   - 解决：修正token获取路径
+
+**解决方案：**
+1. **扩展BookService**: 在 `addBookFromOpds` 方法中添加EPUB下载和解析逻辑
+2. **新增下载方法**: 添加 `downloadEpubFile` 私有方法处理EPUB文件下载
+3. **集成EpubParser**: 使用现有的 `EpubParser` 类解析下载的EPUB文件
+4. **元数据更新**: 解析成功后更新书籍的标题、作者、语言等元数据
+5. **章节创建**: 创建真实的章节记录替换默认章节
+
+**修改文件：**
+- `backend/src/services/BookService.ts` - 添加EPUB下载和解析逻辑
+- `README.md` - 更新OPDS集成功能描述
+
+**测试结果：**
+✅ 成功实现 - 使用Project Gutenberg的EPUB文件测试
+- 原始数据：标题"牛奶可乐经济学"，作者"Robert H.Frank"，1章节
+- 解析后：标题"The Adventures of Tom Sawyer, Complete"，作者"Mark Twain"，41章节
+- 所有章节内容正确提取并存储到数据库
+
+**功能特点：**
+- 自动下载EPUB文件到临时目录
+- 解析EPUB文件结构（container.xml、OPF文件）
+- 提取书籍元数据并更新数据库记录
+- 创建真实章节记录，包含完整内容和字数统计
+- 下载失败时自动回退到默认章节创建逻辑
+
+---
+
 ## 问题2：图书RSS页面查询功能500错误
 
 **问题描述：**
@@ -52,7 +97,37 @@
 - `backend/src/models/BookRssConfig.ts`
 
 **当前状态：**
-✅ 已修复 - 图书RSS页面查询功能现在可以正常工作
+✅ 已修复 - 图书RSS页面查询功能恢复正常
+
+---
+
+## 问题3：OPDS书籍添加后没有章节信息
+
+**问题描述：**
+用户选择OPDS类型添加书籍后，书籍成功创建但没有章节信息显示，导致无法生成RSS订阅。
+
+**问题原因：**
+`BookRssService.ts` 中的 `parseBookChaptersAsync` 方法在处理OPDS书籍时存在逻辑错误：
+1. 该方法要求书籍必须有 `sourcePath` 字段，但OPDS书籍使用的是 `sourceUrl`
+2. 对于OPDS书籍，在 `BookService.addBookFromOpds` 中已经创建了默认章节，无需再次解析
+3. 异步解析逻辑错误地尝试解析OPDS书籍的文件，导致解析失败
+
+**解决方案：**
+1. **添加OPDS特殊处理**: 在 `parseBookChaptersAsync` 方法中为OPDS书籍添加特殊处理逻辑
+2. **跳过文件解析**: OPDS书籍不需要文件解析，直接标记为解析完成
+3. **优化处理顺序**: 将OPDS检查放在文件路径检查之前
+4. **保持现有逻辑**: 确保其他类型书籍的解析逻辑不受影响
+
+**修改文件：**
+- `backend/src/services/BookRssService.ts`
+
+**当前状态：**
+✅ 已修复 - OPDS书籍现在能正确显示章节信息并生成RSS订阅
+
+**技术细节：**
+- OPDS书籍在创建时通过 `BookService.addBookFromOpds` 已经创建了默认章节
+- 修复后的逻辑会检测到现有章节并直接标记解析完成
+- 避免了对OPDS书籍进行不必要的文件解析操作
 
 **预防措施：**
 - 在修改模型文件时要仔细检查文件内容

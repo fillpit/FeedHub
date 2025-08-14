@@ -3,8 +3,10 @@ import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosInstance } from "axios";
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 import Book from "../models/Book";
 import Chapter from "../models/Chapter";
+import { EpubParser } from "../utils/EpubParser";
 
 import {
   Book as BookInterface,
@@ -150,27 +152,94 @@ export class BookService {
       
       console.log('OPDS书籍记录创建成功，ID:', book.id);
       
-      // 为OPDS书籍创建默认章节记录，保持与手动上传书籍的一致性
-      const chapterData = {
-        bookId: book.id,
-        chapterNumber: 1,
-        title: book.title,
-        content: book.description || `《${book.title}》\n\n作者：${book.author}\n\n这是一本来自OPDS服务的电子书。完整内容请访问原始链接获取。\n\n原始链接：${book.sourceUrl || '暂无'}`,
-        wordCount: (book.description || '').length,
-        publishTime: new Date(),
-        isNew: false, // OPDS书籍默认不标记为新章节
-      };
+      // 尝试下载和解析EPUB文件
+      let chapters: any[] = [];
+      let actualTotalChapters = 1;
       
-      const chapter = await Chapter.create(chapterData);
-      console.log('OPDS书籍默认章节创建成功，章节ID:', chapter.id);
+      if (bookData.sourceUrl && bookData.fileFormat === 'epub') {
+        try {
+          console.log('开始下载EPUB文件:', bookData.sourceUrl);
+          const downloadResult = await this.downloadEpubFile(bookData.sourceUrl);
+          
+          if (downloadResult.success && downloadResult.filePath) {
+            console.log('EPUB文件下载成功，开始解析');
+            const parser = new EpubParser(downloadResult.filePath);
+            const parseResult = await parser.parse();
+            
+            // 更新书籍元数据
+            if (parseResult.metadata.title && parseResult.metadata.title !== book.title) {
+              await book.update({ title: parseResult.metadata.title });
+            }
+            if (parseResult.metadata.creator && parseResult.metadata.creator !== book.author) {
+              await book.update({ author: parseResult.metadata.creator });
+            }
+            if (parseResult.metadata.description && parseResult.metadata.description !== book.description) {
+              await book.update({ description: parseResult.metadata.description });
+            }
+            if (parseResult.metadata.language && parseResult.metadata.language !== book.language) {
+              await book.update({ language: parseResult.metadata.language });
+            }
+            
+            // 创建真实的章节记录
+            chapters = parseResult.chapters;
+            actualTotalChapters = chapters.length;
+            
+            // 更新总章节数
+            await book.update({ totalChapters: actualTotalChapters });
+            
+            console.log(`EPUB解析成功，共${actualTotalChapters}个章节`);
+            
+            // 清理临时文件
+            if (fs.existsSync(downloadResult.filePath)) {
+              fs.unlinkSync(downloadResult.filePath);
+            }
+          } else {
+            console.warn('EPUB文件下载失败，使用默认章节:', downloadResult.error);
+          }
+        } catch (parseError) {
+          console.warn('EPUB文件解析失败，使用默认章节:', parseError);
+        }
+      }
+      
+      // 如果没有解析到章节或解析失败，创建默认章节
+      if (chapters.length === 0) {
+        const chapterData = {
+          bookId: book.id,
+          chapterNumber: 1,
+          title: book.title,
+          content: book.description || `《${book.title}》\n\n作者：${book.author}\n\n这是一本来自OPDS服务的电子书。完整内容请访问原始链接获取。\n\n原始链接：${book.sourceUrl || '暂无'}`,
+          wordCount: (book.description || '').length,
+          publishTime: new Date(),
+          isNew: false,
+        };
+        
+        const chapter = await Chapter.create(chapterData);
+        console.log('OPDS书籍默认章节创建成功，章节ID:', chapter.id);
+      } else {
+        // 批量创建解析出的章节
+        for (let i = 0; i < chapters.length; i++) {
+          const chapterData = {
+            bookId: book.id,
+            chapterNumber: i + 1,
+            title: chapters[i].title,
+            content: chapters[i].content,
+            wordCount: chapters[i].wordCount,
+            publishTime: chapters[i].publishTime || new Date(),
+            isNew: false,
+          };
+          
+          await Chapter.create(chapterData);
+        }
+        console.log(`成功创建${chapters.length}个章节记录`);
+      }
       
       console.log('=== OPDS书籍添加流程完成 ===');
       console.log('添加成功的OPDS书籍:', {
         id: book.id,
         title: book.title,
         author: book.author,
-        totalChapters: book.totalChapters,
-        chapterId: chapter.id
+        totalChapters: actualTotalChapters,
+        chaptersCount: chapters.length || 1
       });
 
       return {
@@ -580,5 +649,65 @@ export class BookService {
       'application/x-dtbncx+xml': 'ncx',
     };
     return mimeToFormat[mimeType] || 'unknown';
+  }
+
+  /**
+   * 下载EPUB文件到临时目录
+   */
+  private async downloadEpubFile(url: string): Promise<{
+    success: boolean;
+    filePath?: string;
+    error?: string;
+  }> {
+    try {
+      console.log('开始下载EPUB文件:', url);
+      
+      const response = await this.axiosInstance({
+        method: 'GET',
+        url: url,
+        responseType: 'stream',
+        timeout: 60000, // 60秒超时
+      });
+      
+      // 创建临时文件
+      const tempFileName = `epub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.epub`;
+      const tempFilePath = path.join(os.tmpdir(), tempFileName);
+      
+      // 写入文件
+      const writer = fs.createWriteStream(tempFilePath);
+      response.data.pipe(writer);
+      
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          console.log('EPUB文件下载完成:', tempFilePath);
+          resolve({
+            success: true,
+            filePath: tempFilePath
+          });
+        });
+        
+        writer.on('error', (error) => {
+          console.error('EPUB文件写入失败:', error);
+          resolve({
+            success: false,
+            error: `文件写入失败: ${error.message}`
+          });
+        });
+        
+        response.data.on('error', (error: any) => {
+          console.error('EPUB文件下载失败:', error);
+          resolve({
+            success: false,
+            error: `下载失败: ${error.message}`
+          });
+        });
+      });
+    } catch (error) {
+      console.error('下载EPUB文件时发生错误:', error);
+      return {
+        success: false,
+        error: `下载失败: ${error instanceof Error ? error.message : '未知错误'}`
+      };
+    }
   }
 }

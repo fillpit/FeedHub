@@ -38,6 +38,8 @@ class BookRssConfig
   public lastParseTime?: Date | string;
   public lastFeedTime?: Date | string;
   public minReturnChapters?: number;
+  public chaptersPerUpdate?: number;
+  public currentReadChapter?: number;
 
   public readonly createdAt!: Date | string;
   public readonly updatedAt!: Date | string;
@@ -142,6 +144,18 @@ BookRssConfig.init(
       allowNull: true,
       defaultValue: 3,
       comment: '最小返回章节数',
+    },
+    chaptersPerUpdate: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 3,
+      comment: '每次更新返回的章节数',
+    },
+    currentReadChapter: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      comment: '当前阅读进度（章节号）',
     },
 
   },
