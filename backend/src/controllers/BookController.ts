@@ -178,11 +178,13 @@ export class BookController {
         return;
       }
 
-      // TODO: 实现删除书籍的逻辑
-      res.status(501).json({
-        success: false,
-        error: "删除书籍功能尚未实现",
-      });
+      const result = await this.bookService.deleteBook(bookId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
     } catch (error) {
       res.status(500).json({
         success: false,

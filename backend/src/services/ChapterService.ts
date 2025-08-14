@@ -203,59 +203,10 @@ export class ChapterService {
    * 解析书籍文件
    */
   private async parseBookFile(filePath: string, fileFormat: string): Promise<ChapterParseResult> {
-    switch (fileFormat) {
-      case 'txt':
-        return this.parseTxtFile(filePath);
-      default:
-        throw new Error(`不支持的文件格式: ${fileFormat}`);
-    }
+    throw new Error(`ChapterService不再支持文件解析，请使用BookService.parseBookFile方法`);
   }
 
-  /**
-   * 解析TXT文件
-   */
-  private async parseTxtFile(filePath: string): Promise<ChapterParseResult> {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const chapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [];
-    
-    // 简单的章节分割逻辑
-    const chapterRegex = /第[\d一二三四五六七八九十百千万]+[章节]/g;
-    const matches = [...content.matchAll(chapterRegex)];
-    
-    if (matches.length === 0) {
-      // 如果没有找到章节标记，将整个文件作为一章
-      chapters.push({
-        chapterNumber: 1,
-        title: '第一章',
-        content: content.substring(0, 1000),
-        wordCount: content.length,
-        publishTime: new Date(),
-        isNew: true,
-      });
-    } else {
-      for (let i = 0; i < matches.length; i++) {
-        const match = matches[i];
-        const startIndex = match.index!;
-        const endIndex = i < matches.length - 1 ? matches[i + 1].index! : content.length;
-        const chapterContent = content.substring(startIndex, endIndex);
-        
-        chapters.push({
-          chapterNumber: i + 1,
-          title: match[0],
-          content: chapterContent.substring(0, 1000),
-          wordCount: chapterContent.length,
-          publishTime: new Date(),
-          isNew: true,
-        });
-      }
-    }
 
-    return {
-      chapters,
-      totalChapters: chapters.length,
-      lastChapterTitle: chapters[chapters.length - 1]?.title,
-    };
-  }
 
   /**
    * 标记章节为已读
@@ -305,6 +256,54 @@ export class ChapterService {
       return {
         success: false,
         error: `获取最新章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      };
+    }
+  }
+
+  /**
+   * 删除章节
+   */
+  async deleteChapter(id: number): Promise<ApiResponseData<void>> {
+    try {
+      const chapter = await Chapter.findByPk(id);
+      if (!chapter) {
+        return {
+          success: false,
+          error: `未找到ID为${id}的章节`,
+        };
+      }
+
+      await Chapter.destroy({ where: { id } });
+
+      return {
+        success: true,
+        data: undefined,
+        message: "章节删除成功",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `删除章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      };
+    }
+  }
+
+  /**
+   * 根据书籍ID删除所有章节
+   */
+  async deleteChaptersByBookId(bookId: number): Promise<ApiResponseData<void>> {
+    try {
+      const deletedCount = await Chapter.destroy({ where: { bookId } });
+
+      return {
+        success: true,
+        data: undefined,
+        message: `成功删除${deletedCount}个章节`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `删除章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
       };
     }
   }

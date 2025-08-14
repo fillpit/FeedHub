@@ -109,6 +109,10 @@ router.get("/opds/:id/books", (req, res) => opdsController.getBooksFromOpds(req,
 router.get("/opds/books", (req, res) => opdsController.getBooksFromGlobalOpds(req, res));
 
 // === BookRss配置路由 ===
+// RSS Feed路由 (必须在参数路由之前)
+router.get("/feed/:key", (req, res) => bookRssController.getRssFeed(req, res));
+router.get("/feed/:key/json", (req, res) => bookRssController.getRssFeedJson(req, res));
+
 // 获取所有BookRss配置
 router.get("/", (req, res) => bookRssController.getAllConfigs(req, res));
 
@@ -126,9 +130,5 @@ router.delete("/:id", (req, res) => bookRssController.deleteConfig(req, res));
 
 // 刷新BookRss配置
 router.post("/:id/refresh", (req, res) => bookRssController.refreshConfig(req, res));
-
-// RSS Feed路由
-router.get("/feed/:key", (req, res) => bookRssController.getRssFeed(req, res));
-router.get("/feed/:key/json", (req, res) => bookRssController.getRssFeedJson(req, res));
 
 export default router;

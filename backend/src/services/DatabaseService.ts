@@ -233,9 +233,7 @@ export class DatabaseService {
       if (!columnNames.includes('minReturnChapters')) {
         missingColumns.push('minReturnChapters');
       }
-      if (!columnNames.includes('forceFullUpdate')) {
-        missingColumns.push('forceFullUpdate');
-      }
+
 
       // 添加缺失的字段
       for (const column of missingColumns) {
@@ -265,11 +263,7 @@ export class DatabaseService {
               "ALTER TABLE book_rss_configs ADD COLUMN minReturnChapters INTEGER DEFAULT 3"
             );
             console.log('✅ 已添加minReturnChapters字段到book_rss_configs表');
-          } else if (column === 'forceFullUpdate') {
-            await this.sequelize.query(
-              "ALTER TABLE book_rss_configs ADD COLUMN forceFullUpdate TINYINT(1) DEFAULT 0"
-            );
-            console.log('✅ 已添加forceFullUpdate字段到book_rss_configs表');
+
           }
         } catch (addColumnError) {
           console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);

@@ -31,11 +31,16 @@ class BookRssConfig
   // 新增章节订阅相关字段
   public bookId?: number;
   public includeContent?: boolean;
-  public maxChapters?: number;
+
   // 章节解析状态字段
   public parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
   public parseError?: string;
   public lastParseTime?: Date | string;
+  public lastFeedTime?: Date | string;
+  public minReturnChapters?: number;
+  public chaptersPerUpdate?: number; // 每次更新返回的章节数
+
+  public currentReadChapter?: number; // 当前阅读进度（章节号）
   public readonly createdAt!: Date | string;
   public readonly updatedAt!: Date | string;
 }
@@ -111,12 +116,7 @@ BookRssConfig.init(
       defaultValue: false,
       comment: '是否在RSS中包含章节内容',
     },
-    maxChapters: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: 50,
-      comment: '最大章节数',
-    },
+
     parseStatus: {
       type: DataTypes.ENUM('pending', 'parsing', 'completed', 'failed'),
       allowNull: true,
@@ -132,6 +132,30 @@ BookRssConfig.init(
       type: DataTypes.DATE,
       allowNull: true,
       comment: '最后解析时间',
+    },
+    lastFeedTime: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: '最后RSS生成时间',
+    },
+    minReturnChapters: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 3,
+      comment: '最小返回章节数',
+    },
+    chaptersPerUpdate: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 3,
+      comment: '每次更新返回的章节数',
+    },
+
+    currentReadChapter: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      comment: '当前阅读进度（章节号）',
     },
   },
   {

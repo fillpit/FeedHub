@@ -31,14 +31,14 @@ class BookRssConfig
   // 新增章节订阅相关字段
   public bookId?: number;
   public includeContent?: boolean;
-  public maxChapters?: number;
+
   // 章节解析状态字段
   public parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
   public parseError?: string;
   public lastParseTime?: Date | string;
   public lastFeedTime?: Date | string;
   public minReturnChapters?: number;
-  public forceFullUpdate?: boolean;
+
   public readonly createdAt!: Date | string;
   public readonly updatedAt!: Date | string;
 }
@@ -115,12 +115,7 @@ BookRssConfig.init(
       defaultValue: false,
       comment: '是否在RSS中包含章节内容',
     },
-    maxChapters: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: 50,
-      comment: '最大章节数',
-    },
+
     parseStatus: {
       type: DataTypes.ENUM('pending', 'parsing', 'completed', 'failed'),
       allowNull: true,
@@ -148,12 +143,7 @@ BookRssConfig.init(
       defaultValue: 3,
       comment: '最小返回章节数',
     },
-    forceFullUpdate: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: false,
-      comment: '强制全量更新',
-    },
+
   },
   {
     sequelize,

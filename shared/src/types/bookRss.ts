@@ -74,10 +74,12 @@ export interface BookChapterRssConfig {
   bookId: number | null;
   bookInfo?: Book;
   includeContent: boolean;
-  maxChapters: number;
+
   updateInterval: number; // 更新间隔（天）
   minReturnChapters?: number; // 最小返回章节数，默认3
-  forceFullUpdate?: boolean; // 强制全量更新，默认false
+  chaptersPerUpdate?: number; // 每次更新返回的章节数，默认3
+
+  currentReadChapter?: number; // 当前阅读进度（章节号），默认0
   lastUpdateTime?: string;
   createdAt: string;
   updatedAt: string;
@@ -203,10 +205,11 @@ export interface BookRssConfig {
   // 新增章节订阅相关字段
   bookId?: number;
   includeContent?: boolean;
-  maxChapters?: number;
+
   minReturnChapters?: number; // 最小返回章节数，默认3
-  forceFullUpdate?: boolean; // 强制全量更新，默认false
-  // 章节解析状态字段
+  chaptersPerUpdate?: number; // 每次更新返回的章节数，默认3
+
+  currentReadChapter?: number; // 当前阅读进度（章节号），默认0
   parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
   parseError?: string;
   lastParseTime?: Date | string;

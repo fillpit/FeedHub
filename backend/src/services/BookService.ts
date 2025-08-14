@@ -129,6 +129,9 @@ export class BookService {
    */
   async addBookFromOpds(bookData: any, opdsConfigId?: number) {
     try {
+      console.log('=== 开始OPDS书籍添加流程 ===');
+      console.log('OPDS书籍数据:', JSON.stringify(bookData, null, 2));
+      
       // 创建书籍记录
       const book = await Book.create({
         title: bookData.title || '未知标题',
@@ -144,6 +147,31 @@ export class BookService {
         updateFrequency: bookData.updateFrequency || 60,
         isActive: true,
       });
+      
+      console.log('OPDS书籍记录创建成功，ID:', book.id);
+      
+      // 为OPDS书籍创建默认章节记录，保持与手动上传书籍的一致性
+      const chapterData = {
+        bookId: book.id,
+        chapterNumber: 1,
+        title: book.title,
+        content: book.description || `《${book.title}》\n\n作者：${book.author}\n\n这是一本来自OPDS服务的电子书。完整内容请访问原始链接获取。\n\n原始链接：${book.sourceUrl || '暂无'}`,
+        wordCount: (book.description || '').length,
+        publishTime: new Date(),
+        isNew: false, // OPDS书籍默认不标记为新章节
+      };
+      
+      const chapter = await Chapter.create(chapterData);
+      console.log('OPDS书籍默认章节创建成功，章节ID:', chapter.id);
+      
+      console.log('=== OPDS书籍添加流程完成 ===');
+      console.log('添加成功的OPDS书籍:', {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        totalChapters: book.totalChapters,
+        chapterId: chapter.id
+      });
 
       return {
         success: true,
@@ -151,6 +179,13 @@ export class BookService {
         message: "从OPDS添加书籍成功",
       };
     } catch (error) {
+      console.error('=== OPDS书籍添加失败 ===');
+      console.error('错误详情:', {
+        message: error instanceof Error ? error.message : '未知错误',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
+      
       return {
         success: false,
         error: `从OPDS添加书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
@@ -285,10 +320,10 @@ export class BookService {
    */
   public async parseBookFile(filePath: string, mimeType: string): Promise<ChapterParseResult> {
     const fileFormat = this.getFileFormat(mimeType);
-    
+    // 输出格式信息
+    console.log('文件格式:', fileFormat);
+
     switch (fileFormat) {
-      case 'txt':
-        return this.parseTxtFile(filePath);
       case 'epub':
         return this.parseEpubFile(filePath);
       case 'pdf':
@@ -299,51 +334,7 @@ export class BookService {
     }
   }
 
-  /**
-   * 解析TXT文件
-   */
-  private async parseTxtFile(filePath: string): Promise<ChapterParseResult> {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const chapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [];
-    
-    // 简单的章节分割逻辑
-    const chapterRegex = /第[\d一二三四五六七八九十百千万]+[章节]/g;
-    const matches = [...content.matchAll(chapterRegex)];
-    
-    if (matches.length === 0) {
-      // 如果没有找到章节标记，将整个文件作为一章
-      chapters.push({
-        chapterNumber: 1,
-        title: '第一章',
-        content: content.substring(0, 1000),
-        wordCount: content.length,
-        publishTime: new Date(),
-        isNew: true,
-      });
-    } else {
-      for (let i = 0; i < matches.length; i++) {
-        const match = matches[i];
-        const startIndex = match.index!;
-        const endIndex = i < matches.length - 1 ? matches[i + 1].index! : content.length;
-        const chapterContent = content.substring(startIndex, endIndex);
-        
-        chapters.push({
-          chapterNumber: i + 1,
-          title: match[0],
-          content: chapterContent.substring(0, 1000),
-          wordCount: chapterContent.length,
-          publishTime: new Date(),
-          isNew: true,
-        });
-      }
-    }
 
-    return {
-      chapters,
-      totalChapters: chapters.length,
-      lastChapterTitle: chapters[chapters.length - 1]?.title,
-    };
-  }
 
   /**
    * 解析EPUB文件
@@ -403,50 +394,175 @@ export class BookService {
   }
 
   /**
-   * 解析PDF文件（基础实现）
+   * 解析PDF文件
    */
   private async parsePdfFile(filePath: string): Promise<ChapterParseResult> {
-    // PDF文件的基础处理，暂时返回默认章节信息
-    // 后续可以使用pdf-parse库进行完整解析
-    const chapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [
-      {
-        chapterNumber: 1,
-        title: '第一章',
-        content: 'PDF文件已上传，暂不支持内容解析',
-        wordCount: 0,
-        publishTime: new Date(),
-        isNew: true,
+    try {
+      const { PdfParser } = await import('../utils/PdfParser');
+      const parser = new PdfParser(filePath);
+      const { chapters } = await parser.parse();
+      
+      if (chapters.length === 0) {
+        // 如果没有解析到章节，返回默认章节
+        const defaultChapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [
+          {
+            chapterNumber: 1,
+            title: '第一章',
+            content: 'PDF文件已上传，但未能解析到章节内容',
+            wordCount: 0,
+            publishTime: new Date(),
+            isNew: true,
+          }
+        ];
+        
+        return {
+          totalChapters: 1,
+          chapters: defaultChapters,
+          lastChapterTitle: '第一章',
+        };
       }
-    ];
-    
-    return {
-      totalChapters: 1,
-      chapters,
-      lastChapterTitle: '第一章',
-    };
+      
+      return {
+        totalChapters: chapters.length,
+        chapters,
+        lastChapterTitle: chapters[chapters.length - 1]?.title,
+      };
+    } catch (error) {
+      console.error('PDF解析失败:', error);
+      
+      // 解析失败时返回默认章节
+      const defaultChapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [
+        {
+          chapterNumber: 1,
+          title: '第一章',
+          content: `PDF文件解析失败: ${(error as Error).message}`,
+          wordCount: 0,
+          publishTime: new Date(),
+          isNew: true,
+        }
+      ];
+      
+      return {
+        totalChapters: 1,
+        chapters: defaultChapters,
+        lastChapterTitle: '第一章',
+      };
+    }
   }
 
   /**
-   * 解析通用文件格式（基础实现）
+   * 解析通用文件格式
    */
   private async parseGenericFile(filePath: string, fileFormat: string): Promise<ChapterParseResult> {
-    // 通用文件格式的基础处理，暂时返回默认章节信息
-    const chapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [
-      {
-        chapterNumber: 1,
-        title: '第一章',
-        content: `${fileFormat.toUpperCase()}文件已上传，暂不支持内容解析`,
-        wordCount: 0,
-        publishTime: new Date(),
-        isNew: true,
+    try {
+      // 获取文件基本信息
+      const stats = fs.statSync(filePath);
+      const fileSize = stats.size;
+      
+      // 根据文件格式提供不同的处理
+      let content = '';
+      let title = '第一章';
+      
+      switch (fileFormat.toLowerCase()) {
+        case 'mobi':
+        case 'azw':
+        case 'azw3':
+          content = `Kindle格式电子书已上传成功。\n\n文件大小: ${(fileSize / 1024 / 1024).toFixed(2)} MB\n\n该格式暂不支持内容解析，但文件已保存并可用于RSS订阅。建议使用EPUB或PDF格式以获得更好的解析效果。`;
+          title = 'Kindle电子书';
+          break;
+        case 'chm':
+          content = `CHM帮助文档已上传成功。\n\n文件大小: ${(fileSize / 1024 / 1024).toFixed(2)} MB\n\n该格式暂不支持内容解析，但文件已保存。`;
+          title = 'CHM文档';
+          break;
+        case 'fb2':
+          content = `FictionBook格式电子书已上传成功。\n\n文件大小: ${(fileSize / 1024 / 1024).toFixed(2)} MB\n\n该格式暂不支持内容解析，但文件已保存。`;
+          title = 'FictionBook电子书';
+          break;
+        default:
+          content = `${fileFormat.toUpperCase()}格式文件已上传成功。\n\n文件大小: ${(fileSize / 1024 / 1024).toFixed(2)} MB\n\n该格式暂不支持内容解析，但文件已保存。\n\n支持完整解析的格式：EPUB、PDF`;
+          title = `${fileFormat.toUpperCase()}文件`;
       }
-    ];
-    
-    return {
-      totalChapters: 1,
-      chapters,
-      lastChapterTitle: '第一章',
-    };
+      
+      const chapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [
+        {
+          chapterNumber: 1,
+          title: title,
+          content: content,
+          wordCount: content.length,
+          publishTime: new Date(),
+          isNew: true,
+        }
+      ];
+      
+      return {
+        totalChapters: 1,
+        chapters,
+        lastChapterTitle: title,
+      };
+    } catch (error) {
+      console.error(`解析${fileFormat}文件失败:`, error);
+      
+      // 解析失败时返回默认章节
+      const defaultChapters: Omit<ChapterInterface, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[] = [
+        {
+          chapterNumber: 1,
+          title: '文件上传成功',
+          content: `${fileFormat.toUpperCase()}文件已上传，但处理过程中出现错误: ${(error as Error).message}`,
+          wordCount: 0,
+          publishTime: new Date(),
+          isNew: true,
+        }
+      ];
+      
+      return {
+        totalChapters: 1,
+        chapters: defaultChapters,
+        lastChapterTitle: '文件上传成功',
+      };
+    }
+  }
+
+  /**
+   * 删除书籍
+   */
+  async deleteBook(id: number) {
+    try {
+      const book = await Book.findByPk(id);
+      if (!book) {
+        return {
+          success: false,
+          error: `未找到ID为${id}的书籍`,
+        };
+      }
+
+      // 删除相关章节
+      await Chapter.destroy({ where: { bookId: id } });
+
+      // 删除书籍文件（如果存在）
+      if (book.sourcePath && fs.existsSync(book.sourcePath)) {
+        try {
+          fs.unlinkSync(book.sourcePath);
+          console.log(`已删除书籍文件: ${book.sourcePath}`);
+        } catch (fileError) {
+          console.warn(`删除书籍文件失败: ${fileError}`);
+          // 文件删除失败不影响数据库删除
+        }
+      }
+
+      // 删除书籍记录
+      await Book.destroy({ where: { id } });
+
+      return {
+        success: true,
+        data: undefined,
+        message: "书籍删除成功",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `删除书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      };
+    }
   }
 
   /**
@@ -454,11 +570,14 @@ export class BookService {
    */
   private getFileFormat(mimeType: string): string {
     const mimeToFormat: { [key: string]: string } = {
-      'text/plain': 'txt',
       'application/epub+zip': 'epub',
       'application/pdf': 'pdf',
       'application/x-mobipocket-ebook': 'mobi',
       'application/vnd.amazon.ebook': 'azw',
+      'application/x-kindle-application': 'azw3',
+      'application/vnd.ms-htmlhelp': 'chm',
+      'application/x-fictionbook+xml': 'fb2',
+      'application/x-dtbncx+xml': 'ncx',
     };
     return mimeToFormat[mimeType] || 'unknown';
   }

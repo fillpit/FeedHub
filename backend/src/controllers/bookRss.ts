@@ -26,8 +26,8 @@ export class BookRssController extends BaseController {
   async addConfig(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       // 确保请求体不包含opdsConfig，因为现在使用全局设置
-      const { opdsConfig, ...configData } = req.body;
-      return await this.bookRssService.addConfig(configData);
+      const { opdsConfig, opdsBook, ...configData } = req.body;
+      return await this.bookRssService.addConfig(configData, opdsBook);
     });
   }
 
@@ -57,13 +57,16 @@ export class BookRssController extends BaseController {
   async getRssFeed(req: Request, res: Response): Promise<void> {
     try {
       const key = req.params.key;
+      console.log(`[BookRssController] 开始获取RSS Feed，key: ${key}`);
       const rssXml = await this.bookRssService.getRssFeed(key);
+      console.log(`[BookRssController] RSS Feed生成成功，长度: ${rssXml.length}`);
 
       // 设置正确的内容类型
       res.setHeader("Content-Type", "application/rss+xml");
       res.send(rssXml);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
+      console.error(`[BookRssController] RSS Feed生成失败:`, error);
       res.status(404).send(`获取图书RSS Feed失败: ${errorMessage}`);
     }
   }

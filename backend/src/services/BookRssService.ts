@@ -136,14 +136,42 @@ export class BookRssService {
    * 添加新的图书RSS配置
    */
   async addConfig(
-    configData: Omit<BookRssConfigInterface, 'id' | 'createdAt' | 'updatedAt' | 'opdsConfig'>
+    configData: Omit<BookRssConfigInterface, 'id' | 'createdAt' | 'updatedAt' | 'opdsConfig'>,
+    opdsBook?: any
   ): Promise<ApiResponseData<BookRssConfigInterface>> {
     // 生成唯一的key
     const key = configData.key || `book-rss-${Date.now()}`;
     
+    let bookId = configData.bookId;
+    
+    // 如果提供了OPDS书籍数据，先创建书籍记录
+    if (opdsBook) {
+      console.log('[BookRssService] 处理OPDS书籍数据:', opdsBook);
+      const bookResult = await this.bookService.addBookFromOpds({
+        title: opdsBook.title,
+        author: opdsBook.author,
+        description: opdsBook.description,
+        sourceUrl: opdsBook.link,
+        language: opdsBook.language || 'zh',
+        categories: opdsBook.categories || [],
+        fileFormat: opdsBook.fileFormat || 'epub',
+        totalChapters: opdsBook.totalChapters || 1,
+        updateFrequency: 60
+      });
+      
+      if (bookResult.success && bookResult.data) {
+        bookId = bookResult.data.id;
+        console.log('[BookRssService] OPDS书籍创建成功，ID:', bookId);
+      } else {
+        console.error('[BookRssService] OPDS书籍创建失败:', bookResult.error);
+        throw new Error(`创建OPDS书籍失败: ${bookResult.error}`);
+      }
+    }
+    
     const newConfig = await BookRssConfig.create({
       ...configData,
       key,
+      bookId,
       opdsConfig: {
          name: '',
          url: '',
@@ -151,15 +179,14 @@ export class BookRssService {
          enabled: false
        }, // 占位符，实际使用全局设置
       // 确保新字段被正确保存
-      bookId: configData.bookId,
       includeContent: configData.includeContent || false,
-      maxChapters: configData.maxChapters || 50,
+
       parseStatus: 'pending'
     });
     
     // 如果配置了书籍ID，触发异步章节解析
-    if (configData.bookId) {
-      this.parseBookChaptersAsync(newConfig.id, configData.bookId);
+    if (bookId) {
+      this.parseBookChaptersAsync(newConfig.id, bookId);
     }
     
     const globalSetting = await GlobalSetting.findOne();
@@ -193,7 +220,7 @@ export class BookRssService {
       ...configData,
       bookId: configData.bookId,
       includeContent: configData.includeContent,
-      maxChapters: configData.maxChapters
+
     };
     
     // 检查是否更新了bookId
@@ -230,6 +257,22 @@ export class BookRssService {
     const config = await BookRssConfig.findByPk(id);
     if (!config) throw new Error(`未找到ID为${id}的图书RSS配置`);
 
+    // 如果配置关联了书籍，删除相关的书籍和章节信息
+    if (config.bookId) {
+      try {
+        // 调用BookService删除书籍（包括章节和文件）
+        const deleteResult = await this.bookService.deleteBook(config.bookId);
+        if (!deleteResult.success) {
+          console.warn(`删除关联书籍失败: ${deleteResult.error}`);
+          // 即使书籍删除失败，也继续删除RSS配置
+        }
+      } catch (error) {
+        console.warn(`删除关联书籍时发生错误: ${error}`);
+        // 即使书籍删除失败，也继续删除RSS配置
+      }
+    }
+
+    // 删除RSS配置
     await BookRssConfig.destroy({ where: { id } });
     return { success: true, data: undefined, message: "图书RSS配置删除成功" };
   }
@@ -302,85 +345,124 @@ export class BookRssService {
          return { chapters: [], book: {} as Book };
        }
 
-       // 计算时间窗口进行增量更新
        const now = new Date();
        const updateIntervalDays = config.updateInterval || 1;
        const lastFeedTime = config.lastFeedTime ? new Date(config.lastFeedTime) : null;
        const minReturnChapters = config.minReturnChapters || 3;
+       const chaptersPerUpdate = config.chaptersPerUpdate || 3; // 每次更新返回的章节数
+
+       const currentReadChapter = config.currentReadChapter || 0;
        
        let chapters: Chapter[] = [];
-       const maxChapters = config.maxChapters || 50;
        
-       // 如果强制全量更新，直接返回最新章节
-       if (config.forceFullUpdate) {
+
+       
+       // 检查是否到了更新时间
+       const shouldUpdate = !lastFeedTime || 
+         (now.getTime() - lastFeedTime.getTime()) >= (updateIntervalDays * 24 * 60 * 60 * 1000);
+       
+       if (shouldUpdate) {
+         // 获取所有章节
          const chaptersResult = await this.chapterService.getChaptersByBookId(config.bookId, {
            page: 1,
-           limit: maxChapters,
+           limit: book.totalChapters,
            sortBy: 'chapterNumber',
-           sortOrder: 'desc'
+           sortOrder: 'asc'
          });
          
          if (chaptersResult.success && chaptersResult.data) {
-           chapters = chaptersResult.data.list;
-           console.log(`配置${config.id}强制全量更新，返回最新${chapters.length}章`);
-         }
-         
-         // 更新lastFeedTime
-         await BookRssConfig.update(
-           { lastFeedTime: now },
-           { where: { id: config.id } }
-         );
-         
-         return { chapters, book: book.toJSON() as Book };
-       }
-       
-       if (lastFeedTime) {
-         // 计算时间窗口：从上次生成RSS的时间开始
-         const timeWindowStart = new Date(lastFeedTime.getTime() - (updateIntervalDays * 24 * 60 * 60 * 1000));
-         
-         // 获取时间窗口内的新章节
-         const newChaptersResult = await this.chapterService.getChaptersByBookId(config.bookId, {
-           page: 1,
-           limit: maxChapters,
-           sortBy: 'chapterNumber',
-           sortOrder: 'desc'
-         });
-         
-         if (newChaptersResult.success && newChaptersResult.data) {
-           // 过滤出在时间窗口内创建或更新的章节
-           chapters = newChaptersResult.data.list.filter(chapter => {
-             const chapterTime = new Date(chapter.createdAt || chapter.updatedAt || 0);
-             return chapterTime >= timeWindowStart;
-           });
+           let allChapters = chaptersResult.data.list;
            
-           // 如果没有新章节，返回最近的指定数量章节避免空RSS
-           if (chapters.length === 0) {
-             chapters = newChaptersResult.data.list.slice(0, minReturnChapters);
-             console.log(`配置${config.id}在时间窗口内无新章节，返回最近${minReturnChapters}章`);
+           // OPDS书籍现在在创建时就会有真实的章节记录，无需特殊处理
+           
+           // 计算要返回的章节范围
+           let startChapter: number;
+           let endChapter: number;
+           
+           if (currentReadChapter === 0) {
+             // 首次阅读，从第1章开始
+             startChapter = 1;
+             endChapter = Math.min(chaptersPerUpdate, book.totalChapters);
+           } else if (currentReadChapter >= book.totalChapters) {
+             // 已读完全书，重新开始
+             startChapter = 1;
+             endChapter = Math.min(chaptersPerUpdate, book.totalChapters);
            } else {
-             console.log(`配置${config.id}在时间窗口内找到${chapters.length}个新章节`);
+             // 渐进式阅读：包含上一次的章节数据 + 新的章节数据
+             const prevChapterStart = Math.max(1, currentReadChapter - chaptersPerUpdate + 1);
+             const nextChapterStart = currentReadChapter + 1;
+             const nextChapterEnd = Math.min(nextChapterStart + chaptersPerUpdate - 1, book.totalChapters);
+             
+             // 返回范围：上一次的章节 + 新的章节
+             startChapter = prevChapterStart;
+             endChapter = nextChapterEnd;
+           }
+           
+           // 过滤出指定范围的章节
+           chapters = allChapters.filter(chapter => 
+             chapter.chapterNumber >= startChapter && chapter.chapterNumber <= endChapter
+           );
+           
+           if (chapters.length > 0) {
+             // 更新阅读进度到最新章节
+             const newReadChapter = Math.max(...chapters.map(c => c.chapterNumber));
+             
+             await BookRssConfig.update(
+               { 
+                 lastFeedTime: now,
+                 currentReadChapter: newReadChapter
+               },
+               { where: { id: config.id } }
+             );
+             
+             if (currentReadChapter === 0) {
+               console.log(`配置${config.id}首次阅读，返回第${startChapter}-${endChapter}章，更新进度到第${newReadChapter}章`);
+             } else if (currentReadChapter >= book.totalChapters) {
+               console.log(`配置${config.id}重新开始阅读，返回第${startChapter}-${endChapter}章，更新进度到第${newReadChapter}章`);
+             } else {
+               console.log(`配置${config.id}渐进式阅读，返回第${startChapter}-${endChapter}章（包含上次章节），更新进度到第${newReadChapter}章`);
+             }
+           } else {
+             // 没有章节，返回最近的章节
+             chapters = allChapters.slice(-minReturnChapters);
+             console.log(`配置${config.id}没有可用章节，返回最近${minReturnChapters}章`);
+             
+             await BookRssConfig.update(
+               { lastFeedTime: now },
+               { where: { id: config.id } }
+             );
            }
          }
        } else {
-         // 首次生成RSS，返回最新的章节
+         // 还没到更新时间，返回当前阅读进度对应的章节
+         console.log(`配置${config.id}还未到更新时间，距离下次更新还有${Math.ceil((updateIntervalDays * 24 * 60 * 60 * 1000 - (now.getTime() - lastFeedTime.getTime())) / (60 * 1000))}分钟`);
+         
          const chaptersResult = await this.chapterService.getChaptersByBookId(config.bookId, {
            page: 1,
-           limit: maxChapters,
+           limit: book.totalChapters,
            sortBy: 'chapterNumber',
-           sortOrder: 'desc'
+           sortOrder: 'asc'
          });
          
          if (chaptersResult.success && chaptersResult.data) {
-           chapters = chaptersResult.data.list;
-           console.log(`配置${config.id}首次生成RSS，返回最新${chapters.length}章`);
+           let allChapters = chaptersResult.data.list;
+           
+           // OPDS书籍现在在创建时就会有真实的章节记录，无需特殊处理
+           
+           if (currentReadChapter === 0) {
+             // 如果当前进度为0，返回前几章
+             chapters = allChapters.slice(0, chaptersPerUpdate);
+           } else {
+             // 返回当前阅读进度对应的章节范围（包含上一次的章节）
+             const currentStart = Math.max(1, currentReadChapter - chaptersPerUpdate + 1);
+             const currentEnd = Math.min(currentReadChapter, book.totalChapters);
+             
+             chapters = allChapters.filter(chapter => 
+               chapter.chapterNumber >= currentStart && chapter.chapterNumber <= currentEnd
+             );
+           }
          }
        }
-       
-       // 更新lastFeedTime
-       await BookRssConfig.update(
-         { lastFeedTime: now },
-         { where: { id: config.id } }
-       );
 
        return { chapters, book: book.toJSON() as Book };
      } catch (error) {
@@ -479,7 +561,21 @@ export class BookRssService {
           `<h2>第${chapter.chapterNumber}章 ${chapter.title}</h2><div>${chapter.content.replace(/\n/g, '<br>')}</div>` : 
           `<h2>第${chapter.chapterNumber}章 ${chapter.title}</h2>`,
         url: chapterUrl,
-        date_published: chapter.createdAt ? new Date(chapter.createdAt).toISOString() : new Date().toISOString(),
+        date_published: (() => {
+          try {
+            if (chapter.publishTime) {
+              const date = new Date(chapter.publishTime);
+              if (isNaN(date.getTime())) {
+                return new Date().toISOString();
+              }
+              return date.toISOString();
+            } else {
+              return new Date().toISOString();
+            }
+          } catch (error) {
+            return new Date().toISOString();
+          }
+        })(),
         authors: [{ name: book.author }],
         tags: [`第${chapter.chapterNumber}章`, book.title],
         summary: `${book.title} 第${chapter.chapterNumber}章`,
@@ -530,6 +626,26 @@ export class BookRssService {
   }
 
   /**
+   * 获取文件格式对应的MIME类型
+   */
+  private getFileFormatMimeType(fileFormat: string): string {
+    const formatToMime: { [key: string]: string } = {
+      'epub': 'application/epub+zip',
+      'pdf': 'application/pdf',
+      'mobi': 'application/x-mobipocket-ebook',
+      'azw': 'application/vnd.amazon.ebook',
+      'azw3': 'application/x-kindle-application',
+      'chm': 'application/vnd.ms-htmlhelp',
+      'fb2': 'application/x-fictionbook+xml',
+      'ncx': 'application/x-dtbncx+xml',
+      'txt': 'text/plain',
+      'html': 'text/html',
+      'htm': 'text/html',
+    };
+    return formatToMime[fileFormat] || 'application/octet-stream';
+  }
+
+  /**
    * 转义XML特殊字符
    */
   private escapeXml(text: string): string {
@@ -576,7 +692,8 @@ export class BookRssService {
       }
       
       // 调用BookService的解析方法
-      const parseResult = await this.bookService.parseBookFile(book.sourcePath, book.fileFormat || 'unknown');
+      const mimeType = this.getFileFormatMimeType(book.fileFormat || 'unknown');
+      const parseResult = await this.bookService.parseBookFile(book.sourcePath, mimeType);
       
       // 创建章节记录
       if (parseResult.chapters.length > 0) {

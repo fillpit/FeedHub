@@ -45,7 +45,7 @@
       <el-table-column label="章节设置" min-width="150">
         <template #default="{ row }">
           <div class="text-sm">
-            <div>最大章节: {{ row.maxChapters || 50 }}</div>
+
             <div>包含内容: {{ row.includeContent ? '是' : '否' }}</div>
           </div>
         </template>
@@ -212,15 +212,7 @@
           <div class="text-sm text-gray-500 mt-1">开启后RSS将包含章节的完整内容</div>
         </el-form-item>
         
-        <el-form-item label="最大章节数" prop="maxChapters">
-          <el-input-number
-            v-model="form.maxChapters"
-            :min="1"
-            :max="500"
-            placeholder="最大章节数"
-          />
-          <div class="text-sm text-gray-500 mt-1">RSS中包含的最大章节数量</div>
-        </el-form-item>
+
 
         <!-- 其他配置 -->
         <el-divider content-position="left">其他配置</el-divider>
@@ -247,14 +239,18 @@
           <div class="text-sm text-gray-500 mt-1">当没有新章节时，返回的最少章节数量</div>
         </el-form-item>
 
-        <el-form-item label="强制全量更新">
-          <el-switch
-            v-model="form.forceFullUpdate"
-            active-text="开启"
-            inactive-text="关闭"
+        <el-form-item label="每次更新章节数" prop="chaptersPerUpdate">
+          <el-input-number
+            v-model="form.chaptersPerUpdate"
+            :min="1"
+            :max="20"
+            placeholder="每次更新章节数"
           />
-          <div class="text-sm text-gray-500 mt-1">开启后每次都返回最新的章节，忽略增量更新逻辑</div>
+          <span class="ml-2 text-sm text-gray-500">章</span>
+          <div class="text-sm text-gray-500 mt-1">每次更新时返回的新章节数量（包含上一次的章节）</div>
         </el-form-item>
+
+
       </el-form>
       
       <template #footer>
@@ -332,10 +328,11 @@ interface BookChapterRssConfig {
   bookId: number | null;
   bookInfo?: Book;
   includeContent: boolean;
-  maxChapters: number;
+
   updateInterval: number;
   minReturnChapters?: number;
-  forceFullUpdate?: boolean;
+  chaptersPerUpdate?: number;
+
   lastUpdateTime?: string;
   createdAt: string;
   updatedAt: string;
@@ -370,10 +367,11 @@ const getInitialFormState = (): Omit<BookChapterRssConfig, 'id' | 'key' | 'creat
   description: '',
   bookId: null,
   includeContent: true,
-  maxChapters: 50,
+
   updateInterval: 1,
   minReturnChapters: 3,
-  forceFullUpdate: false
+  chaptersPerUpdate: 3,
+
 });
 
 const form = ref<Omit<BookChapterRssConfig, 'id' | 'key' | 'createdAt' | 'updatedAt'>>(getInitialFormState());
@@ -396,7 +394,7 @@ const rules = reactive<FormRules>({
       trigger: 'change'
     }
   ],
-  maxChapters: [{ required: true, message: '请输入最大章节数', trigger: 'blur' }],
+
   updateInterval: [{ required: true, message: '请输入更新间隔', trigger: 'blur' }],
 });
 
@@ -483,8 +481,11 @@ const editConfig = (config: BookChapterRssConfig) => {
     bookId: config.bookId,
     bookInfo: config.bookInfo,
     includeContent: config.includeContent,
-    maxChapters: config.maxChapters,
-    updateInterval: config.updateInterval
+
+    updateInterval: config.updateInterval,
+    minReturnChapters: config.minReturnChapters || 3,
+    chaptersPerUpdate: config.chaptersPerUpdate || 3,
+
   };
   // 存储当前编辑的配置ID
   currentEditId.value = config.id;
@@ -530,8 +531,11 @@ const submitForm = async () => {
           link: selectedOpdsBook.value.link
         },
         includeContent: configData.includeContent,
-        maxChapters: configData.maxChapters,
+  
         updateInterval: configData.updateInterval,
+        minReturnChapters: configData.minReturnChapters,
+        chaptersPerUpdate: configData.chaptersPerUpdate,
+  
         sourceType: 'opds'
       };
     } else {
@@ -546,11 +550,14 @@ const submitForm = async () => {
           language: '',
           fileFormats: []
         },
-        maxBooks: configData.maxChapters || 50,
+  
         updateInterval: configData.updateInterval,
         bookId: configData.bookId,
         includeContent: configData.includeContent,
-        maxChapters: configData.maxChapters,
+  
+        minReturnChapters: configData.minReturnChapters,
+        chaptersPerUpdate: configData.chaptersPerUpdate,
+  
         sourceType: 'upload'
       };
     }
