@@ -14,17 +14,9 @@ router.post(
 );
 
 // 删除文件路由 - 需要认证
-router.delete(
-  "/:filename",
-  authMiddleware,
-  asyncHandler(UploadController.deleteFile)
-);
+router.delete("/:filename", authMiddleware, asyncHandler(UploadController.deleteFile));
 
 // 获取文件信息路由 - 需要认证
-router.get(
-  "/:filename",
-  authMiddleware,
-  asyncHandler(UploadController.getFileInfo)
-);
+router.get("/:filename", authMiddleware, asyncHandler(UploadController.getFileInfo));
 
 export default router;

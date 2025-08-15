@@ -10,22 +10,22 @@ import { OpdsController } from "../controllers/OpdsController";
 import { BookRssController } from "../controllers/bookRss";
 
 const router = Router();
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB
   },
   fileFilter: (req, file, cb) => {
     // 支持的文件格式
-    const allowedTypes = ['.epub', '.txt', '.pdf', '.mobi', '.azw', '.azw3'];
+    const allowedTypes = [".epub", ".txt", ".pdf", ".mobi", ".azw", ".azw3"];
     const ext = path.extname(file.originalname).toLowerCase();
-    
+
     if (allowedTypes.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error(`不支持的文件格式: ${ext}。支持的格式: ${allowedTypes.join(', ')}`));
+      cb(new Error(`不支持的文件格式: ${ext}。支持的格式: ${allowedTypes.join(", ")}`));
     }
-  }
+  },
 });
 
 // 获取控制器实例
@@ -43,7 +43,9 @@ router.get("/books", (req, res) => bookController.getAllBooks(req, res));
 router.get("/books/:id", (req, res) => bookController.getBookById(req, res));
 
 // 上传书籍文件
-router.post("/books/upload", upload.single('file'), (req, res) => bookController.uploadBook(req, res));
+router.post("/books/upload", upload.single("file"), (req, res) =>
+  bookController.uploadBook(req, res)
+);
 
 // 从OPDS添加书籍
 router.post("/books/opds", (req, res) => bookController.addBookFromOpds(req, res));
@@ -59,7 +61,9 @@ router.post("/books/:id/check-updates", (req, res) => bookController.checkUpdate
 
 // === 章节管理路由 ===
 // 获取书籍的章节列表
-router.get("/books/:bookId/chapters", (req, res) => chapterController.getChaptersByBookId(req, res));
+router.get("/books/:bookId/chapters", (req, res) =>
+  chapterController.getChaptersByBookId(req, res)
+);
 
 // 获取章节详情
 router.get("/chapters/:id", (req, res) => chapterController.getChapterById(req, res));
@@ -68,7 +72,9 @@ router.get("/chapters/:id", (req, res) => chapterController.getChapterById(req, 
 router.patch("/chapters/:id/read", (req, res) => chapterController.markChapterAsRead(req, res));
 
 // 获取最新章节
-router.get("/books/:bookId/chapters/latest", (req, res) => chapterController.getLatestChapters(req, res));
+router.get("/books/:bookId/chapters/latest", (req, res) =>
+  chapterController.getLatestChapters(req, res)
+);
 
 // === 订阅管理路由 ===
 // 获取所有订阅
@@ -81,10 +87,14 @@ router.post("/subscriptions", (req, res) => subscriptionController.createSubscri
 router.put("/subscriptions/:id", (req, res) => subscriptionController.updateSubscription(req, res));
 
 // 删除订阅
-router.delete("/subscriptions/:id", (req, res) => subscriptionController.deleteSubscription(req, res));
+router.delete("/subscriptions/:id", (req, res) =>
+  subscriptionController.deleteSubscription(req, res)
+);
 
 // 根据书籍ID获取订阅
-router.get("/books/:bookId/subscriptions", (req, res) => subscriptionController.getSubscriptionsByBookId(req, res));
+router.get("/books/:bookId/subscriptions", (req, res) =>
+  subscriptionController.getSubscriptionsByBookId(req, res)
+);
 
 // === OPDS配置路由 ===
 // 获取所有OPDS配置

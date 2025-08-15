@@ -1,18 +1,15 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
-import {
-  Book as BookInterface,
-  BookSourceType,
-} from '@feedhub/shared/src/types/bookRss';
+import { Book as BookInterface, BookSourceType } from "@feedhub/shared/src/types/bookRss";
 
 // Sequelize 模型创建属性接口
 interface BookCreationAttributes
-  extends Optional<BookInterface, "id" | "createdAt" | "updatedAt" | "totalChapters" | "lastChapterTitle" | "lastChapterTime"> {}
+  extends Optional<
+    BookInterface,
+    "id" | "createdAt" | "updatedAt" | "totalChapters" | "lastChapterTitle" | "lastChapterTime"
+  > {}
 
-class Book
-  extends Model<BookInterface, BookCreationAttributes>
-  implements BookInterface
-{
+class Book extends Model<BookInterface, BookCreationAttributes> implements BookInterface {
   public id!: number;
   public title!: string;
   public author!: string;
@@ -60,7 +57,7 @@ Book.init(
       allowNull: true,
     },
     sourceType: {
-      type: DataTypes.ENUM('upload', 'opds', 'url'),
+      type: DataTypes.ENUM("upload", "opds", "url"),
       allowNull: false,
     },
     sourcePath: {

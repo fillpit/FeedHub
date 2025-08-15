@@ -264,7 +264,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
-import { Plus, Refresh, ArrowDown, UploadFilled, Document, Edit, Reading, Setting, Tools } from '@element-plus/icons-vue';
+import { Plus, Refresh, ArrowDown, UploadFilled, Document, Edit, Reading, Setting } from '@element-plus/icons-vue';
 import { Book, OpdsBook } from '@feedhub/shared';
 import * as bookRssApi from '@/api/bookRss';
 import { formatDate } from '@feedhub/shared/src/utils/date';
@@ -376,7 +376,7 @@ const rules = reactive<FormRules>({
   bookId: [
     {
       required: true,
-      validator: (rule: any, value: any, callback: any) => {
+      validator: (_rule: any, value: any, callback: any) => {
         if (bookSelectionMode.value === 'upload' && !value) {
           callback(new Error('请选择书籍'));
         } else if (bookSelectionMode.value === 'opds' && !selectedOpdsBook.value) {

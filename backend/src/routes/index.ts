@@ -89,7 +89,6 @@ router.use("/notification", notificationRoutes);
 // 脚本包路由
 router.use("/auth-credential", authCredentialRoutes);
 
-
 // 文件上传路由
 router.use("/upload", uploadRoutes);
 
@@ -98,8 +97,6 @@ router.get("/rss/:key", (req, res) => websiteRssController.getRssFeed(req, res))
 
 // 网站RSS JSON订阅地址（公开访问）
 router.get("/json/:key", (req, res) => websiteRssController.getRssFeedJson(req, res));
-
-
 
 // 自定义路由执行（公开访问）
 router.get("/dynamic/*", (req, res) => dynamicRouteController.executeRouteScript(req, res));

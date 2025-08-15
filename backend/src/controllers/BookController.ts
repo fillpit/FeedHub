@@ -23,11 +23,11 @@ export class BookController {
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
         sortBy: sortBy as string,
-        sortOrder: sortOrder as 'asc' | 'desc',
+        sortOrder: sortOrder as "asc" | "desc",
       };
 
       const result = await this.bookService.getAllBooks(params);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -36,7 +36,7 @@ export class BookController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取书籍列表失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取书籍列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -58,7 +58,7 @@ export class BookController {
       }
 
       const result = await this.bookService.getBookById(bookId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -67,7 +67,7 @@ export class BookController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取书籍详情失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取书籍详情失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -87,7 +87,7 @@ export class BookController {
 
       const metadata = req.body;
       const result = await this.bookService.uploadBook(req.file, metadata);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -96,7 +96,7 @@ export class BookController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `上传书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `上传书籍失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -118,7 +118,7 @@ export class BookController {
 
       // 从OPDS数据创建书籍记录
       const result = await this.bookService.addBookFromOpds(bookData, opdsConfigId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -127,7 +127,7 @@ export class BookController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `从OPDS添加书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `从OPDS添加书籍失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -157,7 +157,7 @@ export class BookController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `更新书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `更新书籍失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -179,7 +179,7 @@ export class BookController {
       }
 
       const result = await this.bookService.deleteBook(bookId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -188,7 +188,7 @@ export class BookController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `删除书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `删除书籍失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -210,7 +210,7 @@ export class BookController {
       }
 
       const result = await this.chapterService.checkBookUpdates(bookId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -219,7 +219,7 @@ export class BookController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `检查更新失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `检查更新失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }

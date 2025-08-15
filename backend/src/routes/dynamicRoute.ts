@@ -5,11 +5,11 @@ import { TYPES } from "../core/types";
 import { DynamicRouteController } from "../controllers/dynamicRoute";
 
 // 配置文件上传
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB
-  }
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
 });
 
 const router = Router();
@@ -33,32 +33,41 @@ router.delete("/:id", (req, res) => controller.deleteDynamicRoute(req, res));
 // 调试自定义路由脚本
 router.post("/debug", (req, res) => controller.debugDynamicRouteScript(req, res));
 
-
 // 获取内联脚本的文件列表
 router.get("/:id/inline-script/files", (req, res) => controller.getInlineScriptFiles(req, res));
 
 // 获取内联脚本的文件内容
-router.get("/:id/inline-script/files/:fileName", (req, res) => controller.getInlineScriptFileContent(req, res));
+router.get("/:id/inline-script/files/:fileName", (req, res) =>
+  controller.getInlineScriptFileContent(req, res)
+);
 
 // 更新内联脚本的文件内容
-router.put("/:id/inline-script/files", (req, res) => controller.updateInlineScriptFileContent(req, res));
+router.put("/:id/inline-script/files", (req, res) =>
+  controller.updateInlineScriptFileContent(req, res)
+);
 
 // 创建内联脚本文件
 router.post("/:id/inline-script/files", (req, res) => controller.createInlineScriptFile(req, res));
 
 // 删除内联脚本文件
-router.delete("/:id/inline-script/files/:fileName", (req, res) => controller.deleteInlineScriptFile(req, res));
+router.delete("/:id/inline-script/files/:fileName", (req, res) =>
+  controller.deleteInlineScriptFile(req, res)
+);
 
 // 初始化路由脚本 - 支持文件上传和JSON请求
-router.post("/:id/initialize-script", (req, res, next) => {
-  // 检查Content-Type，如果是multipart/form-data则使用multer
-  const contentType = req.get('Content-Type') || '';
-  if (contentType.includes('multipart/form-data')) {
-    upload.single('zipFile')(req, res, next);
-  } else {
-    next();
-  }
-}, (req, res) => controller.initializeRouteScript(req, res));
+router.post(
+  "/:id/initialize-script",
+  (req, res, next) => {
+    // 检查Content-Type，如果是multipart/form-data则使用multer
+    const contentType = req.get("Content-Type") || "";
+    if (contentType.includes("multipart/form-data")) {
+      upload.single("zipFile")(req, res, next);
+    } else {
+      next();
+    }
+  },
+  (req, res) => controller.initializeRouteScript(req, res)
+);
 
 // 同步Git仓库
 router.post("/:id/sync-git", (req, res) => controller.syncGitRepository(req, res));
@@ -67,6 +76,8 @@ router.post("/:id/sync-git", (req, res) => controller.syncGitRepository(req, res
 router.post("/export-with-scripts", (req, res) => controller.exportRoutesWithScripts(req, res));
 
 // 导入路由配置和脚本文件
-router.post("/import-with-scripts", upload.single('zipFile'), (req, res) => controller.importRoutesWithScripts(req, res));
+router.post("/import-with-scripts", upload.single("zipFile"), (req, res) =>
+  controller.importRoutesWithScripts(req, res)
+);
 
 export default router;

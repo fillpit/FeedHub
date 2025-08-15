@@ -19,11 +19,11 @@ export class SubscriptionController {
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
         sortBy: sortBy as string,
-        sortOrder: sortOrder as 'asc' | 'desc',
+        sortOrder: sortOrder as "asc" | "desc",
       };
 
       const result = await this.subscriptionService.getSubscriptions(params);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -32,7 +32,7 @@ export class SubscriptionController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取订阅列表失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取订阅列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -53,7 +53,7 @@ export class SubscriptionController {
       }
 
       const result = await this.subscriptionService.createSubscription(bookId, subscriptionData);
-      
+
       if (result.success) {
         res.status(201).json(result);
       } else {
@@ -62,7 +62,7 @@ export class SubscriptionController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `创建订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `创建订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -85,7 +85,7 @@ export class SubscriptionController {
       }
 
       const result = await this.subscriptionService.updateSubscription(subscriptionId, updateData);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -94,7 +94,7 @@ export class SubscriptionController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `更新订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `更新订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -116,7 +116,7 @@ export class SubscriptionController {
       }
 
       const result = await this.subscriptionService.deleteSubscription(subscriptionId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -125,7 +125,7 @@ export class SubscriptionController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `删除订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `删除订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -147,7 +147,7 @@ export class SubscriptionController {
       }
 
       const result = await this.subscriptionService.getSubscriptionsByBookId(id);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -156,7 +156,7 @@ export class SubscriptionController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取书籍订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取书籍订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -177,12 +177,12 @@ export class SubscriptionController {
         return;
       }
 
-      const result = await this.subscriptionService.getFeedByKey(key, format as 'rss' | 'json');
-      
+      const result = await this.subscriptionService.getFeedByKey(key, format as "rss" | "json");
+
       if (result.success) {
-        if (typeof result.data === 'string') {
+        if (typeof result.data === "string") {
           // RSS XML格式
-          res.set('Content-Type', 'application/rss+xml; charset=utf-8');
+          res.set("Content-Type", "application/rss+xml; charset=utf-8");
           res.send(result.data);
         } else {
           // JSON格式
@@ -194,7 +194,7 @@ export class SubscriptionController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取Feed失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取Feed失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -214,8 +214,8 @@ export class SubscriptionController {
         return;
       }
 
-      const result = await this.subscriptionService.getFeedByKey(key, 'json');
-      
+      const result = await this.subscriptionService.getFeedByKey(key, "json");
+
       if (result.success) {
         res.json(result.data);
       } else {
@@ -224,7 +224,7 @@ export class SubscriptionController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取JSON Feed失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取JSON Feed失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }

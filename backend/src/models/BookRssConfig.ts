@@ -3,12 +3,15 @@ import sequelize from "../config/database";
 import {
   BookRssConfig as BookRssConfigInterface,
   BookFilter,
-} from '@feedhub/shared/src/types/bookRss';
-import Book from './Book';
+} from "@feedhub/shared/src/types/bookRss";
+import Book from "./Book";
 
 // Sequelize 模型创建属性接口
 interface BookRssConfigCreationAttributes
-  extends Optional<BookRssConfigInterface, "id" | "createdAt" | "updatedAt" | "key" | "lastUpdateTime" | "lastBooks"> {}
+  extends Optional<
+    BookRssConfigInterface,
+    "id" | "createdAt" | "updatedAt" | "key" | "lastUpdateTime" | "lastBooks"
+  > {}
 
 // 重新导出类型
 export { BookRssConfigInterface as BookRssConfigAttributes, BookRssConfigCreationAttributes };
@@ -33,7 +36,7 @@ class BookRssConfig
   public includeContent?: boolean;
 
   // 章节解析状态字段
-  public parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
+  public parseStatus?: "pending" | "parsing" | "completed" | "failed";
   public parseError?: string;
   public lastParseTime?: Date | string;
   public lastFeedTime?: Date | string;
@@ -68,17 +71,17 @@ BookRssConfig.init(
     opdsConfig: {
       type: DataTypes.JSON,
       allowNull: false,
-      comment: '已弃用：现在使用全局设置中的OPDS配置',
+      comment: "已弃用：现在使用全局设置中的OPDS配置",
     },
     bookFilter: {
       type: DataTypes.JSON,
       allowNull: false,
       defaultValue: {
-        title: '',
-        author: '',
+        title: "",
+        author: "",
         categories: [],
-        language: '',
-        fileFormats: []
+        language: "",
+        fileFormats: [],
       },
     },
     maxBooks: {
@@ -90,7 +93,7 @@ BookRssConfig.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 1, // 默认1天
-      comment: '更新间隔（天）',
+      comment: "更新间隔（天）",
     },
     favicon: {
       type: DataTypes.STRING,
@@ -109,55 +112,54 @@ BookRssConfig.init(
     bookId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      comment: '订阅的书籍ID',
+      comment: "订阅的书籍ID",
     },
     includeContent: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false,
-      comment: '是否在RSS中包含章节内容',
+      comment: "是否在RSS中包含章节内容",
     },
 
     parseStatus: {
-      type: DataTypes.ENUM('pending', 'parsing', 'completed', 'failed'),
+      type: DataTypes.ENUM("pending", "parsing", "completed", "failed"),
       allowNull: true,
-      defaultValue: 'pending',
-      comment: '章节解析状态',
+      defaultValue: "pending",
+      comment: "章节解析状态",
     },
     parseError: {
       type: DataTypes.TEXT,
       allowNull: true,
-      comment: '解析错误信息',
+      comment: "解析错误信息",
     },
     lastParseTime: {
       type: DataTypes.DATE,
       allowNull: true,
-      comment: '最后解析时间',
+      comment: "最后解析时间",
     },
     lastFeedTime: {
       type: DataTypes.DATE,
       allowNull: true,
-      comment: '最后RSS生成时间',
+      comment: "最后RSS生成时间",
     },
     minReturnChapters: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 3,
-      comment: '最小返回章节数',
+      comment: "最小返回章节数",
     },
     chaptersPerUpdate: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 3,
-      comment: '每次更新返回的章节数',
+      comment: "每次更新返回的章节数",
     },
     currentReadChapter: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 0,
-      comment: '当前阅读进度（章节号）',
+      comment: "当前阅读进度（章节号）",
     },
-
   },
   {
     sequelize,
@@ -169,8 +171,8 @@ BookRssConfig.init(
 
 // 定义关联关系
 BookRssConfig.belongsTo(Book, {
-  foreignKey: 'bookId',
-  as: 'book'
+  foreignKey: "bookId",
+  as: "book",
 });
 
 export default BookRssConfig;

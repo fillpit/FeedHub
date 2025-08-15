@@ -5,9 +5,7 @@ import { ChapterService } from "../services/ChapterService";
 
 @injectable()
 export class ChapterController {
-  constructor(
-    @inject(TYPES.ChapterService) private chapterService: ChapterService
-  ) {}
+  constructor(@inject(TYPES.ChapterService) private chapterService: ChapterService) {}
 
   /**
    * 根据书籍ID获取章节列表
@@ -16,7 +14,7 @@ export class ChapterController {
     try {
       const { bookId } = req.params;
       const { page, limit, sortBy, sortOrder } = req.query;
-      
+
       const id = parseInt(bookId);
       if (isNaN(id)) {
         res.status(400).json({
@@ -30,11 +28,11 @@ export class ChapterController {
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
         sortBy: sortBy as string,
-        sortOrder: sortOrder as 'asc' | 'desc',
+        sortOrder: sortOrder as "asc" | "desc",
       };
 
       const result = await this.chapterService.getChaptersByBookId(id, params);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -42,8 +40,7 @@ export class ChapterController {
       }
     } catch (error) {
       res.status(500).json({
-
-        error: `获取章节列表失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取章节列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -65,7 +62,7 @@ export class ChapterController {
       }
 
       const result = await this.chapterService.getChapterById(chapterId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -74,7 +71,7 @@ export class ChapterController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取章节详情失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取章节详情失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -96,7 +93,7 @@ export class ChapterController {
       }
 
       const result = await this.chapterService.checkBookUpdates(id);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -105,7 +102,7 @@ export class ChapterController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `检查更新失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `检查更新失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -117,7 +114,7 @@ export class ChapterController {
     try {
       const { bookId } = req.params;
       const { limit } = req.query;
-      
+
       const id = parseInt(bookId);
       if (isNaN(id)) {
         res.status(400).json({
@@ -129,7 +126,7 @@ export class ChapterController {
 
       const limitNum = limit ? parseInt(limit as string) : 10;
       const result = await this.chapterService.getLatestChapters(id, limitNum);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -138,7 +135,7 @@ export class ChapterController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取最新章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取最新章节失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -160,7 +157,7 @@ export class ChapterController {
       }
 
       const result = await this.chapterService.markChapterAsRead(chapterId);
-      
+
       if (result.success) {
         res.json(result);
       } else {
@@ -169,7 +166,7 @@ export class ChapterController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `标记章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `标记章节失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }

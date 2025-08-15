@@ -6,7 +6,11 @@ import { ApiResponse } from "../utils/apiResponse";
 
 // 配置multer存储
 const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+  destination: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void
+  ) => {
     const uploadDir = path.resolve(process.cwd(), "uploads");
     // 确保上传目录存在
     if (!fs.existsSync(uploadDir)) {
@@ -14,20 +18,24 @@ const storage = multer.diskStorage({
     }
     cb(null, uploadDir);
   },
-  filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+  filename: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void
+  ) => {
     // 生成唯一文件名
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
+    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
+  },
 });
 
 // 文件过滤器
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // 允许的文件类型
-  const allowedTypes = ['.js', '.zip'];
+  const allowedTypes = [".js", ".zip"];
   const ext = path.extname(file.originalname).toLowerCase();
-  
+
   if (allowedTypes.includes(ext)) {
     cb(null, true);
   } else {
@@ -41,19 +49,22 @@ const upload = multer({
   fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
-  }
+  },
 });
 
 export class UploadController {
   /**
    * 单文件上传
    */
-  static uploadSingle = upload.single('file');
+  static uploadSingle = upload.single("file");
 
   /**
    * 处理文件上传
    */
-  static async handleUpload(req: Request & { file?: Express.Multer.File }, res: Response): Promise<void> {
+  static async handleUpload(
+    req: Request & { file?: Express.Multer.File },
+    res: Response
+  ): Promise<void> {
     try {
       if (!req.file) {
         res.status(400).json(ApiResponse.error("没有上传文件"));
@@ -65,13 +76,15 @@ export class UploadController {
         originalname: req.file.originalname,
         size: req.file.size,
         mimetype: req.file.mimetype,
-        path: req.file.path
+        path: req.file.path,
       };
 
-      res.json(ApiResponse.success({
-        message: "文件上传成功",
-        file: fileInfo
-      }));
+      res.json(
+        ApiResponse.success({
+          message: "文件上传成功",
+          file: fileInfo,
+        })
+      );
     } catch (error) {
       console.error("文件上传失败:", error);
       res.status(500).json(ApiResponse.error("文件上传失败"));
@@ -112,7 +125,7 @@ export class UploadController {
           filename,
           size: stats.size,
           created: stats.birthtime,
-          modified: stats.mtime
+          modified: stats.mtime,
         };
         res.json(ApiResponse.success(fileInfo));
       } else {

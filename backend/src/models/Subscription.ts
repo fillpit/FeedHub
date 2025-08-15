@@ -1,13 +1,14 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
-import {
-  Subscription as SubscriptionInterface,
-} from '@feedhub/shared/src/types/bookRss';
-import Book from './Book';
+import { Subscription as SubscriptionInterface } from "@feedhub/shared/src/types/bookRss";
+import Book from "./Book";
 
 // Sequelize 模型创建属性接口
 interface SubscriptionCreationAttributes
-  extends Optional<SubscriptionInterface, "id" | "createdAt" | "updatedAt" | "accessCount" | "lastAccessTime"> {}
+  extends Optional<
+    SubscriptionInterface,
+    "id" | "createdAt" | "updatedAt" | "accessCount" | "lastAccessTime"
+  > {}
 
 class Subscription
   extends Model<SubscriptionInterface, SubscriptionCreationAttributes>
@@ -19,7 +20,7 @@ class Subscription
   public subscriptionKey!: string;
   public title!: string;
   public description?: string;
-  public format!: 'rss' | 'json';
+  public format!: "rss" | "json";
   public includeContent!: boolean;
   public maxItems!: number;
   public isActive!: boolean;
@@ -41,9 +42,9 @@ Subscription.init(
       allowNull: false,
       references: {
         model: Book,
-        key: 'id',
+        key: "id",
       },
-      onDelete: 'CASCADE',
+      onDelete: "CASCADE",
     },
     userId: {
       type: DataTypes.INTEGER,
@@ -63,9 +64,9 @@ Subscription.init(
       allowNull: true,
     },
     format: {
-      type: DataTypes.ENUM('rss', 'json'),
+      type: DataTypes.ENUM("rss", "json"),
       allowNull: false,
-      defaultValue: 'rss',
+      defaultValue: "rss",
     },
     includeContent: {
       type: DataTypes.BOOLEAN,
@@ -109,8 +110,8 @@ Subscription.init(
 );
 
 // 定义关联关系
-Subscription.belongsTo(Book, { foreignKey: 'bookId', as: 'book' });
-Book.hasMany(Subscription, { foreignKey: 'bookId', as: 'subscriptions' });
+Subscription.belongsTo(Book, { foreignKey: "bookId", as: "book" });
+Book.hasMany(Subscription, { foreignKey: "bookId", as: "subscriptions" });
 
 export default Subscription;
 export { SubscriptionInterface as SubscriptionAttributes, SubscriptionCreationAttributes };

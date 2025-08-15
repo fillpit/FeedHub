@@ -6,7 +6,9 @@ import { BaseController } from "./BaseController";
 
 @injectable()
 export class AuthCredentialController extends BaseController {
-    constructor(@inject(TYPES.AuthCredentialService) private authCredentialService: AuthCredentialService) {
+  constructor(
+    @inject(TYPES.AuthCredentialService) private authCredentialService: AuthCredentialService
+  ) {
     super();
   }
 
@@ -48,4 +50,3 @@ export class AuthCredentialController extends BaseController {
     });
   }
 }
-

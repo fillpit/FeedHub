@@ -64,7 +64,6 @@ export function debugDynamicRouteScript(
   });
 }
 
-
 /**
  * 获取内联脚本的文件列表
  * @param routeId 路由ID
@@ -79,7 +78,9 @@ export function getInlineScriptFiles(routeId: number) {
  * @param fileName 文件名
  */
 export function getInlineScriptFileContent(routeId: number, fileName: string) {
-  return request.get(`/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`);
+  return request.get(
+    `/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`
+  );
 }
 
 /**
@@ -101,7 +102,11 @@ export function updateInlineScriptFileContent(routeId: number, fileName: string,
  * @param fileName 文件名
  * @param template 模板类型
  */
-export function createInlineScriptFile(routeId: number, fileName: string, template: string = 'blank') {
+export function createInlineScriptFile(
+  routeId: number,
+  fileName: string,
+  template: string = "blank"
+) {
   return request.post(`/api/dynamic-route/${routeId}/inline-script/files`, {
     fileName,
     template,
@@ -114,7 +119,9 @@ export function createInlineScriptFile(routeId: number, fileName: string, templa
  * @param fileName 文件名
  */
 export function deleteInlineScriptFile(routeId: number, fileName: string) {
-  return request.delete(`/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`);
+  return request.delete(
+    `/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`
+  );
 }
 
 /**
@@ -122,9 +129,13 @@ export function deleteInlineScriptFile(routeId: number, fileName: string) {
  * @param routeIds 路由ID列表
  */
 export function exportRoutesWithScripts(routeIds: number[]) {
-  return request.post('/api/dynamic-route/export-with-scripts', { routeIds }, {
-    responseType: 'blob'
-  });
+  return request.post(
+    "/api/dynamic-route/export-with-scripts",
+    { routeIds },
+    {
+      responseType: "blob",
+    }
+  );
 }
 
 /**
@@ -133,11 +144,11 @@ export function exportRoutesWithScripts(routeIds: number[]) {
  */
 export function importRoutesWithScripts(zipFile: File) {
   const formData = new FormData();
-  formData.append('zipFile', zipFile);
-  return request.post('/api/dynamic-route/import-with-scripts', formData, {
+  formData.append("zipFile", zipFile);
+  return request.post("/api/dynamic-route/import-with-scripts", formData, {
     headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+      "Content-Type": "multipart/form-data",
+    },
   });
 }
 
@@ -148,8 +159,8 @@ export function importRoutesWithScripts(zipFile: File) {
  * @param options 初始化选项
  */
 export function initializeRouteScript(
-  routeId: number, 
-  initType: 'template' | 'upload' | 'git',
+  routeId: number,
+  initType: "template" | "upload" | "git",
   options: {
     templateName?: string;
     zipFile?: File;
@@ -159,34 +170,34 @@ export function initializeRouteScript(
   }
 ) {
   // 对于文件上传，使用FormData
-  if (initType === 'upload' && options.zipFile) {
+  if (initType === "upload" && options.zipFile) {
     const formData = new FormData();
-    formData.append('initType', initType);
-    formData.append('zipFile', options.zipFile);
-    
+    formData.append("initType", initType);
+    formData.append("zipFile", options.zipFile);
+
     // 不要手动设置 Content-Type，让浏览器自动设置以包含正确的 boundary
     return request.post(`/api/dynamic-route/${routeId}/initialize-script`, formData);
   }
-  
+
   // 对于模板和Git，使用JSON
   const data: any = { initType };
-  
+
   if (options.templateName) {
     data.templateName = options.templateName;
   }
-  
+
   if (options.gitUrl) {
     data.gitUrl = options.gitUrl;
   }
-  
+
   if (options.gitBranch) {
     data.gitBranch = options.gitBranch;
   }
-  
+
   if (options.gitSubPath) {
     data.gitSubPath = options.gitSubPath;
   }
-  
+
   return request.post(`/api/dynamic-route/${routeId}/initialize-script`, data);
 }
 

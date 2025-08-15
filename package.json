@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.13",
-    "vue-json-pretty": "^2.4.0"
+    "vue-json-pretty": "^2.4.0",
+    "xml2js": "^0.6.2"
   }
 }

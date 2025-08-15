@@ -7,7 +7,7 @@ export interface OpdsConfig {
   url: string; // OPDS服务地址
   username?: string; // 用户名（如果需要认证）
   password?: string; // 密码（如果需要认证）
-  authType: 'none' | 'basic' | 'bearer'; // 认证类型
+  authType: "none" | "basic" | "bearer"; // 认证类型
   bearerToken?: string; // Bearer token
   enabled: boolean; // 是否启用
   createdAt?: Date | string;
@@ -15,7 +15,7 @@ export interface OpdsConfig {
 }
 
 // 书籍来源类型
-export type BookSourceType = 'upload' | 'opds' | 'url';
+export type BookSourceType = "upload" | "opds" | "url";
 
 // 书籍信息
 export interface Book {
@@ -44,11 +44,11 @@ export interface Book {
 
 // OPDS书籍类型定义
 export interface OpdsBook {
-    id: string;
-    title: string;
-    author: string;
-    description?: string;
-    link?: string;
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  link?: string;
 }
 
 // 章节信息
@@ -93,7 +93,7 @@ export interface Subscription {
   subscriptionKey: string; // 订阅唯一标识
   title: string; // 订阅标题
   description?: string; // 订阅描述
-  format: 'rss' | 'json'; // 订阅格式
+  format: "rss" | "json"; // 订阅格式
   includeContent: boolean; // 是否包含章节内容
   maxItems: number; // 最大条目数
   isActive: boolean; // 是否激活
@@ -107,7 +107,7 @@ export interface Subscription {
 export interface UpdateTask {
   id: number;
   bookId: number;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
   lastRunTime?: Date | string;
   nextRunTime: Date | string;
   errorMessage?: string;
@@ -168,14 +168,14 @@ export interface FileUploadResult {
 
 // 章节解析结果
 export interface ChapterParseResult {
-  chapters: Omit<Chapter, 'id' | 'bookId' | 'createdAt' | 'updatedAt'>[];
+  chapters: Omit<Chapter, "id" | "bookId" | "createdAt" | "updatedAt">[];
   totalChapters: number;
   lastChapterTitle?: string;
 }
 
 // OPDS解析结果
 export interface OpdsParseResult {
-  books: Omit<Book, 'id' | 'createdAt' | 'updatedAt'>[];
+  books: Omit<Book, "id" | "createdAt" | "updatedAt">[];
   totalCount?: number;
   nextPageUrl?: string;
 }
@@ -210,7 +210,7 @@ export interface BookRssConfig {
   chaptersPerUpdate?: number; // 每次更新返回的章节数，默认3
 
   currentReadChapter?: number; // 当前阅读进度（章节号），默认0
-  parseStatus?: 'pending' | 'parsing' | 'completed' | 'failed';
+  parseStatus?: "pending" | "parsing" | "completed" | "failed";
   parseError?: string;
   lastParseTime?: Date | string;
   lastFeedTime?: Date | string;

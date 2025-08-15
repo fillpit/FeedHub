@@ -8,31 +8,29 @@ import { ScriptFileService } from "./ScriptFileService";
  */
 @injectable()
 export class ScriptTemplateService {
-  constructor(
-    @inject(TYPES.ScriptFileService) private scriptFileService: ScriptFileService
-  ) {}
+  constructor(@inject(TYPES.ScriptFileService) private scriptFileService: ScriptFileService) {}
   /**
    * 获取文件模板
    */
   getFileTemplate(fileName: string, template: string): string {
-    const isJsFile = fileName.endsWith('.js');
-    const isJsonFile = fileName.endsWith('.json');
-    
+    const isJsFile = fileName.endsWith(".js");
+    const isJsonFile = fileName.endsWith(".json");
+
     switch (template) {
-      case 'main':
+      case "main":
         return this.getMainFileTemplate();
-      case 'package':
+      case "package":
         return this.getPackageJsonTemplate();
-      case 'utils':
+      case "utils":
         return this.getUtilsFileTemplate();
-      case 'blank':
+      case "blank":
       default:
         if (isJsonFile) {
-          return '{\n  \n}';
+          return "{\n  \n}";
         } else if (isJsFile) {
           return `/**\n * ${fileName}\n * 创建时间: ${new Date().toISOString()}\n */\n\n`;
         } else {
-          return '';
+          return "";
         }
     }
   }
@@ -98,17 +96,21 @@ module.exports = { main };
   /**
    * 从模板初始化脚本目录
    */
-  async initializeFromTemplate(scriptDirName: string, templateName: string, routeConfig?: any): Promise<void> {
+  async initializeFromTemplate(
+    scriptDirName: string,
+    templateName: string,
+    routeConfig?: any
+  ): Promise<void> {
     const templates = {
       basic: {
-        'main.js': this.getMainFileTemplate(),
-        'package.json': this.getPackageJsonTemplate(routeConfig)
+        "main.js": this.getMainFileTemplate(),
+        "package.json": this.getPackageJsonTemplate(routeConfig),
       },
       complex: {
-        'main.js': this.getMainFileTemplate(),
-        'package.json': this.getPackageJsonTemplate(routeConfig),
-        'utils/helper.js': this.getUtilsFileTemplate()
-      }
+        "main.js": this.getMainFileTemplate(),
+        "package.json": this.getPackageJsonTemplate(routeConfig),
+        "utils/helper.js": this.getUtilsFileTemplate(),
+      },
     };
 
     const template = templates[templateName as keyof typeof templates];
@@ -125,19 +127,21 @@ module.exports = { main };
    * 获取package.json模板
    */
   getPackageJsonTemplate(routeConfig?: any): string {
-    const name = routeConfig?.name ? `route-${routeConfig.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}` : 'dynamic-route-script';
-    const description = routeConfig?.description || '动态路由脚本包';
-    const version = '1.0.0';
-    
+    const name = routeConfig?.name
+      ? `route-${routeConfig.name.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`
+      : "dynamic-route-script";
+    const description = routeConfig?.description || "动态路由脚本包";
+    const version = "1.0.0";
+
     // 构建路由配置信息
     const routeInfo: any = {
-      name: routeConfig?.name || '',
-      path: routeConfig?.path || '',
-      method: routeConfig?.method || 'GET',
-      description: routeConfig?.description || '',
-      refreshInterval: routeConfig?.refreshInterval || 60
+      name: routeConfig?.name || "",
+      path: routeConfig?.path || "",
+      method: routeConfig?.method || "GET",
+      description: routeConfig?.description || "",
+      refreshInterval: routeConfig?.refreshInterval || 60,
     };
-    
+
     // 添加参数信息
     if (routeConfig?.params && routeConfig.params.length > 0) {
       routeInfo.params = routeConfig.params.map((param: any) => ({
@@ -145,16 +149,16 @@ module.exports = { main };
         type: param.type,
         required: param.required,
         defaultValue: param.defaultValue,
-        description: param.description
+        description: param.description,
       }));
     }
-    
+
     // 添加授权信息
     if (routeConfig?.authCredentialId) {
       routeInfo.requiresAuth = true;
       routeInfo.authCredentialId = routeConfig.authCredentialId;
     }
-    
+
     return `{
   "name": "${name}",
   "version": "${version}",
@@ -168,7 +172,7 @@ module.exports = { main };
   },
   "author": "",
   "license": "ISC",
-  "routeConfig": ${JSON.stringify(routeInfo, null, 4).replace(/\n/g, '\n  ')}
+  "routeConfig": ${JSON.stringify(routeInfo, null, 4).replace(/\n/g, "\n  ")}
 }
 `;
   }

@@ -15,16 +15,16 @@ export class ScriptFileService {
   constructor() {
     // 优先从环境变量读取脚本存放目录
     const envScriptsDir = process.env.SCRIPTS_DIR;
-    
+
     if (envScriptsDir) {
       // 如果环境变量设置了脚本目录，使用绝对路径或相对于当前工作目录的路径
-      this.scriptsDir = path.isAbsolute(envScriptsDir) 
-        ? envScriptsDir 
+      this.scriptsDir = path.isAbsolute(envScriptsDir)
+        ? envScriptsDir
         : path.join(process.cwd(), envScriptsDir);
     } else {
       // 如果环境变量未设置，默认使用项目根目录下的scripts目录
       const cwd = process.cwd();
-      if (cwd.endsWith('/backend') || cwd.endsWith('\\backend')) {
+      if (cwd.endsWith("/backend") || cwd.endsWith("\\backend")) {
         // 如果当前在backend目录，则使用上级目录的scripts
         this.scriptsDir = path.join(path.dirname(cwd), "scripts");
       } else {
@@ -32,7 +32,7 @@ export class ScriptFileService {
         this.scriptsDir = path.join(cwd, "scripts");
       }
     }
-    
+
     this.ensureScriptsDirectory();
   }
 
@@ -58,8 +58,7 @@ export class ScriptFileService {
 
     // 创建目录
     fs.mkdirSync(scriptDir, { recursive: true });
-    
-    
+
     logger.info(`[ScriptFileService] 为路由 "${routeName}" 创建脚本目录: ${scriptDir}`);
     return dirName; // 返回相对路径
   }
@@ -122,28 +121,28 @@ async function main(context) {
 module.exports = { main };
 `;
 
-    const mainScriptPath = path.join(scriptDir, 'main.js');
-    fs.writeFileSync(mainScriptPath, mainScriptContent, 'utf-8');
+    const mainScriptPath = path.join(scriptDir, "main.js");
+    fs.writeFileSync(mainScriptPath, mainScriptContent, "utf-8");
 
     // 创建 package.json
     const packageJson = {
-      name: 'dynamic-route-script',
-      version: '1.0.0',
-      description: '动态路由脚本',
-      main: 'main.js',
+      name: "dynamic-route-script",
+      version: "1.0.0",
+      description: "动态路由脚本",
+      main: "main.js",
       scripts: {
-        test: 'echo "Error: no test specified" && exit 1'
+        test: 'echo "Error: no test specified" && exit 1',
       },
-      keywords: ['feedhub', 'dynamic-route', 'rss'],
-      author: '',
-      license: 'ISC'
+      keywords: ["feedhub", "dynamic-route", "rss"],
+      author: "",
+      license: "ISC",
     };
 
-    const packageJsonPath = path.join(scriptDir, 'package.json');
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf-8');
+    const packageJsonPath = path.join(scriptDir, "package.json");
+    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), "utf-8");
 
     // 创建 utils 目录和示例工具文件
-    const utilsDir = path.join(scriptDir, 'utils');
+    const utilsDir = path.join(scriptDir, "utils");
     fs.mkdirSync(utilsDir, { recursive: true });
 
     const helperContent = `/**
@@ -186,8 +185,8 @@ module.exports = {
 };
 `;
 
-    const helperPath = path.join(utilsDir, 'helper.js');
-    fs.writeFileSync(helperPath, helperContent, 'utf-8');
+    const helperPath = path.join(utilsDir, "helper.js");
+    fs.writeFileSync(helperPath, helperContent, "utf-8");
 
     logger.info(`[ScriptFileService] 创建默认脚本文件完成: ${scriptDir}`);
   }
@@ -217,15 +216,15 @@ module.exports = {
    * @param fileName 文件名（默认为main.js）
    * @returns 文件内容
    */
-  async readScriptFile(scriptDirName: string, fileName: string = 'main.js'): Promise<string> {
+  async readScriptFile(scriptDirName: string, fileName: string = "main.js"): Promise<string> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
     const filePath = path.join(scriptDir, fileName);
-    
+
     if (!fs.existsSync(filePath)) {
       throw new Error(`脚本文件不存在: ${fileName}`);
     }
-    
-    return fs.readFileSync(filePath, 'utf-8');
+
+    return fs.readFileSync(filePath, "utf-8");
   }
 
   /**
@@ -236,22 +235,22 @@ module.exports = {
    */
   async writeScriptFile(scriptDirName: string, fileName: string, content: string): Promise<void> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    
+
     if (!fs.existsSync(scriptDir)) {
       throw new Error(`脚本目录不存在: ${scriptDirName}`);
     }
-    
+
     const filePath = path.join(scriptDir, fileName);
-    
+
     // 确保文件所在的目录存在
     const fileDir = path.dirname(filePath);
     if (!fs.existsSync(fileDir)) {
       fs.mkdirSync(fileDir, { recursive: true });
       logger.info(`[ScriptFileService] 创建目录: ${fileDir}`);
     }
-    
-    fs.writeFileSync(filePath, content, 'utf-8');
-    
+
+    fs.writeFileSync(filePath, content, "utf-8");
+
     logger.info(`[ScriptFileService] 更新脚本文件: ${filePath}`);
   }
 
@@ -260,20 +259,22 @@ module.exports = {
    * @param scriptDirName 脚本目录名称
    * @returns 文件和目录的详细信息列表
    */
-  async getScriptFiles(scriptDirName: string): Promise<Array<{
-    name: string;
-    path: string;
-    type: 'file' | 'directory';
-    extension?: string;
-    size?: number;
-    lastModified?: Date;
-  }>> {
+  async getScriptFiles(scriptDirName: string): Promise<
+    Array<{
+      name: string;
+      path: string;
+      type: "file" | "directory";
+      extension?: string;
+      size?: number;
+      lastModified?: Date;
+    }>
+  > {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    
+
     if (!fs.existsSync(scriptDir)) {
       throw new Error(`脚本目录不存在: ${scriptDirName}`);
     }
-    
+
     return this.getFileTreeRecursively(scriptDir, scriptDir);
   }
 
@@ -284,21 +285,24 @@ module.exports = {
    */
   async getScriptFilePaths(scriptDirName: string): Promise<string[]> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    
+
     if (!fs.existsSync(scriptDir)) {
       throw new Error(`脚本目录不存在: ${scriptDirName}`);
     }
-    
+
     return this.getFilesRecursively(scriptDir, scriptDir);
   }
 
   /**
    * 递归获取目录中的所有文件和目录信息
    */
-  private getFileTreeRecursively(dir: string, baseDir: string): Array<{
+  private getFileTreeRecursively(
+    dir: string,
+    baseDir: string
+  ): Array<{
     name: string;
     path: string;
-    type: 'file' | 'directory';
+    type: "file" | "directory";
     extension?: string;
     size?: number;
     lastModified?: Date;
@@ -306,28 +310,28 @@ module.exports = {
     const items: Array<{
       name: string;
       path: string;
-      type: 'file' | 'directory';
+      type: "file" | "directory";
       extension?: string;
       size?: number;
       lastModified?: Date;
     }> = [];
-    
+
     const dirItems = fs.readdirSync(dir);
-    
+
     for (const item of dirItems) {
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
       const relativePath = path.relative(baseDir, fullPath);
-      
+
       if (stat.isDirectory()) {
         // 添加目录信息
         items.push({
           name: item,
           path: relativePath,
-          type: 'directory',
-          lastModified: stat.mtime
+          type: "directory",
+          lastModified: stat.mtime,
         });
-        
+
         // 递归获取子目录内容
         items.push(...this.getFileTreeRecursively(fullPath, baseDir));
       } else {
@@ -336,14 +340,14 @@ module.exports = {
         items.push({
           name: item,
           path: relativePath,
-          type: 'file',
+          type: "file",
           extension: extension || undefined,
           size: stat.size,
-          lastModified: stat.mtime
+          lastModified: stat.mtime,
         });
       }
     }
-    
+
     return items;
   }
 
@@ -353,11 +357,11 @@ module.exports = {
   private getFilesRecursively(dir: string, baseDir: string): string[] {
     const files: string[] = [];
     const items = fs.readdirSync(dir);
-    
+
     for (const item of items) {
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
-      
+
       if (stat.isDirectory()) {
         files.push(...this.getFilesRecursively(fullPath, baseDir));
       } else {
@@ -365,7 +369,7 @@ module.exports = {
         files.push(relativePath);
       }
     }
-    
+
     return files;
   }
 
@@ -375,7 +379,7 @@ module.exports = {
    */
   async deleteScriptDirectory(scriptDirName: string): Promise<void> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    
+
     if (fs.existsSync(scriptDir)) {
       fs.rmSync(scriptDir, { recursive: true, force: true });
       logger.info(`[ScriptFileService] 删除脚本目录: ${scriptDir}`);
@@ -389,23 +393,25 @@ module.exports = {
    */
   async deleteScriptFile(scriptDirName: string, fileName: string): Promise<void> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    
+
     if (!fs.existsSync(scriptDir)) {
       throw new Error(`脚本目录不存在: ${scriptDirName}`);
     }
-    
+
     const filePath = path.join(scriptDir, fileName);
-    
+
     if (!fs.existsSync(filePath)) {
       throw new Error(`文件不存在: ${fileName}`);
     }
-    
+
     try {
       fs.unlinkSync(filePath);
       logger.info(`[ScriptFileService] 删除脚本文件: ${filePath}`);
     } catch (error) {
       logger.error(`[ScriptFileService] 删除脚本文件失败: ${filePath}`, error);
-      throw new Error(`删除脚本文件失败: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `删除脚本文件失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -417,18 +423,18 @@ module.exports = {
    */
   async copyScriptDirectory(sourceScriptDirName: string, targetRouteName: string): Promise<string> {
     const sourceDir = this.getScriptDirectoryPath(sourceScriptDirName);
-    
+
     if (!fs.existsSync(sourceDir)) {
       throw new Error(`源脚本目录不存在: ${sourceScriptDirName}`);
     }
-    
+
     // 创建新的目录名
     const newDirName = `${this.sanitizeFileName(targetRouteName)}_${uuidv4().substring(0, 8)}`;
     const targetDir = path.join(this.scriptsDir, newDirName);
-    
+
     // 复制目录
     this.copyDirectoryRecursively(sourceDir, targetDir);
-    
+
     logger.info(`[ScriptFileService] 复制脚本目录: ${sourceDir} -> ${targetDir}`);
     return newDirName;
   }
@@ -440,14 +446,14 @@ module.exports = {
     if (!fs.existsSync(target)) {
       fs.mkdirSync(target, { recursive: true });
     }
-    
+
     const items = fs.readdirSync(source);
-    
+
     for (const item of items) {
       const sourcePath = path.join(source, item);
       const targetPath = path.join(target, item);
       const stat = fs.statSync(sourcePath);
-      
+
       if (stat.isDirectory()) {
         this.copyDirectoryRecursively(sourcePath, targetPath);
       } else {
@@ -461,9 +467,9 @@ module.exports = {
    */
   private sanitizeFileName(fileName: string): string {
     return fileName
-      .replace(/[^a-zA-Z0-9\-_]/g, '_')
-      .replace(/_{2,}/g, '_')
-      .replace(/^_|_$/g, '')
+      .replace(/[^a-zA-Z0-9\-_]/g, "_")
+      .replace(/_{2,}/g, "_")
+      .replace(/^_|_$/g, "")
       .toLowerCase();
   }
 
@@ -478,22 +484,22 @@ module.exports = {
     lastModified: Date;
   }> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    
+
     if (!fs.existsSync(scriptDir)) {
       throw new Error(`脚本目录不存在: ${scriptDirName}`);
     }
-    
+
     let fileCount = 0;
     let totalSize = 0;
     let lastModified = new Date(0);
-    
+
     const calculateStats = (dir: string) => {
       const items = fs.readdirSync(dir);
-      
+
       for (const item of items) {
         const fullPath = path.join(dir, item);
         const stat = fs.statSync(fullPath);
-        
+
         if (stat.isDirectory()) {
           calculateStats(fullPath);
         } else {
@@ -505,9 +511,9 @@ module.exports = {
         }
       }
     };
-    
+
     calculateStats(scriptDir);
-    
+
     return {
       fileCount,
       totalSize,
@@ -521,7 +527,7 @@ module.exports = {
   async ensureDirectoryExists(scriptDirName: string, relativePath: string): Promise<void> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
     const targetDir = path.join(scriptDir, relativePath);
-    
+
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
       logger.info(`创建目录: ${targetDir}`);

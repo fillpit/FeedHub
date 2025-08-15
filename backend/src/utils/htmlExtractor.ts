@@ -56,24 +56,26 @@ function applyRegexProcessing(text: string, field: SelectorField, logs?: string[
   }
 
   try {
-    const flags = field.regexFlags || '';
+    const flags = field.regexFlags || "";
     const regex = new RegExp(field.regexPattern, flags);
     const match = text.match(regex);
-    
+
     if (match) {
       const groupIndex = field.regexGroup || 0;
-      const result = match[groupIndex] || '';
-      
+      const result = match[groupIndex] || "";
+
       if (logs) {
-        logs.push(`[DEBUG] 正则处理: 模式="${field.regexPattern}", 标志="${flags}", 组索引=${groupIndex}, 原文="${text}", 结果="${result}"`);
+        logs.push(
+          `[DEBUG] 正则处理: 模式="${field.regexPattern}", 标志="${flags}", 组索引=${groupIndex}, 原文="${text}", 结果="${result}"`
+        );
       }
-      
+
       return result;
     } else {
       if (logs) {
         logs.push(`[DEBUG] 正则处理: 模式="${field.regexPattern}" 未匹配到内容, 原文="${text}"`);
       }
-      return '';
+      return "";
     }
   } catch (error) {
     const errorMsg = `正则表达式处理失败: ${(error as Error).message}`;
@@ -104,7 +106,11 @@ function extractWithSelectorField($element: any, field: SelectorField, logs?: st
 }
 
 // 辅助方法：根据SelectorField配置提取内容（XPath选择器）
-function extractWithSelectorFieldXPath(containerNode: Node, field: SelectorField, logs?: string[]): string {
+function extractWithSelectorFieldXPath(
+  containerNode: Node,
+  field: SelectorField,
+  logs?: string[]
+): string {
   const nodesResult = xpath.select(field.selector, containerNode);
   const nodes = Array.isArray(nodesResult) ? nodesResult : [nodesResult];
 
@@ -267,12 +273,12 @@ export function extractContentWithXPath(
   const items: any[] = [];
 
   if (logs) logs.push(`[DEBUG] 使用XPath选择器模式`);
-  
+
   // 创建自定义错误处理器，忽略重复属性等非致命错误
   const errorHandler = {
     warning: (msg: string) => {
       // 忽略重复属性警告
-      if (msg.includes('redefined') || msg.includes('duplicate')) {
+      if (msg.includes("redefined") || msg.includes("duplicate")) {
         if (logs) logs.push(`[WARN] 忽略HTML解析警告: ${msg}`);
         return;
       }
@@ -280,7 +286,7 @@ export function extractContentWithXPath(
     },
     error: (msg: string) => {
       // 对于重复属性错误，降级为警告
-      if (msg.includes('redefined') || msg.includes('duplicate')) {
+      if (msg.includes("redefined") || msg.includes("duplicate")) {
         if (logs) logs.push(`[WARN] 忽略HTML解析错误: ${msg}`);
         return;
       }
@@ -288,11 +294,11 @@ export function extractContentWithXPath(
     },
     fatalError: (msg: string) => {
       throw new Error(`HTML解析致命错误: ${msg}`);
-    }
+    },
   };
-  console.log('html', html);
+  console.log("html", html);
   const doc = new DOMParser({
-    errorHandler: errorHandler
+    errorHandler: errorHandler,
   }).parseFromString(html);
 
   // 检查解析是否成功
@@ -373,7 +379,11 @@ export function extractContentWithXPath(
     }
 
     // 提取内容（如果有）
-    const contentText = extractWithSelectorFieldXPath(containerNode as Node, selector.content, logs);
+    const contentText = extractWithSelectorFieldXPath(
+      containerNode as Node,
+      selector.content,
+      logs
+    );
     if (contentText) {
       item.content = contentText;
       item.contentSnippet = contentText.substring(0, 300);
@@ -387,7 +397,11 @@ export function extractContentWithXPath(
 
     // 提取作者（如果有）
     if (selector.author) {
-      const authorText = extractWithSelectorFieldXPath(containerNode as Node, selector.author, logs);
+      const authorText = extractWithSelectorFieldXPath(
+        containerNode as Node,
+        selector.author,
+        logs
+      );
       if (authorText) {
         item.author = authorText;
         if (logs)

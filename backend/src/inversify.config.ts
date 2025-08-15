@@ -39,7 +39,6 @@ import { ChapterController } from "./controllers/ChapterController";
 import { SubscriptionController } from "./controllers/SubscriptionController";
 import { OpdsController } from "./controllers/OpdsController";
 
-
 const container = new Container();
 
 // Services
@@ -47,7 +46,10 @@ container.bind<DatabaseService>(TYPES.DatabaseService).to(DatabaseService).inSin
 container.bind<UserService>(TYPES.UserService).to(UserService).inSingletonScope();
 container.bind<WebsiteRssService>(TYPES.WebsiteRssService).to(WebsiteRssService).inSingletonScope();
 container.bind<BookRssService>(TYPES.BookRssService).to(BookRssService).inSingletonScope();
-container.bind<AuthCredentialService>(TYPES.AuthCredentialService).to(AuthCredentialService).inSingletonScope();
+container
+  .bind<AuthCredentialService>(TYPES.AuthCredentialService)
+  .to(AuthCredentialService)
+  .inSingletonScope();
 
 container.bind<SettingService>(TYPES.SettingService).to(SettingService).inSingletonScope();
 container
@@ -59,24 +61,29 @@ container
   .to(DynamicRouteService)
   .inSingletonScope();
 
-container
-  .bind<ScriptFileService>(TYPES.ScriptFileService)
-  .to(ScriptFileService)
-  .inSingletonScope();
+container.bind<ScriptFileService>(TYPES.ScriptFileService).to(ScriptFileService).inSingletonScope();
 container.bind<NpmPackageService>(TYPES.NpmPackageService).to(NpmPackageService).inSingletonScope();
-container.bind<ScriptTemplateService>(TYPES.ScriptTemplateService).to(ScriptTemplateService).inSingletonScope();
+container
+  .bind<ScriptTemplateService>(TYPES.ScriptTemplateService)
+  .to(ScriptTemplateService)
+  .inSingletonScope();
 
 // 新的书籍订阅服务
 container.bind<BookService>(TYPES.BookService).to(BookService).inSingletonScope();
 container.bind<ChapterService>(TYPES.ChapterService).to(ChapterService).inSingletonScope();
-container.bind<SubscriptionService>(TYPES.SubscriptionService).to(SubscriptionService).inSingletonScope();
+container
+  .bind<SubscriptionService>(TYPES.SubscriptionService)
+  .to(SubscriptionService)
+  .inSingletonScope();
 container.bind<OpdsService>(TYPES.OpdsService).to(OpdsService).inSingletonScope();
 // Controllers
 container.bind<SettingController>(TYPES.SettingController).to(SettingController);
 container.bind<UserController>(TYPES.UserController).to(UserController);
 container.bind<WebsiteRssController>(TYPES.WebsiteRssController).to(WebsiteRssController);
 container.bind<BookRssController>(TYPES.BookRssController).to(BookRssController);
-container.bind<AuthCredentialController>(TYPES.AuthCredentialController).to(AuthCredentialController);
+container
+  .bind<AuthCredentialController>(TYPES.AuthCredentialController)
+  .to(AuthCredentialController);
 container.bind<DynamicRouteController>(TYPES.DynamicRouteController).to(DynamicRouteController);
 container.bind<NpmPackageController>(TYPES.NpmPackageController).to(NpmPackageController);
 container.bind<NotificationController>(TYPES.NotificationController).to(NotificationController);

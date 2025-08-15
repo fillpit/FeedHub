@@ -1,7 +1,5 @@
 import { injectable } from "inversify";
-import NpmPackage, {
-  NpmPackageAttributes
-} from "../models/NpmPackage";
+import NpmPackage, { NpmPackageAttributes } from "../models/NpmPackage";
 import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import * as fs from "fs";
@@ -20,16 +18,16 @@ export class NpmPackageService {
   constructor() {
     // 优先从环境变量读取自定义包存放目录
     const envPackagesDir = process.env.CUSTOM_PACKAGES_DIR;
-    
+
     if (envPackagesDir) {
       // 如果环境变量设置了自定义包目录，使用绝对路径或相对于当前工作目录的路径
-      this.packagesDir = path.isAbsolute(envPackagesDir) 
-        ? envPackagesDir 
+      this.packagesDir = path.isAbsolute(envPackagesDir)
+        ? envPackagesDir
         : path.join(process.cwd(), envPackagesDir);
     } else {
       // 如果环境变量未设置，默认使用项目根目录下的custom_packages目录
       const cwd = process.cwd();
-      if (cwd.endsWith('/backend') || cwd.endsWith('\\backend')) {
+      if (cwd.endsWith("/backend") || cwd.endsWith("\\backend")) {
         // 如果当前在backend目录，则使用上级目录的custom_packages
         this.packagesDir = path.join(path.dirname(cwd), "custom_packages");
       } else {
@@ -37,7 +35,7 @@ export class NpmPackageService {
         this.packagesDir = path.join(cwd, "custom_packages");
       }
     }
-    
+
     this.ensurePackagesDirectory();
   }
 

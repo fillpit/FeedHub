@@ -72,7 +72,7 @@ GlobalSetting.init(
       type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "",
-    }
+    },
   },
   {
     sequelize,

@@ -1,9 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
-import {
-  Chapter as ChapterInterface,
-} from '@feedhub/shared/src/types/bookRss';
-import Book from './Book';
+import { Chapter as ChapterInterface } from "@feedhub/shared/src/types/bookRss";
+import Book from "./Book";
 
 // Sequelize 模型创建属性接口
 interface ChapterCreationAttributes
@@ -37,9 +35,9 @@ Chapter.init(
       allowNull: false,
       references: {
         model: Book,
-        key: 'id',
+        key: "id",
       },
-      onDelete: 'CASCADE',
+      onDelete: "CASCADE",
     },
     chapterNumber: {
       type: DataTypes.INTEGER,
@@ -83,15 +81,15 @@ Chapter.init(
     indexes: [
       {
         unique: true,
-        fields: ['bookId', 'chapterNumber'],
+        fields: ["bookId", "chapterNumber"],
       },
     ],
   }
 );
 
 // 定义关联关系
-Chapter.belongsTo(Book, { foreignKey: 'bookId', as: 'book' });
-Book.hasMany(Chapter, { foreignKey: 'bookId', as: 'chapters' });
+Chapter.belongsTo(Book, { foreignKey: "bookId", as: "book" });
+Book.hasMany(Chapter, { foreignKey: "bookId", as: "chapters" });
 
 export default Chapter;
 export { ChapterInterface as ChapterAttributes, ChapterCreationAttributes };

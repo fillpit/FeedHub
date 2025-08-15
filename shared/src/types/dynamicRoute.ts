@@ -48,7 +48,7 @@ export const DEFAULT_TYPE_PARAM: RouteParam = {
   type: "string",
   required: false,
   default: "rss",
-  description: "返回数据格式：rss 或 json"
+  description: "返回数据格式：rss 或 json",
 };
 
 // 后端数据库模型属性接口

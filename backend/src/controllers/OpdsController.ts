@@ -5,9 +5,7 @@ import { OpdsService } from "../services/OpdsService";
 
 @injectable()
 export class OpdsController {
-  constructor(
-    @inject(TYPES.OpdsService) private opdsService: OpdsService
-  ) {}
+  constructor(@inject(TYPES.OpdsService) private opdsService: OpdsService) {}
 
   /**
    * 获取所有OPDS配置
@@ -19,11 +17,11 @@ export class OpdsController {
         page: page ? parseInt(page as string) : 1,
         limit: limit ? parseInt(limit as string) : 20,
         sortBy: sortBy as string,
-        sortOrder: sortOrder as 'asc' | 'desc',
+        sortOrder: sortOrder as "asc" | "desc",
       };
 
       const result = await this.opdsService.getAllOpdsConfigs(params);
-      
+
       if (result.data) {
         res.json(result);
       } else {
@@ -32,7 +30,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取OPDS配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取OPDS配置失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -54,7 +52,7 @@ export class OpdsController {
       }
 
       const result = await this.opdsService.getOpdsConfigById(configId);
-      
+
       if (result.data) {
         res.json(result);
       } else {
@@ -63,7 +61,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取OPDS配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取OPDS配置失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -84,7 +82,7 @@ export class OpdsController {
       }
 
       const result = await this.opdsService.createOpdsConfig(configData);
-      
+
       if (result.data) {
         res.status(201).json(result);
       } else {
@@ -93,7 +91,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `创建OPDS配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `创建OPDS配置失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -116,7 +114,7 @@ export class OpdsController {
       }
 
       const result = await this.opdsService.updateOpdsConfig(configId, updateData);
-      
+
       if (result.data) {
         res.json(result);
       } else {
@@ -125,7 +123,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `更新OPDS配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `更新OPDS配置失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -147,7 +145,7 @@ export class OpdsController {
       }
 
       const result = await this.opdsService.deleteOpdsConfig(configId);
-      
+
       if (!result.error) {
         res.status(204).send();
       } else {
@@ -156,7 +154,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `删除OPDS配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `删除OPDS配置失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -178,7 +176,7 @@ export class OpdsController {
       }
 
       const result = await this.opdsService.testOpdsConnection(configId);
-      
+
       if (result.data) {
         res.json(result);
       } else {
@@ -187,7 +185,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `测试连接失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `测试连接失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -216,7 +214,7 @@ export class OpdsController {
       };
 
       const result = await this.opdsService.fetchBooksFromOpds(configId, params.search);
-      
+
       if (result.data) {
         res.json(result);
       } else {
@@ -225,7 +223,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取OPDS书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取OPDS书籍失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -236,9 +234,9 @@ export class OpdsController {
   async getBooksFromGlobalOpds(req: Request, res: Response): Promise<void> {
     try {
       const { search } = req.query;
-      
+
       const result = await this.opdsService.fetchBooksFromGlobalOpds(search as string);
-      
+
       if (result.data) {
         res.json(result);
       } else {
@@ -247,7 +245,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `获取全局OPDS书籍失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取全局OPDS书籍失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }
@@ -269,7 +267,7 @@ export class OpdsController {
         return;
       }
 
-      if (typeof enabled !== 'boolean') {
+      if (typeof enabled !== "boolean") {
         res.status(400).json({
           success: false,
           error: "enabled参数必须是布尔值",
@@ -278,11 +276,11 @@ export class OpdsController {
       }
 
       const result = await this.opdsService.updateOpdsConfig(configId, { enabled });
-      
+
       if (result.data) {
         res.json({
           success: true,
-          message: `OPDS配置已${enabled ? '启用' : '禁用'}`,
+          message: `OPDS配置已${enabled ? "启用" : "禁用"}`,
           data: result.data,
         });
       } else {
@@ -291,7 +289,7 @@ export class OpdsController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: `切换配置状态失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `切换配置状态失败: ${error instanceof Error ? error.message : "未知错误"}`,
       });
     }
   }

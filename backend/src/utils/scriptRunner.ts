@@ -26,11 +26,7 @@ function formatMultilineLog(level: string, message: string): string {
   );
 }
 
-export function createScriptContext(
-  config: any,
-  axiosInstance: any,
-  logs?: string[]
-): any {
+export function createScriptContext(config: any, axiosInstance: any, logs?: string[]): any {
   const authInfo = {
     type: config.auth?.authType || "none",
     cookie: sanitizeCookie(config.auth?.cookie || ""),
@@ -266,17 +262,19 @@ export function createScriptContext(
   const createConsole = () => {
     // 格式化参数的辅助函数
     const formatArgs = (...args: any[]): string => {
-      return args.map(arg => {
-        if (typeof arg === 'object' && arg !== null) {
-          try {
-            return JSON.stringify(arg, null, 2);
-          } catch (error) {
-            // 如果JSON.stringify失败（如循环引用），使用util.inspect
-            return util.inspect(arg, { depth: 3, colors: false });
+      return args
+        .map((arg) => {
+          if (typeof arg === "object" && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch (error) {
+              // 如果JSON.stringify失败（如循环引用），使用util.inspect
+              return util.inspect(arg, { depth: 3, colors: false });
+            }
           }
-        }
-        return String(arg);
-      }).join(' ');
+          return String(arg);
+        })
+        .join(" ");
     };
 
     if (logs) {
@@ -296,7 +294,7 @@ export function createScriptContext(
   return {
     authInfo,
     createUtils,
-    createConsole
+    createConsole,
   };
 }
 
@@ -310,47 +308,49 @@ export async function executeScriptPackage(
   timeout: number = 30000
 ): Promise<any> {
   const { authInfo, createUtils, createConsole, routeParams } = context;
-  
+
   // 清理模块缓存以确保脚本更新后能重新加载
   const entryFilePath = path.resolve(packageDir, entryPoint);
-  const modulePattern = new RegExp(`^${packageDir.replace(/[\\\[\]{}()*+?.^$|]/g, '\\$&')}`);
-  
+  const modulePattern = new RegExp(`^${packageDir.replace(/[\\\[\]{}()*+?.^$|]/g, "\\$&")}`);
+
   // 清理相关模块的缓存
-  Object.keys(require.cache).forEach(key => {
+  Object.keys(require.cache).forEach((key) => {
     if (modulePattern.test(key)) {
       delete require.cache[key];
     }
   });
-  
+
   try {
     // 直接require脚本包的入口文件
     const scriptModule = require(entryFilePath);
-    
+
     // 验证是否导出了main函数
-    if (!scriptModule || typeof scriptModule.main !== 'function') {
-      throw new Error('脚本包必须导出一个名为"main"的函数。请参考脚本规范文档：SCRIPT_STANDARDS.md');
+    if (!scriptModule || typeof scriptModule.main !== "function") {
+      throw new Error(
+        '脚本包必须导出一个名为"main"的函数。请参考脚本规范文档：SCRIPT_STANDARDS.md'
+      );
     }
-    
+
     // 创建安全的require函数，限制只能访问脚本包内的模块
     const createSafeRequire = () => {
       return (modulePath: string) => {
         // 只允许相对路径引用（脚本包内的模块）
-        if (modulePath.startsWith('./') || modulePath.startsWith('../')) {
+        if (modulePath.startsWith("./") || modulePath.startsWith("../")) {
           const resolvedPath = path.resolve(packageDir, modulePath);
-          
+
           // 确保解析后的路径仍在脚本包目录内
           if (!resolvedPath.startsWith(packageDir)) {
             throw new Error(`不允许访问脚本包外的模块: ${modulePath}`);
           }
-          
+
           return require(resolvedPath);
         }
-        
+
         // 对于非相对路径，抛出错误（安全考虑）
         throw new Error(`不允许访问外部模块: ${modulePath}`);
       };
     };
-    
+
     // 创建脚本执行上下文
     const scriptContext = {
       routeParams: routeParams || {},
@@ -358,26 +358,26 @@ export async function executeScriptPackage(
       auth: authInfo,
       console: createConsole(),
       dayjs: dayjs,
-      require: createSafeRequire()
+      require: createSafeRequire(),
     };
-    
+
     // 使用Promise.race实现超时控制
     const result = await Promise.race([
       scriptModule.main(scriptContext),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error(`脚本执行超时 (${timeout}ms)`)), timeout)
-      )
+      ),
     ]);
-    
+
     return result;
   } catch (error) {
     // 清理可能的模块缓存
-    Object.keys(require.cache).forEach(key => {
+    Object.keys(require.cache).forEach((key) => {
       if (modulePattern.test(key)) {
         delete require.cache[key];
       }
     });
-    
+
     throw error;
   }
 }
@@ -389,8 +389,7 @@ export async function executeScript(
   logs?: string[],
   npmPackageService?: any
 ): Promise<any> {
-  const { authInfo, createUtils, createConsole, routeParams } =
-    context;
+  const { authInfo, createUtils, createConsole, routeParams } = context;
 
   // 创建安全的require函数
   const createSafeRequire = () => {
@@ -439,21 +438,16 @@ export async function executeScript(
   console.log("config.script?.script", scriptContent);
 
   // 检测脚本类型：如果包含脚本包标识，使用新的执行方式
-  if (scriptContent && scriptContent.includes('__SCRIPT_PACKAGE__')) {
+  if (scriptContent && scriptContent.includes("__SCRIPT_PACKAGE__")) {
     // 解析脚本包信息
     const packageInfoMatch = scriptContent.match(/__SCRIPT_PACKAGE__:(.+?)__/);
     if (packageInfoMatch) {
       try {
         const packageInfo = JSON.parse(packageInfoMatch[1]);
         const { packageDir, entryPoint } = packageInfo;
-        
+
         // 使用新的脚本包执行方式
-        return await executeScriptPackage(
-          packageDir,
-          entryPoint,
-          context,
-          timeout
-        );
+        return await executeScriptPackage(packageDir, entryPoint, context, timeout);
       } catch (error) {
         throw new Error(`解析脚本包信息失败: ${(error as Error).message}`);
       }
@@ -480,12 +474,11 @@ export async function executeScript(
       setTimeout(() => reject(new Error(`脚本执行超时 (${timeout}ms)`)), timeout)
     ),
   ]);
-    
+
   return result;
 }
 
 export function validateScriptResult(result: any): any {
-
   // 如果返回的是数组，说明是旧格式（只返回items），保持向后兼容
   if (Array.isArray(result)) {
     const validatedItems = result.map((item, index) => {

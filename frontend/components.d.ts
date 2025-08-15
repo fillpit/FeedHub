@@ -66,7 +66,6 @@ declare module 'vue' {
     NotificationSettings: typeof import('./src/components/NotificationSettings.vue')['default']
     OpdsBookSelector: typeof import('./src/components/OpdsBookSelector.vue')['default']
     OpdsGlobalSettings: typeof import('./src/components/OpdsGlobalSettings.vue')['default']
-    OpdsSettings: typeof import('./src/components/OpdsSettings.vue')['default']
     RouteDebugger: typeof import('./src/components/RouteDebugger.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

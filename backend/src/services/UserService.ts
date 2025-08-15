@@ -14,7 +14,6 @@ export class UserService {
   }
 
   async register(username: string, password: string, registerCode: string) {
-
     // 验证输入
     if (!this.isValidInput(username) || !this.isValidInput(password)) {
       throw new Error("用户名、密码或注册码不能包含空格或汉字");

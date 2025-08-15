@@ -17,10 +17,7 @@ export class SubscriptionService {
   /**
    * 创建订阅
    */
-  async createSubscription(
-    bookId: number,
-    subscriptionData: Partial<SubscriptionInterface>
-  ) {
+  async createSubscription(bookId: number, subscriptionData: Partial<SubscriptionInterface>) {
     try {
       // 检查书籍是否存在
       const book = await Book.findByPk(bookId);
@@ -39,7 +36,7 @@ export class SubscriptionService {
         subscriptionKey,
         title: subscriptionData.title || `${book.title} - 章节订阅`,
         description: subscriptionData.description || `${book.title}的最新章节更新`,
-        format: subscriptionData.format || 'rss',
+        format: subscriptionData.format || "rss",
         includeContent: subscriptionData.includeContent ?? true,
         maxItems: subscriptionData.maxItems || 20,
         isActive: true,
@@ -55,7 +52,7 @@ export class SubscriptionService {
     } catch (error) {
       return {
         success: false,
-        error: `创建订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `创建订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -65,7 +62,7 @@ export class SubscriptionService {
    */
   async getSubscriptions(params?: PaginationParams) {
     try {
-      const { page = 1, limit = 20, sortBy = 'updatedAt', sortOrder = 'desc' } = params || {};
+      const { page = 1, limit = 20, sortBy = "updatedAt", sortOrder = "desc" } = params || {};
       const offset = (page - 1) * limit;
 
       const { count, rows } = await Subscription.findAndCountAll({
@@ -75,8 +72,8 @@ export class SubscriptionService {
         include: [
           {
             model: Book,
-            as: 'book',
-            attributes: ['id', 'title', 'author', 'totalChapters', 'lastChapterTitle'],
+            as: "book",
+            attributes: ["id", "title", "author", "totalChapters", "lastChapterTitle"],
           },
         ],
       });
@@ -95,7 +92,7 @@ export class SubscriptionService {
     } catch (error) {
       return {
         success: false,
-        error: `获取订阅列表失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取订阅列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -103,7 +100,7 @@ export class SubscriptionService {
   /**
    * 根据订阅key获取RSS/JSON feed
    */
-  async getFeedByKey(subscriptionKey: string, format?: 'rss' | 'json') {
+  async getFeedByKey(subscriptionKey: string, format?: "rss" | "json") {
     try {
       const subscription = await Subscription.findOne({
         where: { subscriptionKey, isActive: true },
@@ -121,12 +118,12 @@ export class SubscriptionService {
         include: [
           {
             model: Book,
-            as: 'book',
+            as: "book",
             include: [
               {
                 model: Chapter,
-                as: 'chapters',
-                order: [['chapterNumber', 'DESC']],
+                as: "chapters",
+                order: [["chapterNumber", "DESC"]],
                 limit: subscription.maxItems || 20,
               },
             ],
@@ -150,7 +147,7 @@ export class SubscriptionService {
       const feedFormat = format || subscription.format;
       const feedData = this.generateFeedData(subscriptionWithBook);
 
-      if (feedFormat === 'json') {
+      if (feedFormat === "json") {
         return {
           success: true,
           data: feedData,
@@ -167,7 +164,7 @@ export class SubscriptionService {
     } catch (error) {
       return {
         success: false,
-        error: `获取feed失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取feed失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -182,8 +179,10 @@ export class SubscriptionService {
     const items: SubscriptionItem[] = chapters.map((chapter: any) => ({
       id: chapter.id.toString(),
       title: chapter.title,
-      description: subscription.includeContent ? chapter.content : `${book.title} - ${chapter.title}`,
-      link: `${process.env.BASE_URL || 'http://localhost:3000'}/books/${book.id}/chapters/${chapter.id}`,
+      description: subscription.includeContent
+        ? chapter.content
+        : `${book.title} - ${chapter.title}`,
+      link: `${process.env.BASE_URL || "http://localhost:3000"}/books/${book.id}/chapters/${chapter.id}`,
       pubDate: chapter.publishTime.toISOString(),
       guid: `${book.id}-${chapter.id}`,
       isNew: chapter.isNew,
@@ -192,7 +191,7 @@ export class SubscriptionService {
     return {
       title: subscription.title,
       description: subscription.description,
-      link: `${process.env.BASE_URL || 'http://localhost:3000'}/books/${book.id}`,
+      link: `${process.env.BASE_URL || "http://localhost:3000"}/books/${book.id}`,
       lastBuildDate: new Date().toISOString(),
       totalItems: items.length,
       items,
@@ -220,7 +219,7 @@ export class SubscriptionService {
       <pubDate>${new Date(item.pubDate).toUTCString()}</pubDate>
     </item>`
       )
-      .join('');
+      .join("");
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -237,10 +236,7 @@ export class SubscriptionService {
   /**
    * 更新订阅
    */
-  async updateSubscription(
-    id: number,
-    updateData: Partial<SubscriptionInterface>
-  ) {
+  async updateSubscription(id: number, updateData: Partial<SubscriptionInterface>) {
     try {
       const subscription = await Subscription.findByPk(id);
       if (!subscription) {
@@ -260,7 +256,7 @@ export class SubscriptionService {
     } catch (error) {
       return {
         success: false,
-        error: `更新订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `更新订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -287,7 +283,7 @@ export class SubscriptionService {
     } catch (error) {
       return {
         success: false,
-        error: `删除订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `删除订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -299,7 +295,7 @@ export class SubscriptionService {
     try {
       const subscriptions = await Subscription.findAll({
         where: { bookId },
-        order: [['createdAt', 'DESC']],
+        order: [["createdAt", "DESC"]],
       });
 
       return {
@@ -310,7 +306,7 @@ export class SubscriptionService {
     } catch (error) {
       return {
         success: false,
-        error: `获取书籍订阅失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取书籍订阅失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }

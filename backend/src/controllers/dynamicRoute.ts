@@ -75,7 +75,6 @@ export class DynamicRouteController extends BaseController {
     });
   }
 
-
   /**
    * 获取内联脚本的文件列表
    */
@@ -104,7 +103,11 @@ export class DynamicRouteController extends BaseController {
     await this.handleRequest(req, res, async () => {
       const routeId = Number(req.params.id);
       const { fileName, content } = req.body;
-      return await this.dynamicRouteService.updateInlineScriptFileContent(routeId, fileName, content);
+      return await this.dynamicRouteService.updateInlineScriptFileContent(
+        routeId,
+        fileName,
+        content
+      );
     });
   }
 
@@ -137,18 +140,18 @@ export class DynamicRouteController extends BaseController {
     await this.handleRequest(req, res, async () => {
       const routeId = Number(req.params.id);
       const { initType, templateName, gitUrl, gitBranch, gitSubPath } = req.body;
-      
+
       let zipBuffer: Buffer | undefined;
       if (req.file) {
         zipBuffer = req.file.buffer;
       }
-      
+
       return await this.dynamicRouteService.initializeRouteScript(routeId, initType, {
         templateName,
         zipBuffer,
         gitUrl,
         gitBranch,
-        gitSubPath
+        gitSubPath,
       });
     });
   }
@@ -170,18 +173,21 @@ export class DynamicRouteController extends BaseController {
     try {
       const routeIds = req.body.routeIds as number[];
       if (!Array.isArray(routeIds) || routeIds.length === 0) {
-        res.status(400).json({ success: false, message: '请提供有效的路由ID列表' });
+        res.status(400).json({ success: false, message: "请提供有效的路由ID列表" });
         return;
       }
 
       const zipBuffer = await this.dynamicRouteService.exportRoutesWithScripts(routeIds);
-      
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', `attachment; filename="routes-export-${Date.now()}.zip"`);
+
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="routes-export-${Date.now()}.zip"`
+      );
       res.send(zipBuffer);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '导出失败';
-      logger.error('[DynamicRouteController] 导出路由失败:', error);
+      const errorMessage = error instanceof Error ? error.message : "导出失败";
+      logger.error("[DynamicRouteController] 导出路由失败:", error);
       res.status(500).json({ success: false, message: errorMessage });
     }
   }
@@ -191,12 +197,12 @@ export class DynamicRouteController extends BaseController {
    */
   async importRoutesWithScripts(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
-     if (!req.file) {
-        throw new AppError('请上传ZIP文件');
+      if (!req.file) {
+        throw new AppError("请上传ZIP文件");
       }
 
       return await this.dynamicRouteService.importRoutesWithScripts(req.file.buffer);
-    })
+    });
   }
 
   /**
@@ -206,16 +212,19 @@ export class DynamicRouteController extends BaseController {
     const routePath = req.params[0]; // 使用通配符路由，获取完整路径
 
     try {
-      const responseContent = await this.dynamicRouteService.executeRouteScript(routePath, req.query);
+      const responseContent = await this.dynamicRouteService.executeRouteScript(
+        routePath,
+        req.query
+      );
 
       // 根据type参数设置正确的内容类型
-      const responseType = (req.query.type as string) || 'rss';
-      if (responseType === 'json') {
+      const responseType = (req.query.type as string) || "rss";
+      if (responseType === "json") {
         res.setHeader("Content-Type", "application/json; charset=utf-8");
       } else {
         res.setHeader("Content-Type", "application/rss+xml; charset=utf-8");
       }
-      
+
       res.send(responseContent);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";

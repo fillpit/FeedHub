@@ -1,8 +1,6 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
-import {
-  OpdsConfig as OpdsConfigInterface,
-} from '@feedhub/shared/src/types/bookRss';
+import { OpdsConfig as OpdsConfigInterface } from "@feedhub/shared/src/types/bookRss";
 
 // Sequelize 模型创建属性接口
 interface OpdsConfigCreationAttributes
@@ -17,7 +15,7 @@ class OpdsConfig
   public url!: string;
   public username?: string;
   public password?: string;
-  public authType!: 'none' | 'basic' | 'bearer';
+  public authType!: "none" | "basic" | "bearer";
   public bearerToken?: string;
   public enabled!: boolean;
   public readonly createdAt!: Date | string;
@@ -48,9 +46,9 @@ OpdsConfig.init(
       allowNull: true,
     },
     authType: {
-      type: DataTypes.ENUM('none', 'basic', 'bearer'),
+      type: DataTypes.ENUM("none", "basic", "bearer"),
       allowNull: false,
-      defaultValue: 'none',
+      defaultValue: "none",
     },
     bearerToken: {
       type: DataTypes.TEXT,

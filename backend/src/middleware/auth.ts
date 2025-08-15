@@ -18,7 +18,7 @@ export const authMiddleware = async (
 ): Promise<void | Response> => {
   // 添加调试日志
   console.log(`[Auth] 请求路径: ${req.path}, 原始URL: ${req.originalUrl}`);
-  
+
   // 检查是否是公开访问的路径
   if (
     req.path === "/user/login" ||
@@ -33,7 +33,7 @@ export const authMiddleware = async (
     console.log(`[Auth] 公开路径，跳过认证: ${req.path}`);
     return next();
   }
-  
+
   console.log(`[Auth] 需要认证的路径: ${req.path}`);
 
   const token = req.headers.authorization?.split(" ")[1];

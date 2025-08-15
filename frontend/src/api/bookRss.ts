@@ -1,12 +1,12 @@
-import request from '@/utils/request';
-import { 
-  Book, 
-  Chapter, 
-  Subscription, 
+import request from "@/utils/request";
+import {
+  Book,
+  Chapter,
+  Subscription,
   OpdsConfig,
   OpdsParseResult,
-  BookRssConfig
-} from '@feedhub/shared/src/types/bookRss';
+  BookRssConfig,
+} from "@feedhub/shared/src/types/bookRss";
 
 const baseUrl = "/api/book-rss";
 
@@ -24,12 +24,12 @@ export const getBookById = (id: number) => {
 // 上传书籍文件
 export const uploadBook = (file: File, metadata?: Partial<Book>) => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   if (metadata) {
-    formData.append('metadata', JSON.stringify(metadata));
+    formData.append("metadata", JSON.stringify(metadata));
   }
   return request.post<Book>(`${baseUrl}/books/upload`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { "Content-Type": "multipart/form-data" },
   });
 };
 
@@ -81,7 +81,7 @@ export const getAllSubscriptions = () => {
 };
 
 // 创建订阅
-export const createSubscription = (data: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>) => {
+export const createSubscription = (data: Omit<Subscription, "id" | "createdAt" | "updatedAt">) => {
   return request.post<Subscription>(`${baseUrl}/subscriptions`, data);
 };
 
@@ -118,7 +118,7 @@ export const getAllOpdsConfigs = () => {
 };
 
 // 创建OPDS配置
-export const createOpdsConfig = (data: Omit<OpdsConfig, 'id' | 'createdAt' | 'updatedAt'>) => {
+export const createOpdsConfig = (data: Omit<OpdsConfig, "id" | "createdAt" | "updatedAt">) => {
   return request.post<OpdsConfig>(`${baseUrl}/opds`, data);
 };
 
@@ -140,12 +140,12 @@ export const testOpdsConnection = (id: number) => {
 // 从OPDS获取书籍列表
 export const fetchBooksFromOpds = (search?: string) => {
   const params = search ? { search } : {};
-  return request.get<OpdsParseResult>('/api/book-rss/opds/books', { params });
+  return request.get<OpdsParseResult>("/api/book-rss/opds/books", { params });
 };
 
 // 获取全局设置
 export const getGlobalSettings = () => {
-  return request.get<any>('/api/settings');
+  return request.get<any>("/api/settings");
 };
 
 // === 兼容性API (保持向后兼容) ===
@@ -160,7 +160,9 @@ export const getConfigById = (id: number) => {
 };
 
 // 添加图书RSS配置
-export const addConfig = (config: Omit<BookRssConfig, "id" | "lastUpdateTime" | "lastBooks" | "opdsConfig">) => {
+export const addConfig = (
+  config: Omit<BookRssConfig, "id" | "lastUpdateTime" | "lastBooks" | "opdsConfig">
+) => {
   return request.post<BookRssConfig>(`${baseUrl}/`, config);
 };
 

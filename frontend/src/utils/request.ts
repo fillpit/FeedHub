@@ -121,7 +121,7 @@ axiosInstance.interceptors.request.use(
     // 如果是 FormData，不要设置 Content-Type，让浏览器自动处理
     if (config.data instanceof FormData) {
       // 删除默认的 Content-Type，让浏览器自动设置包含 boundary 的 multipart/form-data
-      delete config.headers['Content-Type'];
+      delete config.headers["Content-Type"];
     } else {
       // 清理请求数据中的潜在XSS内容
       if (config.data && typeof config.data === "object") {
@@ -162,7 +162,7 @@ axiosInstance.interceptors.response.use(
     }
 
     // 如果是blob响应类型，直接返回response，不进行success检查
-    if (response.config.responseType === 'blob') {
+    if (response.config.responseType === "blob") {
       return response;
     }
 

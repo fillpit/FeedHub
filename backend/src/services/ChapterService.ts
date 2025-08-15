@@ -12,7 +12,6 @@ import {
 } from "@feedhub/shared";
 import { ApiResponseData } from "@/utils/apiResponse";
 
-
 @injectable()
 export class ChapterService {
   /**
@@ -23,7 +22,7 @@ export class ChapterService {
     params?: PaginationParams
   ): Promise<ApiResponseData<PaginatedResponse<ChapterInterface>>> {
     try {
-      const { page = 1, limit = 50, sortBy = 'chapterNumber', sortOrder = 'asc' } = params || {};
+      const { page = 1, limit = 50, sortBy = "chapterNumber", sortOrder = "asc" } = params || {};
       const offset = (page - 1) * limit;
 
       const { count, rows } = await Chapter.findAndCountAll({
@@ -47,7 +46,7 @@ export class ChapterService {
     } catch (error) {
       return {
         success: false,
-        error: `获取章节列表失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取章节列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -61,8 +60,8 @@ export class ChapterService {
         include: [
           {
             model: Book,
-            as: 'book',
-            attributes: ['id', 'title', 'author'],
+            as: "book",
+            attributes: ["id", "title", "author"],
           },
         ],
       });
@@ -82,7 +81,7 @@ export class ChapterService {
     } catch (error) {
       return {
         success: false,
-        error: `获取章节详情失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取章节详情失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -90,7 +89,9 @@ export class ChapterService {
   /**
    * 检查书籍更新
    */
-  async checkBookUpdates(bookId: number): Promise<ApiResponseData<{ hasUpdates: boolean; newChapters: ChapterInterface[] }>> {
+  async checkBookUpdates(
+    bookId: number
+  ): Promise<ApiResponseData<{ hasUpdates: boolean; newChapters: ChapterInterface[] }>> {
     try {
       const book = await Book.findByPk(bookId);
       if (!book) {
@@ -103,12 +104,12 @@ export class ChapterService {
       let hasUpdates = false;
       let newChapters: ChapterInterface[] = [];
 
-      if (book.sourceType === 'upload') {
+      if (book.sourceType === "upload") {
         // 检查上传文件的更新
         const result = await this.checkUploadedFileUpdates(book);
         hasUpdates = result.hasUpdates;
         newChapters = result.newChapters;
-      } else if (book.sourceType === 'opds') {
+      } else if (book.sourceType === "opds") {
         // 检查OPDS源的更新
         const result = await this.checkOpdsUpdates(book);
         hasUpdates = result.hasUpdates;
@@ -123,10 +124,7 @@ export class ChapterService {
         });
 
         // 标记新章节
-        await Chapter.update(
-          { isNew: false },
-          { where: { bookId, isNew: true } }
-        );
+        await Chapter.update({ isNew: false }, { where: { bookId, isNew: true } });
       }
 
       return {
@@ -137,7 +135,7 @@ export class ChapterService {
     } catch (error) {
       return {
         success: false,
-        error: `检查更新失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `检查更新失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -145,7 +143,9 @@ export class ChapterService {
   /**
    * 检查上传文件的更新
    */
-  private async checkUploadedFileUpdates(book: any): Promise<{ hasUpdates: boolean; newChapters: ChapterInterface[] }> {
+  private async checkUploadedFileUpdates(
+    book: any
+  ): Promise<{ hasUpdates: boolean; newChapters: ChapterInterface[] }> {
     try {
       if (!book.sourcePath || !fs.existsSync(book.sourcePath)) {
         return { hasUpdates: false, newChapters: [] };
@@ -162,17 +162,19 @@ export class ChapterService {
 
       // 重新解析文件
       const parseResult = await this.parseBookFile(book.sourcePath, book.fileFormat);
-      
+
       // 获取现有章节
       const existingChapters = await Chapter.findAll({
         where: { bookId: book.id },
-        order: [['chapterNumber', 'ASC']],
+        order: [["chapterNumber", "ASC"]],
       });
 
       // 找出新章节
       const newChapters: ChapterInterface[] = [];
       for (const parsedChapter of parseResult.chapters) {
-        const existing = existingChapters.find(ch => ch.chapterNumber === parsedChapter.chapterNumber);
+        const existing = existingChapters.find(
+          (ch) => ch.chapterNumber === parsedChapter.chapterNumber
+        );
         if (!existing) {
           const newChapter = await Chapter.create({
             ...parsedChapter,
@@ -185,7 +187,7 @@ export class ChapterService {
 
       return { hasUpdates: newChapters.length > 0, newChapters };
     } catch (error) {
-      console.error('检查上传文件更新失败:', error);
+      console.error("检查上传文件更新失败:", error);
       return { hasUpdates: false, newChapters: [] };
     }
   }
@@ -193,7 +195,9 @@ export class ChapterService {
   /**
    * 检查OPDS源的更新
    */
-  private async checkOpdsUpdates(book: any): Promise<{ hasUpdates: boolean; newChapters: ChapterInterface[] }> {
+  private async checkOpdsUpdates(
+    book: any
+  ): Promise<{ hasUpdates: boolean; newChapters: ChapterInterface[] }> {
     // TODO: 实现OPDS更新检查逻辑
     // 这里需要根据OPDS API来检查书籍是否有新章节
     return { hasUpdates: false, newChapters: [] };
@@ -205,8 +209,6 @@ export class ChapterService {
   private async parseBookFile(filePath: string, fileFormat: string): Promise<ChapterParseResult> {
     throw new Error(`ChapterService不再支持文件解析，请使用BookService.parseBookFile方法`);
   }
-
-
 
   /**
    * 标记章节为已读
@@ -231,7 +233,7 @@ export class ChapterService {
     } catch (error) {
       return {
         success: false,
-        error: `标记章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `标记章节失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -239,11 +241,14 @@ export class ChapterService {
   /**
    * 获取书籍的最新章节
    */
-  async getLatestChapters(bookId: number, limit: number = 5): Promise<ApiResponseData<ChapterInterface[]>> {
+  async getLatestChapters(
+    bookId: number,
+    limit: number = 5
+  ): Promise<ApiResponseData<ChapterInterface[]>> {
     try {
       const chapters = await Chapter.findAll({
         where: { bookId },
-        order: [['chapterNumber', 'DESC']],
+        order: [["chapterNumber", "DESC"]],
         limit,
       });
 
@@ -255,7 +260,7 @@ export class ChapterService {
     } catch (error) {
       return {
         success: false,
-        error: `获取最新章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `获取最新章节失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -283,7 +288,7 @@ export class ChapterService {
     } catch (error) {
       return {
         success: false,
-        error: `删除章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `删除章节失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
@@ -303,7 +308,7 @@ export class ChapterService {
     } catch (error) {
       return {
         success: false,
-        error: `删除章节失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error: `删除章节失败: ${error instanceof Error ? error.message : "未知错误"}`,
       };
     }
   }
