@@ -23,6 +23,7 @@ import AuthCredential from "../models/AuthCredential";
 import { TYPES } from "../core/types";
 import { NpmPackageService } from "./NpmPackageService";
 import { NotificationService } from "./NotificationService";
+import { PageRenderer } from "../utils/PageRenderer";
 
 // 配置 dayjs
 dayjs.extend(relativeTime);
@@ -218,10 +219,32 @@ export class WebsiteRssService {
       // 创建带有授权信息的请求配置
       const requestConfig = createRequestConfig(auth);
       let extractedContent: any[] = [];
+      let html: string;
 
-      // 选择器抓取模式（默认）
-      const response = await this.axiosInstance.get(config.url, requestConfig);
-      const html = response.data;
+      // 根据渲染模式选择页面获取方式
+      const renderMode = config.renderMode || 'static'; // 默认为静态模式
+      
+      if (renderMode === 'rendered') {
+        // 使用浏览器渲染模式
+        console.log(`使用浏览器渲染模式获取页面: ${config.url}`);
+        try {
+          html = await PageRenderer.renderPage({
+            url: config.url,
+            auth: auth,
+            timeout: 30000,
+            waitTime: 2000 // 等待2秒确保JavaScript执行完成
+          });
+        } catch (error) {
+          console.warn(`浏览器渲染失败，回退到静态模式: ${error}`);
+          // 回退到静态模式
+          const response = await this.axiosInstance.get(config.url, requestConfig);
+          html = response.data;
+        }
+      } else {
+        // 静态模式（默认）
+        const response = await this.axiosInstance.get(config.url, requestConfig);
+        html = response.data;
+      }
 
       // 提取内容并格式化日期
       extractedContent = extractContentFromHtml(

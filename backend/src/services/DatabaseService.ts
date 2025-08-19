@@ -42,6 +42,9 @@ export class DatabaseService {
       // 检查并添加BookRssConfig表的缺失字段
       await this.fixBookRssConfigTableIfNeeded();
 
+      // 检查并添加WebsiteRssConfig表的缺失字段
+      await this.fixWebsiteRssConfigTableIfNeeded();
+
       // 使用force: false确保不会重新创建已存在的表
       await this.sequelize.sync({ force: false });
 
@@ -321,6 +324,43 @@ export class DatabaseService {
       console.log(`✅ 已迁移 ${configs.length} 条记录的updateInterval单位从分钟改为天`);
     } catch (error) {
       console.warn("迁移updateInterval单位时出现警告:", (error as Error).message);
+    }
+  }
+
+  private async fixWebsiteRssConfigTableIfNeeded(): Promise<void> {
+    try {
+      // 检查website_rss_configs表是否存在renderMode字段
+      const tableInfo = await this.sequelize.query<{ name: string }>(
+        "PRAGMA table_info(website_rss_configs)",
+        { type: QueryTypes.SELECT }
+      );
+
+      const columns = tableInfo.map((col) => col.name);
+      const missingColumns: string[] = [];
+
+      if (!columns.includes("renderMode")) {
+        missingColumns.push("renderMode");
+      }
+
+      // 添加缺失的字段
+      for (const column of missingColumns) {
+        try {
+          if (column === "renderMode") {
+            await this.sequelize.query(
+              "ALTER TABLE website_rss_configs ADD COLUMN renderMode VARCHAR(255) DEFAULT 'static'"
+            );
+            console.log("✅ 已添加renderMode字段到website_rss_configs表");
+          }
+        } catch (addColumnError) {
+          console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);
+        }
+      }
+
+      if (missingColumns.length === 0) {
+        console.log("✅ website_rss_configs表字段检查完成，无需添加新字段");
+      }
+    } catch (error) {
+      console.warn("检查website_rss_configs表字段时出现警告:", (error as Error).message);
     }
   }
 

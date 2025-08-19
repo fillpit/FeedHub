@@ -1,16 +1,17 @@
+# 使用 browserless/chrome 镜像的简化配置
+# 这个配置文件使用现成的 Chrome 服务镜像，无需自己构建
+
 services:
-  # Chrome 浏览器服务容器
+  # Chrome 浏览器服务容器 (使用现成镜像)
   chrome:
-    build:
-      context: ./chrome-service
-      dockerfile: Dockerfile
-    # 也可以使用现成的镜像：
-    # image: browserless/chrome:latest
+    image: browserless/chrome:latest
     ports:
-      - "9222:9222"
+      - "9222:3000"  # browserless 默认端口是 3000
     environment:
       - CONNECTION_TIMEOUT=60000
       - MAX_CONCURRENT_SESSIONS=10
+      - ENABLE_DEBUGGER=false
+      - PREBOOT_CHROME=true
     restart: unless-stopped
     shm_size: 2gb
     cap_add:
@@ -30,7 +31,7 @@ services:
       - BASIC_AUTH_USERNAME=admin
       - BASIC_AUTH_PASSWORD=admin@123
       - API_BASE_URL=http://localhost:8008
-      - CHROME_SERVICE_URL=http://chrome:9222
+      - CHROME_SERVICE_URL=http://chrome:3000
     depends_on:
       - chrome
     volumes:

@@ -114,6 +114,17 @@
 
         <el-divider>抓取设置</el-divider>
 
+        <el-form-item label="渲染模式" prop="renderMode">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <el-radio-group v-model="form.renderMode">
+              <el-radio-button label="static">静态页面</el-radio-button>
+              <el-radio-button label="rendered">浏览器渲染</el-radio-button>
+            </el-radio-group>
+            <el-tooltip content="静态页面：直接请求HTML内容，速度快但无法获取JavaScript动态生成的内容；浏览器渲染：使用无头浏览器渲染页面，可获取JavaScript动态内容但速度较慢" placement="top">
+              <el-icon style="color: #909399; cursor: help"><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </div>
+        </el-form-item>
         <el-form-item label="选择器类型" prop="selector.selectorType">
           <div style="display: flex; align-items: center; gap: 12px">
             <el-radio-group v-model="form.selector.selectorType">
@@ -725,6 +736,7 @@ const getInitialFormState = (): WebsiteRssConfig => ({
   fetchInterval: 60,
   maxFeeds: 50,
   useProxy: false,
+  renderMode: "static",
   selector: {
     selectorType: "css",
     container: "",

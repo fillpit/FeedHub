@@ -119,6 +119,7 @@ pnpm dev
 
 使用 Docker Compose
 
+#### 标准部署（单容器）
 ```bash
 # 下载 docker-compose.yml 文件
 wget https://raw.githubusercontent.com/fillpit/FeedHub/refs/heads/main/docker-compose.yml
@@ -132,6 +133,35 @@ docker-compose logs -f
 # 停止服务
 docker-compose down
 ```
+
+#### 微服务架构部署（推荐）
+
+**新功能**: 支持网页渲染模式，可抓取JavaScript动态生成的内容！
+
+**方式1: 使用 browserless/chrome（推荐）**
+```bash
+# 下载微服务配置文件
+wget https://raw.githubusercontent.com/fillpit/FeedHub/refs/heads/main/docker-compose.browserless.yml
+
+# 启动微服务架构
+docker-compose -f docker-compose.browserless.yml up -d
+```
+
+**方式2: 使用一键部署脚本**
+```bash
+# 下载并运行部署脚本
+wget https://raw.githubusercontent.com/fillpit/FeedHub/refs/heads/main/deploy-with-chrome-service.sh
+chmod +x deploy-with-chrome-service.sh
+./deploy-with-chrome-service.sh
+```
+
+**微服务架构优势**:
+- 🚀 主应用容器更轻量（无需安装Chrome）
+- 🔄 支持JavaScript渲染的SPA应用抓取
+- 📈 更好的资源隔离和扩展性
+- 🛠️ Chrome服务可独立维护和更新
+
+详细说明请参考：[Docker渲染模式部署文档](DOCKER_RENDER_MODE.md)
 
 #### 环境变量配置
 
