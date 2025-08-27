@@ -79,6 +79,12 @@ WebsiteRssConfig.init(
       allowNull: true,
       comment: "授权信息ID",
     },
+    renderMode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "static",
+      comment: "页面渲染模式：static-直接请求HTML，rendered-使用浏览器渲染",
+    },
 
     lastContent: {
       type: DataTypes.TEXT,

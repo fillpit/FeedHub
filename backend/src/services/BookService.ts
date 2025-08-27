@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosInstance } from "axios";
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
 import Book from "../models/Book";
 import Chapter from "../models/Chapter";
 import { EpubParser } from "../utils/EpubParser";
@@ -11,10 +10,7 @@ import { EpubParser } from "../utils/EpubParser";
 import {
   Book as BookInterface,
   Chapter as ChapterInterface,
-  Subscription as SubscriptionInterface,
   ChapterParseResult,
-  ApiResponse,
-  PaginatedResponse,
   PaginationParams,
   BookSourceType,
 } from "@feedhub/shared";

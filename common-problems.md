@@ -136,7 +136,125 @@
 
 ---
 
-## 问题3：章节ID始终为1的问题
+## 问题4：网站RSS浏览器渲染模式"no such column: NaN"错误
+
+**问题描述：**
+网站RSS配置使用浏览器渲染模式时，后端返回500错误，日志显示SQL查询错误：`WHERE WebsiteRssConfig.id = NaN`。
+
+**问题原因：**
+1. **路由匹配错误**: 前端请求路径与后端路由定义不匹配
+   - 前端API调用: `/api/website-rss` (通过8008端口)
+   - 后端路由定义: `/website-rss` 和 `/website-rss/:id`
+   - 导致请求被错误匹配到 `/:id` 路由，而 `configs` 被当作ID参数
+
+2. **参数解析错误**: 字符串 `"configs"` 被解析为数字时变成 `NaN`
+
+**解决方案：**
+1. **确认正确的API路径**: 
+   - 8008端口访问: `/api/website-rss` (自动添加/api前缀)
+   - 8009端口访问: `/website-rss` (无需/api前缀)
+
+2. **验证路由配置**:
+   ```typescript
+   // backend/src/routes/index.ts
+   router.use("/website-rss", websiteRssRoutes);
+   
+   // backend/src/routes/websiteRss.ts
+   router.get("/", getAllConfigs);        // 获取所有配置
+   router.get("/:id", getConfigById);     // 根据ID获取配置
+   ```
+
+3. **测试API调用**:
+   ```bash
+   # 正确的API调用
+   curl -H "Authorization: Bearer <token>" http://localhost:8009/website-rss
+   ```
+
+**修复验证：**
+✅ 已修复 - 浏览器渲染模式现在完全正常工作
+- 成功获取页面内容并解析文章列表
+- 正确更新数据库中的lastContent和lastFetchTime
+- 刷新过程正常，耗时合理(约6秒)
+
+**技术细节：**
+- 浏览器渲染模式使用Puppeteer获取动态内容
+- 成功解析出文章标题、链接、作者和发布日期
+- 数据库更新操作正常执行
+
+**预防措施：**
+- 在添加新路由时要仔细检查路径匹配规则
+- 确保前后端API路径一致性
+- 在开发过程中及时检查后端日志
+
+---
+
+## 问题5：网站RSS调试接口未应用渲染模式配置
+
+**问题描述：**
+网站RSS的调试选择器功能没有应用渲染模式配置，无论配置是静态模式还是浏览器渲染模式，调试时都只使用静态模式获取页面内容。这导致调试结果与实际RSS刷新结果不一致。
+
+**问题原因：**
+在 `WebsiteRssService.ts` 的 `debugSelector` 方法中，直接使用 `axios` 获取静态HTML内容，完全忽略了 `renderMode` 配置参数。而正常的RSS刷新逻辑会根据 `renderMode` 选择使用浏览器渲染或静态模式。
+
+**解决方案：**
+1. **修改debugSelector方法**: 在调试逻辑中添加渲染模式检查
+2. **支持浏览器渲染**: 当 `renderMode` 为 `rendered` 时使用 `PageRenderer.renderPage`
+3. **保持回退机制**: 浏览器渲染失败时自动回退到静态模式
+4. **增强日志记录**: 在调试日志中明确显示使用的渲染模式
+
+**修改文件：**
+- `backend/src/services/WebsiteRssService.ts` - 修改 `debugSelector` 方法
+
+**修复代码：**
+```typescript
+// 获取网页内容 - 支持渲染模式
+let html: string;
+const renderMode = configData.renderMode || 'static';
+logs.push(`[INFO] 使用渲染模式: ${renderMode}`);
+
+if (renderMode === 'rendered') {
+  // 使用浏览器渲染模式
+  logs.push(`[INFO] 正在使用浏览器渲染模式获取网页内容...`);
+  try {
+    html = await PageRenderer.renderPage({
+      url: configData.url,
+      auth: auth,
+      timeout: 30000,
+      waitTime: 2000
+    });
+    logs.push(`[INFO] 浏览器渲染成功`);
+  } catch (error) {
+    logs.push(`[WARN] 浏览器渲染失败，回退到静态模式: ${error}`);
+    const response = await this.axiosInstance.get(configData.url, requestConfig);
+    html = response.data;
+  }
+} else {
+  // 静态模式（默认）
+  const response = await this.axiosInstance.get(configData.url, requestConfig);
+  html = response.data;
+}
+```
+
+**修复验证：**
+✅ 已修复 - 调试接口现在正确应用渲染模式配置
+- 调试时会检查并应用配置的渲染模式
+- 浏览器渲染模式调试结果与实际RSS刷新一致
+- 调试日志中明确显示使用的渲染模式
+- 保持了浏览器渲染失败时的回退机制
+
+**技术细节：**
+- 调试接口现在与RSS刷新逻辑保持一致
+- 支持所有渲染模式：`static`（静态）和 `rendered`（浏览器渲染）
+- 增强的日志记录帮助用户了解调试过程
+
+**预防措施：**
+- 确保新功能的调试接口与主要功能逻辑保持一致
+- 在添加新的配置参数时，同步更新相关的调试功能
+- 定期检查调试功能是否反映了最新的业务逻辑
+
+---
+
+## 问题6：章节ID始终为1的问题
 
 **问题描述：**
 - 上传书籍时，所有章节的ID都是1，无法正常自增
@@ -198,6 +316,48 @@ INSERT INTO chapters SELECT * FROM chapters_backup;
 -- 6. 删除备份表
 DROP TABLE chapters_backup;
 ```
+
+---
+
+## 问题4：网站RSS刷新返回数据缺少renderMode字段
+
+**问题描述：**
+用户反馈网站RSS配置刷新后返回的数据中缺少 `renderMode` 字段，导致前端无法正确显示渲染模式设置。
+
+**问题原因：**
+在 `WebsiteRssConfig` 模型的定义中，虽然在类属性中定义了 `renderMode` 字段，但在 Sequelize 的 `init` 方法中缺少了该字段的数据库列定义。Sequelize 需要在 `init` 方法中明确定义字段才能正确序列化到 JSON 响应中。
+
+**解决方案：**
+1. **添加字段定义**: 在 `WebsiteRssConfig.init()` 方法中添加 `renderMode` 字段的完整定义
+2. **设置默认值**: 为 `renderMode` 字段设置默认值 "static"
+3. **添加注释**: 为字段添加清晰的注释说明其用途
+
+**修改文件：**
+- `backend/src/models/WebsiteRssConfig.ts`
+
+**修复代码：**
+```typescript
+renderMode: {
+  type: DataTypes.STRING,
+  allowNull: true,
+  defaultValue: "static",
+  comment: "页面渲染模式：static-直接请求HTML，rendered-使用浏览器渲染",
+},
+```
+
+**当前状态：**
+✅ 已修复 - 网站RSS配置刷新现在正确返回 `renderMode` 字段
+
+**技术细节：**
+- `renderMode` 字段支持两个值："static" 和 "rendered"
+- "static" 模式：直接请求页面HTML内容
+- "rendered" 模式：使用浏览器渲染后获取页面内容
+- 字段为可选，默认值为 "static"
+
+**预防措施：**
+- 在添加新字段时，确保同时在类属性和 Sequelize init 方法中定义
+- 定期检查模型定义的一致性
+- 在功能测试中验证 API 响应的完整性
 
 **修改文件：**
 - `backend/src/services/DatabaseService.ts` (添加自动修复逻辑)

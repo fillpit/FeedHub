@@ -406,13 +406,38 @@ export class WebsiteRssService {
       const requestConfig = createRequestConfig(auth);
       logs.push(`[DEBUG] 请求配置: ${JSON.stringify(requestConfig, null, 2)}`);
 
-      // 获取网页内容
-      logs.push(`[INFO] 正在获取网页内容...`);
-      const response = await this.axiosInstance.get(configData.url, requestConfig);
-      logs.push(`[INFO] 网页获取成功，状态码: ${response.status}`);
-      logs.push(`[INFO] 响应头: ${JSON.stringify(response.headers, null, 2)}`);
-
-      const html = response.data;
+      // 获取网页内容 - 支持渲染模式
+      let html: string;
+      const renderMode = configData.renderMode || 'static'; // 默认为静态模式
+      logs.push(`[INFO] 使用渲染模式: ${renderMode}`);
+      
+      if (renderMode === 'rendered') {
+        // 使用浏览器渲染模式
+        logs.push(`[INFO] 正在使用浏览器渲染模式获取网页内容...`);
+        try {
+          html = await PageRenderer.renderPage({
+            url: configData.url,
+            auth: auth,
+            timeout: 30000,
+            waitTime: 2000 // 等待2秒确保JavaScript执行完成
+          });
+          logs.push(`[INFO] 浏览器渲染成功`);
+        } catch (error) {
+          logs.push(`[WARN] 浏览器渲染失败，回退到静态模式: ${error}`);
+          // 回退到静态模式
+          const response = await this.axiosInstance.get(configData.url, requestConfig);
+          html = response.data;
+          logs.push(`[INFO] 静态模式获取成功，状态码: ${response.status}`);
+        }
+      } else {
+        // 静态模式（默认）
+        logs.push(`[INFO] 正在使用静态模式获取网页内容...`);
+        const response = await this.axiosInstance.get(configData.url, requestConfig);
+        html = response.data;
+        logs.push(`[INFO] 网页获取成功，状态码: ${response.status}`);
+        logs.push(`[INFO] 响应头: ${JSON.stringify(response.headers, null, 2)}`);
+      }
+      
       logs.push(`[INFO] 网页内容长度: ${html.length} 字符`);
 
       // 使用选择器提取内容

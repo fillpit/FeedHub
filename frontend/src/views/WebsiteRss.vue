@@ -5,6 +5,10 @@
       <div class="header">
         <h1>网站RSS源配置</h1>
         <div class="header-actions">
+          <el-button type="info" @click="refreshAllData" :loading="refreshingData">
+            <el-icon><Refresh /></el-icon>
+            刷新数据
+          </el-button>
           <el-button type="primary" @click="addConfig">添加配置</el-button>
           <el-button 
             type="success" 
@@ -710,6 +714,7 @@ import SelectorHelpDialog from "@/components/SelectorHelpDialog.vue";
 
 const configs = ref<WebsiteRssConfig[]>([]);
 const configsLoading = ref(false);
+const refreshingData = ref(false);
 const dialogVisible = ref(false);
 const submitLoading = ref(false);
 const dialogTitle = ref("");
@@ -972,6 +977,20 @@ const refreshConfig = async (id: number) => {
   } catch (error: any) {
     console.error("刷新失败:", error);
     ElMessage.error(`刷新失败: ${error.message || "网络错误"}`);
+  }
+};
+
+const refreshAllData = async () => {
+  refreshingData.value = true;
+  try {
+    await fetchConfigs();
+    await fetchAuthCredentials();
+    ElMessage.success("数据刷新成功");
+  } catch (error: any) {
+    console.error("刷新数据失败:", error);
+    ElMessage.error(`刷新数据失败: ${error.message || "网络错误"}`);
+  } finally {
+    refreshingData.value = false;
   }
 };
 
