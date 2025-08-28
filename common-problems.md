@@ -254,7 +254,96 @@ if (renderMode === 'rendered') {
 
 ---
 
-## 问题6：章节ID始终为1的问题
+## 问题6：WebsiteRssService代码重构 - 消除重复代码
+
+**问题描述：**
+`WebsiteRssService.ts` 中的 `fetchAndUpdateContent` 和 `debugSelector` 方法包含大量相似的代码，特别是在授权信息处理、请求配置创建、渲染模式选择和网页内容获取方面，导致代码冗余和维护困难。
+
+**问题原因：**
+1. **授权信息处理重复**: 两个方法都有相同的授权凭证查询和处理逻辑
+2. **网页内容获取重复**: 渲染模式选择、浏览器渲染、静态模式回退等逻辑完全重复
+3. **缺乏代码复用**: 没有提取公共方法，导致代码维护成本高
+
+**解决方案：**
+1. **提取授权信息处理方法**: 创建 `getAuthInfo` 私有方法统一处理授权信息
+2. **提取网页内容获取方法**: 创建 `fetchPageContent` 私有方法统一处理网页内容获取
+3. **重构现有方法**: 修改 `fetchAndUpdateContent` 和 `debugSelector` 方法使用新的公共方法
+4. **保持功能一致性**: 确保重构后功能完全一致，包括日志记录
+
+**修改文件：**
+- `backend/src/services/WebsiteRssService.ts` - 重构服务方法
+
+**重构详情：**
+
+**新增方法1: `getAuthInfo`**
+```typescript
+private async getAuthInfo(authCredentialId?: number, existingAuth?: any): Promise<any> {
+  let auth = existingAuth || { enabled: false, authType: "none" };
+  
+  if (authCredentialId) {
+    const authObj = await AuthCredential.findByPk(authCredentialId);
+    if (!authObj) throw new Error("未找到授权信息");
+    
+    let customHeaders: Record<string, string> | undefined = undefined;
+    if (authObj.customHeaders && typeof authObj.customHeaders === "object") {
+      try {
+        customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
+      } catch {
+        customHeaders = undefined;
+      }
+    }
+    
+    auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
+  }
+  
+  return auth;
+}
+```
+
+**新增方法2: `fetchPageContent`**
+```typescript
+private async fetchPageContent(
+  url: string, 
+  auth: any, 
+  renderMode: string = 'static',
+  logs?: string[]
+): Promise<string> {
+  const requestConfig = createRequestConfig(auth);
+  let html: string;
+  
+  if (renderMode === 'rendered') {
+    // 浏览器渲染模式逻辑
+    // 包含错误处理和回退机制
+  } else {
+    // 静态模式逻辑
+  }
+  
+  return html;
+}
+```
+
+**修复验证：**
+✅ 已修复 - 代码重构完成，消除了重复代码
+- 提取了 `getAuthInfo` 方法统一处理授权信息
+- 提取了 `fetchPageContent` 方法统一处理网页内容获取
+- `fetchAndUpdateContent` 方法代码行数从 66 行减少到 25 行
+- `debugSelector` 方法代码行数从 89 行减少到 61 行
+- 保持了所有原有功能，包括日志记录和错误处理
+
+**技术收益：**
+- **代码复用**: 消除了约 50 行重复代码
+- **维护性提升**: 授权和网页获取逻辑集中管理
+- **一致性保证**: 两个方法使用相同的底层逻辑
+- **扩展性增强**: 新功能可以复用这些公共方法
+
+**预防措施：**
+- 在添加新的网页抓取功能时，优先考虑复用现有的公共方法
+- 定期检查代码中的重复逻辑，及时进行重构
+- 遵循DRY（Don't Repeat Yourself）原则
+
+---
+
+## 问题7：章节ID始终为1的问题
 
 **问题描述：**
 - 上传书籍时，所有章节的ID都是1，无法正常自增

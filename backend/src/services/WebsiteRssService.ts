@@ -16,7 +16,7 @@ import zhCN from "dayjs/locale/zh-cn";
 import { extractContentFromHtml } from "../utils/htmlExtractor";
 import { formatDate } from "../utils/dateUtils";
 import { createRequestConfig } from "../utils/requestUtils";
-import { createScriptContext, executeScript, validateScriptResult } from "../utils/scriptRunner";
+
 import { getFavicon } from "../utils/favicon";
 import { validateselector } from "../utils/selectorValidator";
 import AuthCredential from "../models/AuthCredential";
@@ -140,7 +140,8 @@ export class WebsiteRssService {
     const config = await WebsiteRssConfig.findByPk(id);
     if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
     // 重新抓取
-    await this.fetchAndUpdateContent(id);
+    await this.fetchAndUpdateContent(config);
+
     // 返回最新配置
     const updatedConfig = await WebsiteRssConfig.findByPk(id);
     return { success: true, data: updatedConfig!, message: "网站RSS内容刷新成功" };
@@ -158,7 +159,7 @@ export class WebsiteRssService {
     const lastFetchTime = config.lastFetchTime || new Date(0);
     const minutesSinceLastFetch = (now.getTime() - lastFetchTime.getTime()) / (60 * 1000);
     if (minutesSinceLastFetch >= config.fetchInterval) {
-      await this.fetchAndUpdateContent(config.id);
+      await this.fetchAndUpdateContent(config);
       // 重新获取更新后的配置
       const updatedConfig = await WebsiteRssConfig.findByPk(config.id);
       if (updatedConfig) config.lastContent = updatedConfig.lastContent;
@@ -179,7 +180,7 @@ export class WebsiteRssService {
     const lastFetchTime = config.lastFetchTime || new Date(0);
     const minutesSinceLastFetch = (now.getTime() - lastFetchTime.getTime()) / (60 * 1000);
     if (minutesSinceLastFetch >= config.fetchInterval) {
-      await this.fetchAndUpdateContent(config.id);
+      await this.fetchAndUpdateContent(config);
       // 重新获取更新后的配置
       const updatedConfig = await WebsiteRssConfig.findByPk(config.id);
       if (updatedConfig) config.lastContent = updatedConfig.lastContent;
@@ -191,97 +192,188 @@ export class WebsiteRssService {
   /**
    * 抓取并更新内容
    */
-  private async fetchAndUpdateContent(id: number): Promise<void> {
-    let config: any;
-    try {
-      // 查找配置
-      config = await WebsiteRssConfig.findByPk(id);
-      if (!config) throw new Error(`未找到ID为${id}的网站RSS配置`);
-
-      // 兼容性处理：确保 auth 字段存在
-      let auth = config.auth || { enabled: false, authType: "none" };
-      // 新增：如有authCredentialId，查库组装
-      if (config.authCredentialId) {
-        const authObj = await AuthCredential.findByPk(config.authCredentialId);
-        if (!authObj) throw new Error("未找到授权信息");
-        let customHeaders: Record<string, string> | undefined = undefined;
-        if (authObj.customHeaders && typeof authObj.customHeaders === "object") {
-          try {
-            customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
-          } catch {
-            customHeaders = undefined;
-          }
-        }
-        auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
-        config.auth = auth;
-      }
-
-      // 创建带有授权信息的请求配置
-      const requestConfig = createRequestConfig(auth);
-      let extractedContent: any[] = [];
-      let html: string;
-
-      // 根据渲染模式选择页面获取方式
-      const renderMode = config.renderMode || 'static'; // 默认为静态模式
+  /**
+   * 获取授权信息
+   */
+  private async getAuthInfo(authCredentialId?: number, existingAuth?: any): Promise<any> {
+    let auth = existingAuth || { enabled: false, authType: "none" };
+    
+    if (authCredentialId) {
+      const authObj = await AuthCredential.findByPk(authCredentialId);
+      if (!authObj) throw new Error("未找到授权信息");
       
-      if (renderMode === 'rendered') {
-        // 使用浏览器渲染模式
-        console.log(`使用浏览器渲染模式获取页面: ${config.url}`);
+      let customHeaders: Record<string, string> | undefined = undefined;
+      if (authObj.customHeaders && typeof authObj.customHeaders === "object") {
         try {
-          html = await PageRenderer.renderPage({
-            url: config.url,
-            auth: auth,
-            timeout: 30000,
-            waitTime: 2000 // 等待2秒确保JavaScript执行完成
-          });
-        } catch (error) {
-          console.warn(`浏览器渲染失败，回退到静态模式: ${error}`);
-          // 回退到静态模式
-          const response = await this.axiosInstance.get(config.url, requestConfig);
-          html = response.data;
+          customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
+        } catch {
+          customHeaders = undefined;
         }
-      } else {
-        // 静态模式（默认）
-        const response = await this.axiosInstance.get(config.url, requestConfig);
-        html = response.data;
       }
+      
+      auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
+    }
+    
+    return auth;
+  }
+
+  /**
+   * 获取网页内容（支持渲染模式）
+   */
+  private async fetchPageContent(
+    url: string, 
+    auth: any, 
+    renderMode: string = 'static',
+    logs?: string[]
+  ): Promise<string> {
+    const requestConfig = createRequestConfig(auth);
+    let html: string;
+    let msg: string;
+
+    msg = `使用渲染模式: ${renderMode}`;
+    console.log(msg);
+    if (logs) {
+      logs.push(`[INFO] 使用渲染模式: ${renderMode}`);
+    }
+
+    if (renderMode === 'rendered') {
+      // 使用浏览器渲染模式
+      msg = `使用浏览器渲染模式获取页面: ${url}`;
+      console.log(msg);
+      // 记录日志
+      if (logs) {
+        logs.push(`[INFO] ${msg}`);
+      }
+      
+      try {
+        html = await PageRenderer.renderPage({
+          url: url,
+          auth: auth,
+          timeout: 30000,
+          waitTime: 2000 // 等待2秒确保JavaScript执行完成
+        });
+        
+        msg = `浏览器渲染成功: ${url}`;
+        console.log(msg);
+        if (logs) {
+          logs.push(`[INFO] ${msg}`);
+        }
+      } catch (error) {
+        msg = `浏览器渲染失败，回退到静态模式: ${error}`;
+        console.warn(msg);
+        if (logs) {
+          logs.push(`[WARN] ${msg}`);
+        }
+        
+        // 回退到静态模式
+        const response = await this.axiosInstance.get(url, requestConfig);
+        html = response.data;
+        
+
+        msg = `静态模式获取成功，状态码: ${response.status}`;
+        console.log(msg);
+        if (logs) {
+          logs.push(`[INFO] ${msg}`);
+        }
+      }
+    } else {
+      // 静态模式（默认）
+      msg = `正在使用静态模式获取网页内容...`;
+      console.log(msg);
+      if (logs) {
+        logs.push(`[INFO] ${msg}`);
+      }
+      
+      const response = await this.axiosInstance.get(url, requestConfig);
+      html = response.data;
+      
+      msg = `网页获取成功，状态码: ${response.status}`;
+      console.log(msg);
+      if (logs) {
+        logs.push(`[INFO] ${msg}`);
+        logs.push(`[INFO] 响应头: ${JSON.stringify(response.headers, null, 2)}`);
+      }
+    }
+    
+    msg = `网页内容长度: ${html.length} 字符`;
+    console.log(msg);
+    if (logs) {
+      logs.push(`[INFO] ${msg}`);
+    }
+    
+    return html;
+  }
+
+  /**
+   * 刷新配置后更新内容
+   */
+  private async fetchAndUpdateContent(config: WebsiteRssConfigAttributes):Promise<void> {
+    let content = await this.fetchContent(config, undefined);
+
+    // 更新配置
+    await WebsiteRssConfig.update(
+      {
+        lastContent: JSON.stringify(content),
+        lastFetchTime: new Date(),
+      },
+      { where: { id: config.id } }
+    );
+  }
+
+  /**
+   * 抓取内容
+   */
+  private async fetchContent(config: WebsiteRssConfigAttributes, logs?: string[]): Promise<any> {
+    let msg: string;
+    try {
+      // 获取授权信息
+      const auth = await this.getAuthInfo(config.authCredentialId, config.auth);
+      config.auth = auth;
+      if (config.authCredentialId && auth.enabled) {
+        msg = `获取授权信息: ${auth.name || 'Unknown'} (${auth.authType})`;
+        console.log(msg);
+        if (logs) {
+          logs.push(`[INFO] ${msg}`);
+        }
+      }
+
+      // 获取网页内容
+      const renderMode = config.renderMode || 'static';
+      const html = await this.fetchPageContent(config.url, auth, renderMode, logs);
 
       // 提取内容并格式化日期
-      extractedContent = extractContentFromHtml(
+      msg = `开始使用选择器提取内容...`;
+      console.log(msg);
+      if (logs) {
+        logs.push(`[INFO] ${msg}`);
+      }
+
+      const extractedContent = extractContentFromHtml(
         html,
         config.selector as WebsiteRssSelector,
-        config.url
-      ).map((item) => ({
+        config.url,
+        logs
+      );
+
+      msg = `提取完成，共找到 ${extractedContent.length} 个项目`;
+      console.log(msg);
+      if (logs) {
+        logs.push(`[INFO] ${msg}`);
+      }
+
+      // 格式化日期
+      const formattedContent = extractedContent.map((item) => ({
         ...item,
         pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat),
       }));
 
-      console.log("extractedContent", extractedContent);
+      return formattedContent;
 
-      // 更新配置
-      await WebsiteRssConfig.update(
-        {
-          lastContent: JSON.stringify(extractedContent),
-          lastFetchTime: new Date(),
-        },
-        { where: { id } }
-      );
     } catch (error: any) {
-      console.error(`RSS订阅更新失败 [ID: ${id}]:`, error.message);
-
-      // 发送错误通知
-      if (config && config.userId) {
-        try {
-          await this.notificationService.sendFeedUpdateErrorNotification(
-            config.userId,
-            config.title || config.url,
-            error.message
-          );
-        } catch (notificationError: any) {
-          console.error("发送通知失败:", notificationError.message);
-        }
+      console.error(`RSS订阅更新失败 [ID: ${config.id}]:`, error.message);
+      if (logs) {
+        logs.push(`[ERROR] RSS订阅更新失败 [ID: ${config.id}]: ${error.message}`);
       }
-
       // 重新抛出错误，保持原有的错误处理逻辑
       throw error;
     }
@@ -382,79 +474,8 @@ export class WebsiteRssService {
       logs.push(`[DEBUG] 目标URL: ${configData.url}`);
       logs.push(`[DEBUG] 选择器配置: ${JSON.stringify(configData.selector, null, 2)}`);
 
-      // 获取授权信息
-      let auth = configData.auth || { enabled: false, authType: "none" };
-      if (configData.authCredentialId) {
-        const authObj = await AuthCredential.findByPk(configData.authCredentialId);
-        if (authObj) {
-          let customHeaders: Record<string, string> | undefined = undefined;
-          if (authObj.customHeaders && typeof authObj.customHeaders === "object") {
-            try {
-              customHeaders = JSON.parse(JSON.stringify(authObj.customHeaders));
-            } catch {
-              customHeaders = undefined;
-            }
-          }
-          auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
-          logs.push(`[INFO] 使用授权信息: ${authObj.name} (${authObj.authType})`);
-        } else {
-          logs.push(`[WARN] 未找到授权信息，ID: ${configData.authCredentialId}`);
-        }
-      }
-
-      // 创建请求配置
-      const requestConfig = createRequestConfig(auth);
-      logs.push(`[DEBUG] 请求配置: ${JSON.stringify(requestConfig, null, 2)}`);
-
-      // 获取网页内容 - 支持渲染模式
-      let html: string;
-      const renderMode = configData.renderMode || 'static'; // 默认为静态模式
-      logs.push(`[INFO] 使用渲染模式: ${renderMode}`);
-      
-      if (renderMode === 'rendered') {
-        // 使用浏览器渲染模式
-        logs.push(`[INFO] 正在使用浏览器渲染模式获取网页内容...`);
-        try {
-          html = await PageRenderer.renderPage({
-            url: configData.url,
-            auth: auth,
-            timeout: 30000,
-            waitTime: 2000 // 等待2秒确保JavaScript执行完成
-          });
-          logs.push(`[INFO] 浏览器渲染成功`);
-        } catch (error) {
-          logs.push(`[WARN] 浏览器渲染失败，回退到静态模式: ${error}`);
-          // 回退到静态模式
-          const response = await this.axiosInstance.get(configData.url, requestConfig);
-          html = response.data;
-          logs.push(`[INFO] 静态模式获取成功，状态码: ${response.status}`);
-        }
-      } else {
-        // 静态模式（默认）
-        logs.push(`[INFO] 正在使用静态模式获取网页内容...`);
-        const response = await this.axiosInstance.get(configData.url, requestConfig);
-        html = response.data;
-        logs.push(`[INFO] 网页获取成功，状态码: ${response.status}`);
-        logs.push(`[INFO] 响应头: ${JSON.stringify(response.headers, null, 2)}`);
-      }
-      
-      logs.push(`[INFO] 网页内容长度: ${html.length} 字符`);
-
-      // 使用选择器提取内容
-      logs.push(`[INFO] 开始使用选择器提取内容...`);
-      const extractedContent = extractContentFromHtml(
-        html,
-        configData.selector as WebsiteRssSelector,
-        configData.url,
-        logs
-      );
-      logs.push(`[INFO] 提取完成，共找到 ${extractedContent.length} 个项目`);
-
-      // 格式化日期
-      const formattedContent = extractedContent.map((item) => ({
-        ...item,
-        pubDate: formatDate(item.pubDate, (configData.selector as WebsiteRssSelector).dateFormat),
-      }));
+      // 重新抓取
+      const formattedContent = await this.fetchContent(configData, logs);
 
       const executionTime = Date.now() - startTime;
       logs.push(`[INFO] 调试完成，耗时: ${executionTime}ms`);

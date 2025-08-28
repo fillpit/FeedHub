@@ -1175,14 +1175,15 @@ const handleDebugSelector = async () => {
 
   debugging.value = true;
   try {
-    const debugConfig = {
-      url: form.value.url,
-      selector: form.value.selector,
-      authCredentialId: form.value.authCredentialId,
-      useProxy: form.value.useProxy,
-    };
+    // const debugConfig = {
+    //   url: form.value.url,
+    //   selector: form.value.selector,
+    //   authCredentialId: form.value.authCredentialId,
+    //   useProxy: form.value.useProxy,
+    //   renderMode: form.value.renderMode,
+    // };
 
-    const result = await debugSelector(debugConfig);
+    const result = await debugSelector(form.value);
 
     // 处理调试结果 - 后端返回的数据结构是嵌套的
     const data = result.data as any;
