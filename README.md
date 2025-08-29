@@ -140,7 +140,7 @@ docker-compose down
 
 **新功能**: 支持网页渲染模式，可抓取JavaScript动态生成的内容！
 
-**方式1: 使用 browserless/chrome（推荐）**
+**方式1: 使用 ghcr.io/browserless/chromium（推荐）**
 ```bash
 # 下载微服务配置文件
 wget https://raw.githubusercontent.com/fillpit/FeedHub/refs/heads/main/docker-compose.browserless.yml
@@ -148,6 +148,9 @@ wget https://raw.githubusercontent.com/fillpit/FeedHub/refs/heads/main/docker-co
 # 启动微服务架构
 docker-compose -f docker-compose.browserless.yml up -d
 ```
+
+**Token认证配置（可选）：**
+在 `docker-compose.browserless.yml` 中将 `your_browserless_token_here` 替换为您的实际token，提供更好的安全性。
 
 **方式2: 使用一键部署脚本**
 ```bash

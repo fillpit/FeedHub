@@ -4,7 +4,7 @@
 services:
   # Chrome 浏览器服务容器 (使用现成镜像)
   chrome:
-    image: browserless/chrome:latest
+    image: ghcr.io/browserless/chromium:latest
     ports:
       - "9222:3000"  # browserless 默认端口是 3000
     environment:
@@ -12,6 +12,10 @@ services:
       - MAX_CONCURRENT_SESSIONS=10
       - ENABLE_DEBUGGER=false
       - PREBOOT_CHROME=true
+      - TOKEN=your_browserless_token_here
+      # 可选：设置其他安全配置
+      - ENABLE_CORS=false
+      - ENABLE_XVFB=true
     restart: unless-stopped
     shm_size: 2gb
     cap_add:
@@ -32,6 +36,7 @@ services:
       - BASIC_AUTH_PASSWORD=admin@123
       - API_BASE_URL=http://localhost:8008
       - CHROME_SERVICE_URL=http://chrome:3000
+      - BROWSERLESS_TOKEN=your_browserless_token_here
     depends_on:
       - chrome
     volumes:

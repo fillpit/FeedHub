@@ -23,7 +23,7 @@
 
 ### 选项1: 使用 browserless/chrome (推荐)
 
-使用现成的专业Chrome服务镜像，无需自己构建：
+使用GitHub Container Registry上的官方Chromium镜像，无需自己构建：
 
 ```bash
 # 下载配置文件
@@ -37,10 +37,24 @@ docker-compose -f docker-compose.browserless.yml logs -f
 ```
 
 **优势**:
+- 使用官方GHCR镜像，更稳定可靠
 - 无需构建，直接使用
 - 专业优化，性能更好
 - 支持更多浏览器功能
 - 内置连接池和资源管理
+- 支持token认证，提供更好的安全性
+
+**Token认证配置**:
+```bash
+# 在 docker-compose.browserless.yml 中配置
+chrome:
+  environment:
+    - TOKEN=your_secure_token_here
+
+feedhub:
+  environment:
+    - BROWSERLESS_TOKEN=your_secure_token_here
+```
 
 ### 选项2: 自定义Chrome服务
 

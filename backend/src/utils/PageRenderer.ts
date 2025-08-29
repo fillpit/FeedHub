@@ -38,9 +38,17 @@ export class PageRenderer {
       if (chromeServiceUrl) {
         // 连接到独立的Chrome服务容器
         try {
+          // 构建连接URL，支持token认证
+          const token = process.env.BROWSERLESS_TOKEN;
+          let wsEndpoint = `ws://${chromeServiceUrl.replace('http://', '')}/`;
+          
+          if (token) {
+            wsEndpoint += `?token=${token}`;
+          }
+          
           // 尝试连接到 browserless 服务
           this.browser = await puppeteer.connect({
-            browserWSEndpoint: `ws://${chromeServiceUrl.replace('http://', '')}/`,
+            browserWSEndpoint: wsEndpoint,
           });
         } catch (error) {
           console.warn('Failed to connect to browserless service, trying direct connection:', error);

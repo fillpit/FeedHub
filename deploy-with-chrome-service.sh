@@ -38,6 +38,17 @@ echo "2) 使用自定义Chrome服务 (需要构建，更可控)"
 echo ""
 read -p "请输入选择 (1 或 2): " choice
 
+# 如果选择 browserless，询问是否配置 token
+if [ "$choice" = "1" ]; then
+    read -p "是否配置 browserless token? (y/n): " use_token
+    if [ "$use_token" = "y" ] || [ "$use_token" = "Y" ]; then
+        read -p "请输入 browserless token: " browserless_token
+        # 更新 docker-compose 文件中的 token
+        sed -i.bak "s/your_browserless_token_here/$browserless_token/g" docker-compose.browserless.yml
+        echo "已配置 browserless token"
+    fi
+fi
+
 case $choice in
     1)
         echo -e "${GREEN}选择了 browserless/chrome 方式${NC}"
@@ -83,8 +94,8 @@ docker-compose -f "$COMPOSE_FILE" down 2>/dev/null || true
 # 拉取/构建镜像
 echo -e "${YELLOW}准备镜像...${NC}"
 if [ "$choice" = "1" ]; then
-    echo -e "${YELLOW}拉取 browserless/chrome 镜像...${NC}"
-    docker pull browserless/chrome:latest
+    echo -e "${YELLOW}拉取 ghcr.io/browserless/chromium 镜像...${NC}"
+    docker pull ghcr.io/browserless/chromium:latest
     echo -e "${YELLOW}拉取 FeedHub 镜像...${NC}"
     docker pull fillpit/feedhub:latest
 else
