@@ -28,15 +28,29 @@
       <el-table-column type="selection" width="55" />
       <el-table-column prop="title" label="订阅标题" min-width="150" />
       <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-      <el-table-column label="订阅书籍" min-width="250">
+      <el-table-column label="订阅书籍" min-width="300">
         <template #default="{ row }">
-          <div v-if="row.bookInfo">
-            <div class="font-medium">{{ row.bookInfo.title }}</div>
-            <div class="text-sm text-gray-500">作者: {{ row.bookInfo.author }}</div>
-            <div class="text-xs text-blue-500 mt-1">
-              <el-tag size="small" :type="getSourceTypeTag(row.bookInfo.sourceType)">
-                {{ getSourceTypeText(row.bookInfo.sourceType) }}
-              </el-tag>
+          <div v-if="row.bookInfo" class="book-info-container">
+            <div class="book-cover-container">
+              <img 
+                v-if="row.bookInfo.coverUrl" 
+                :src="row.bookInfo.coverUrl" 
+                :alt="row.bookInfo.title"
+                class="book-cover"
+                @error="handleImageError"
+              />
+              <div v-else class="book-cover-placeholder">
+                <el-icon><Document /></el-icon>
+              </div>
+            </div>
+            <div class="book-details">
+              <div class="font-medium book-title">{{ row.bookInfo.title }}</div>
+              <div class="text-sm text-gray-500">作者: {{ row.bookInfo.author }}</div>
+              <div class="text-xs text-blue-500 mt-1">
+                <el-tag size="small" :type="getSourceTypeTag(row.bookInfo.sourceType)">
+                  {{ getSourceTypeText(row.bookInfo.sourceType) }}
+                </el-tag>
+              </div>
             </div>
           </div>
           <div v-else class="text-sm text-gray-400">未选择书籍</div>
@@ -499,6 +513,12 @@ const handleBookChange = (bookId: number) => {
       form.value.description = `${selectedBook.title} 的章节更新订阅`;
     }
   }
+};
+
+// 处理图片加载错误
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.style.display = 'none';
 };
 
 const submitForm = async () => {
@@ -1038,6 +1058,51 @@ const handleUploadError = (error: any) => {
 
 .selected-opds-book {
   margin-top: 16px;
+}
+
+/* 书籍封面样式 */
+.book-info-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.book-cover-container {
+  flex-shrink: 0;
+  width: 48px;
+  height: 64px;
+}
+
+.book-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.book-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  color: #999;
+  font-size: 20px;
+}
+
+.book-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.book-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 响应式设计 */

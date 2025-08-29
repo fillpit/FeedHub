@@ -1037,7 +1037,7 @@ const exportSelectedConfigs = async () => {
     const exportData = selectedConfigs.value.map((config) => ({
       ...config,
       id: undefined, // 导出时移除ID
-      key: undefined, // 导出时移除key
+      // 保留 key 和 renderMode 字段
     }));
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {

@@ -516,6 +516,45 @@ try {
 
 ---
 
+## 网页内容监控导出功能增强
+
+### 问题描述
+用户反馈网页内容监控的导出功能在导出时会移除 `key` 字段，但希望能够保留 `key` 和 `renderMode` 字段以便于配置的完整性和可追溯性。
+
+### 问题原因
+原有的导出逻辑为了避免配置冲突，会自动移除 `id` 和 `key` 字段，但这导致了配置信息的不完整。
+
+### 解决方案
+修改 `WebsiteRss.vue` 文件中的 `exportSelectedConfigs` 方法，保留 `key` 和 `renderMode` 字段：
+
+```javascript
+const exportData = selectedConfigs.value.map((config) => ({
+  ...config,
+  id: undefined, // 导出时移除ID
+  // 保留 key 和 renderMode 字段
+}));
+```
+
+### 修复验证
+1. 选择网页内容监控配置
+2. 点击"导出选中配置"按钮
+3. 检查导出的 JSON 文件是否包含 `key` 和 `renderMode` 字段
+4. 验证导出的配置可以正常导入和使用
+
+### 技术细节
+- **文件位置**: `frontend/src/views/WebsiteRss.vue`
+- **修改方法**: `exportSelectedConfigs`
+- **保留字段**: `key`、`renderMode`
+- **移除字段**: `id`（避免导入时的主键冲突）
+
+### 功能收益
+1. **配置完整性**: 导出的配置包含完整的标识和渲染模式信息
+2. **可追溯性**: 通过 `key` 字段可以追溯配置的来源
+3. **渲染模式**: 保留 `renderMode` 确保导入后的行为一致
+4. **用户体验**: 满足用户对完整配置导出的需求
+
+---
+
 ## 问题3：书籍上传Validation error错误
 
 **问题描述：**

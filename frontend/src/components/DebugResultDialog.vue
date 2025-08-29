@@ -39,6 +39,19 @@
             />
             <el-table-column prop="link" label="链接" align="center" show-overflow-tooltip />
             <el-table-column
+              prop="content"
+              label="内容"
+              align="center"
+              width="300"
+              show-overflow-tooltip
+            >
+              <template #default="{ row }">
+                <div class="content-preview">
+                  <span>{{ row.content ? (row.content.length > 100 ? row.content.substring(0, 100) + '...' : row.content) : '无内容' }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column
               prop="pubDate"
               label="发布时间"
               width="200"
@@ -171,5 +184,19 @@ watch(
 }
 .dialog-footer {
   text-align: right;
+}
+
+.content-preview {
+  max-width: 300px;
+  text-align: left;
+  
+  span {
+    display: block;
+    line-height: 1.4;
+    color: #606266;
+    font-size: 13px;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
 }
 </style>

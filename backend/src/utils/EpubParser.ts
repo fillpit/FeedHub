@@ -38,6 +38,7 @@ export class EpubParser {
   async parse(): Promise<{
     metadata: EpubMetadata;
     chapters: Omit<Chapter, "id" | "bookId" | "createdAt" | "updatedAt">[];
+    coverUrl?: string;
   }> {
     try {
       // 1. 解压EPUB文件
@@ -47,12 +48,15 @@ export class EpubParser {
       await this.parseContainer();
 
       // 3. 解析OPF文件获取元数据和章节信息
-      const { metadata, chapterList } = await this.parseOpf();
+      const { metadata, chapterList, manifest } = await this.parseOpf();
 
-      // 4. 提取章节内容
+      // 4. 提取封面
+      const coverUrl = await this.extractCover(manifest);
+
+      // 5. 提取章节内容
       const chapters = await this.extractChapters(chapterList);
 
-      return { metadata, chapters };
+      return { metadata, chapters, coverUrl: coverUrl || undefined };
     } catch (error) {
       throw new Error(`EPUB解析失败: ${(error as Error).message}`);
     } finally {
@@ -106,6 +110,7 @@ export class EpubParser {
   private async parseOpf(): Promise<{
     metadata: EpubMetadata;
     chapterList: EpubChapter[];
+    manifest: any;
   }> {
     if (!fs.existsSync(this.opfPath)) {
       throw new Error("OPF文件不存在");
@@ -129,7 +134,7 @@ export class EpubParser {
           // 解析章节列表
           const chapterList = this.parseSpine(pkg.manifest[0], pkg.spine[0]);
 
-          resolve({ metadata, chapterList });
+          resolve({ metadata, chapterList, manifest: pkg.manifest[0] });
         } catch (error) {
           reject(error);
         }
@@ -164,6 +169,75 @@ export class EpubParser {
     }
 
     return result;
+  }
+
+  /**
+   * 提取封面图片
+   */
+  private async extractCover(manifest: any): Promise<string | null> {
+    try {
+      let coverItem: any = null;
+
+      // 方法1: 查找meta标签中的cover引用
+      if (manifest.item) {
+        for (const item of manifest.item) {
+          const attrs = item.$;
+          if (attrs.properties && attrs.properties.includes('cover-image')) {
+            coverItem = attrs;
+            break;
+          }
+          if (attrs.id === 'cover' || attrs.id === 'cover-image') {
+            coverItem = attrs;
+            break;
+          }
+        }
+      }
+
+      // 方法2: 查找常见的封面文件名
+      if (!coverItem && manifest.item) {
+        const coverPatterns = ['cover', 'Cover', 'COVER', 'cover.jpg', 'cover.png', 'cover.jpeg'];
+        for (const item of manifest.item) {
+          const attrs = item.$;
+          const href = attrs.href;
+          if (href && coverPatterns.some(pattern => href.includes(pattern))) {
+            if (attrs['media-type'] && attrs['media-type'].startsWith('image/')) {
+              coverItem = attrs;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!coverItem) {
+        return null;
+      }
+
+      // 构建封面文件路径
+      const coverPath = path.join(this.opfDir, coverItem.href);
+      if (!fs.existsSync(coverPath)) {
+        return null;
+      }
+
+      // 创建封面存储目录
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'covers');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      // 生成唯一的封面文件名
+      const ext = path.extname(coverItem.href);
+      const coverFileName = `cover_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${ext}`;
+      const coverDestPath = path.join(uploadsDir, coverFileName);
+
+      // 复制封面文件
+      fs.copyFileSync(coverPath, coverDestPath);
+
+      // 返回相对路径
+      return `/uploads/covers/${coverFileName}`;
+    } catch (error) {
+      console.warn(`提取封面失败: ${(error as Error).message}`);
+      return null;
+    }
   }
 
   /**

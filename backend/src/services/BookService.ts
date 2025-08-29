@@ -258,6 +258,15 @@ export class BookService {
               updateData.language = parseResult.metadata.language;
             }
 
+            // 处理封面URL
+            if (parseResult.coverUrl) {
+              console.log(
+                "[BookService.addBookFromOpds] 更新书籍封面:",
+                parseResult.coverUrl
+              );
+              updateData.coverUrl = parseResult.coverUrl;
+            }
+
             // 创建真实的章节记录
             chapters = parseResult.chapters;
             actualTotalChapters = chapters.length;

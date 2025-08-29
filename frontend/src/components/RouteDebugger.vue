@@ -1,5 +1,5 @@
 <template>
-  <el-drawer v-model="visible" title="调试动态路由脚本" direction="rtl" size="50%">
+  <el-drawer v-model="visible" title="调试动态路由脚本" direction="rtl" size="70%">
     <div class="debug-container">
       <div class="debug-form">
         <h3>测试参数</h3>
@@ -47,6 +47,15 @@
                     <el-link :href="row.link" target="_blank" type="primary">{{
                       row.link
                     }}</el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="content" label="内容" min-width="300">
+                  <template #default="{ row }">
+                    <div class="content-preview">
+                      <el-tooltip :content="row.content" placement="top" :disabled="!row.content">
+                        <span>{{ row.content ? (row.content.length > 100 ? row.content.substring(0, 100) + '...' : row.content) : '无内容' }}</span>
+                      </el-tooltip>
+                    </div>
                   </template>
                 </el-table-column>
                 <el-table-column prop="pubDate" label="发布日期" width="180" />
@@ -255,5 +264,18 @@ watch(visible, (newValue) => {
   font-size: 12px;
   max-height: 400px;
   overflow-y: auto;
+}
+
+.content-preview {
+  max-width: 300px;
+  
+  span {
+    display: block;
+    line-height: 1.4;
+    color: #606266;
+    font-size: 13px;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
 }
 </style>
