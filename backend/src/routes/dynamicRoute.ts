@@ -54,6 +54,12 @@ router.delete("/:id/inline-script/files/:fileName", (req, res) =>
   controller.deleteInlineScriptFile(req, res)
 );
 
+// 获取路由README内容
+router.get("/:id/readme", (req, res) => controller.getRouteReadme(req, res));
+
+// 更新路由README内容
+router.put("/:id/readme", (req, res) => controller.updateRouteReadme(req, res));
+
 // 初始化路由脚本 - 支持文件上传和JSON请求
 router.post(
   "/:id/initialize-script",

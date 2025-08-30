@@ -5,40 +5,8 @@
       <div class="page-actions">
         <el-button type="primary" @click="openAddDrawer">添加路由</el-button>
         <el-button @click="refreshRoutes">刷新</el-button>
-        <el-dropdown @command="handleExportCommand" :disabled="selectedRoutes.length === 0">
-          <el-button type="success" :disabled="selectedRoutes.length === 0">
-            <el-icon>
-              <Download />
-            </el-icon>
-            导出选中配置 ({{ selectedRoutes.length }})
-            <el-icon class="el-icon--right">
-              <ArrowDown />
-            </el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="config-only">仅导出配置</el-dropdown-item>
-              <el-dropdown-item command="with-scripts">导出配置和脚本文件</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-dropdown @command="handleImportCommand">
-          <el-button type="warning">
-            <el-icon>
-              <Upload />
-            </el-icon>
-            导入配置
-            <el-icon class="el-icon--right">
-              <ArrowDown />
-            </el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="config-only">仅导入配置</el-dropdown-item>
-              <el-dropdown-item command="with-scripts">导入配置和脚本文件</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <el-button @click="exportRoutesWithScriptsHandler">导出</el-button>
+        <el-button @click="triggerZipImport">导入</el-button>
         <input ref="fileInputRef" type="file" accept=".json" style="display: none" @change="handleFileImport" />
         <input ref="zipFileInputRef" type="file" accept=".zip" style="display: none" @change="handleZipFileImport" />
       </div>
@@ -160,10 +128,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="140" fixed="right" align="center">
+        <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
             <div class="route-actions">
               <el-link type="primary" @click="openDebugDrawer(row)">调试</el-link>
+              <el-link type="success" @click="openReadmeDialog(row)" v-if="row.script.sourceType === 'inline'">说明</el-link>
               <el-link type="primary" @click="openEditDrawer(row)">编辑</el-link>
               <el-popconfirm title="确定要删除此路由配置吗？" @confirm="deleteRoute(row.id)" confirm-button-text="确定"
                 cancel-button-text="取消">
@@ -332,21 +301,39 @@
 
     <!-- 内联脚本在线编辑器组件 -->
     <InlineScriptEditor v-model="inlineScriptEditorVisible" :route-id="currentEditingRouteId" />
+
+    <!-- README查看对话框 -->
+    <el-dialog
+      v-model="readmeDialogVisible"
+      :title="`${currentReadmeRoute.name} - 使用说明`"
+      width="60%"
+      @close="closeReadmeDialog"
+    >
+      <div v-loading="readmeLoading" style="min-height: 200px;">
+        <div v-if="!readmeLoading" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.6; background: #f8f9fa; padding: 16px; border-radius: 4px; border: 1px solid #e9ecef;">
+          {{ readmeContent }}
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="closeReadmeDialog">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
-import { Search, Download, Upload, InfoFilled, Setting, Link, Document, ArrowDown } from "@element-plus/icons-vue";
+import { Search, InfoFilled, Setting, Link, Document } from "@element-plus/icons-vue";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
   updateDynamicRoute,
-  deleteDynamicRoute,
   syncGitRepository,
+  deleteDynamicRoute,
   exportRoutesWithScripts,
   importRoutesWithScripts,
+  getRouteReadme,
   type DynamicRouteConfig,
 } from "@/api/dynamicRoute";
 // 移除DEFAULT_TYPE_PARAM导入，不再自动添加type参数
@@ -376,6 +363,12 @@ const selectedRoutes = ref<DynamicRouteConfig[]>([]);
 // 内联脚本在线编辑相关
 const inlineScriptEditorVisible = ref(false);
 const currentEditingRouteId = ref<number>(0);
+
+// README相关
+const readmeDialogVisible = ref(false);
+const readmeContent = ref("");
+const readmeLoading = ref(false);
+const currentReadmeRoute = ref<DynamicRouteConfig>({} as DynamicRouteConfig);
 
 // 脚本初始化相关
 const scriptInitVisible = ref(false);
@@ -495,6 +488,34 @@ const openEditDrawer = (row: any) => {
 const openDebugDrawer = (row: any) => {
   debugRoute.value = row;
   debugDrawerVisible.value = true;
+};
+
+// 打开README对话框
+const openReadmeDialog = async (row: DynamicRouteConfig) => {
+  currentReadmeRoute.value = row;
+  readmeDialogVisible.value = true;
+  readmeLoading.value = true;
+  
+  try {
+    const res = await getRouteReadme(row.id!);
+    if (res.code === 0) {
+      readmeContent.value = (res.data as string) || "暂无README内容";
+    } else {
+      readmeContent.value = "获取README内容失败: " + res.message;
+    }
+  } catch (error) {
+    console.error("获取README内容出错:", error);
+    readmeContent.value = "获取README内容出错";
+  } finally {
+    readmeLoading.value = false;
+  }
+};
+
+// 关闭README对话框
+const closeReadmeDialog = () => {
+  readmeDialogVisible.value = false;
+  readmeContent.value = "";
+  currentReadmeRoute.value = {} as DynamicRouteConfig;
 };
 
 // 关闭抽屉
@@ -726,82 +747,11 @@ const syncGitRepo = async (route: DynamicRouteConfig) => {
 };
 
 
-
-
-
-
-
-
-
 // 处理表格选择变化
 const handleSelectionChange = (selection: DynamicRouteConfig[]) => {
   selectedRoutes.value = selection;
 };
 
-// 处理导出命令
-const handleExportCommand = (command: string) => {
-  if (command === 'config-only') {
-    exportRoutes();
-  } else if (command === 'with-scripts') {
-    exportRoutesWithScriptsHandler();
-  }
-};
-
-// 处理导入命令
-const handleImportCommand = (command: string) => {
-  if (command === 'config-only') {
-    triggerImport();
-  } else if (command === 'with-scripts') {
-    triggerZipImport();
-  }
-};
-
-// 导出路由配置（仅配置）
-const exportRoutes = () => {
-  try {
-    // 检查是否有选择的路由
-    if (selectedRoutes.value.length === 0) {
-      ElMessage.warning("请先选择要导出的路由配置");
-      return;
-    }
-
-    const exportData = {
-      version: "1.0",
-      exportTime: new Date().toISOString(),
-      routes: selectedRoutes.value.map((route) => ({
-        name: route.name,
-        path: route.path,
-        method: route.method,
-        description: route.description,
-        authCredentialId: route.authCredentialId,
-        params: route.params,
-        script: route.script,
-      })),
-    };
-
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `dynamic-routes-selected-${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    ElMessage.success(`成功导出 ${selectedRoutes.value.length} 个选中的路由配置`);
-  } catch (error) {
-    console.error("导出路由配置失败:", error);
-    ElMessage.error("导出路由配置失败");
-  }
-};
-
-// 触发导入
-const triggerImport = () => {
-  fileInputRef.value?.click();
-};
 
 // 处理文件导入
 const handleFileImport = async (event: Event) => {

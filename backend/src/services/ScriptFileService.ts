@@ -188,7 +188,112 @@ module.exports = {
     const helperPath = path.join(utilsDir, "helper.js");
     fs.writeFileSync(helperPath, helperContent, "utf-8");
 
+    // 创建 README.md 文件
+    const readmeContent = this.getDefaultReadmeTemplate();
+    const readmePath = path.join(scriptDir, "README.md");
+    fs.writeFileSync(readmePath, readmeContent, "utf-8");
+
     logger.info(`[ScriptFileService] 创建默认脚本文件完成: ${scriptDir}`);
+  }
+
+  /**
+   * 获取默认的README模板
+   * @returns README模板内容
+   */
+  private getDefaultReadmeTemplate(): string {
+    return `# 动态路由脚本说明
+
+## 概述
+这是一个动态路由脚本，用于生成RSS内容。
+
+## 参数说明
+
+### 路由参数 (routeParams)
+路由参数通过URL路径传递，例如：
+- \`/dynamic/my-route/:id\` 中的 \`:id\` 参数
+- 访问 \`/dynamic/my-route/123\` 时，\`routeParams.id\` 的值为 \`"123"\`
+
+### 查询参数 (queryParams)
+查询参数通过URL查询字符串传递，例如：
+- 访问 \`/dynamic/my-route?type=news&limit=10\` 时
+- \`queryParams.type\` 的值为 \`"news"\`
+- \`queryParams.limit\` 的值为 \`"10"\`
+
+## 使用示例
+
+### 基本用法
+\`\`\`javascript
+async function main(context) {
+  const { routeParams, queryParams, utils, console } = context;
+  
+  // 获取参数
+  const id = routeParams.id;
+  const type = queryParams.type || 'default';
+  const limit = parseInt(queryParams.limit) || 10;
+  
+  console.log('路由参数:', routeParams);
+  console.log('查询参数:', queryParams);
+  
+  // 返回RSS数据
+  return {
+    title: '我的RSS源',
+    description: '动态生成的RSS内容',
+    link: 'https://example.com',
+    items: [
+      {
+        title: '文章标题',
+        link: 'https://example.com/article/1',
+        content: '文章内容',
+        pubDate: new Date().toISOString()
+      }
+    ]
+  };
+}
+\`\`\`
+
+### 可用的上下文对象
+
+- \`routeParams\`: 路由参数对象
+- \`queryParams\`: 查询参数对象  
+- \`utils\`: 工具函数集合
+- \`auth\`: 授权信息（如果配置了授权凭证）
+- \`console\`: 日志输出对象
+- \`dayjs\`: 日期处理库
+- \`helpers\`: 辅助函数
+- \`customRequire\`: 自定义require函数
+
+## 返回格式
+
+脚本应该返回以下格式的数据：
+
+\`\`\`javascript
+{
+  title: 'RSS标题',
+  description: 'RSS描述',
+  link: 'RSS链接',
+  items: [
+    {
+      title: '文章标题',
+      link: '文章链接',
+      content: '文章内容',
+      author: '作者',
+      pubDate: '发布时间（ISO格式）'
+    }
+  ]
+}
+\`\`\`
+
+## 注意事项
+
+1. 所有参数都是字符串类型，需要时请进行类型转换
+2. 建议对参数进行验证和默认值处理
+3. 错误处理：使用try-catch包装可能出错的代码
+4. 性能考虑：避免过度复杂的逻辑，合理使用缓存
+
+## 更新日志
+
+- 初始版本：基础脚本模板
+`;
   }
 
   /**
@@ -225,6 +330,51 @@ module.exports = {
     }
 
     return fs.readFileSync(filePath, "utf-8");
+  }
+
+  /**
+   * 读取README.md文件内容
+   * @param scriptDirName 脚本目录名称
+   * @returns README内容，如果文件不存在则返回null
+   */
+  async readReadmeFile(scriptDirName: string): Promise<string | undefined> {
+    const scriptDir = this.getScriptDirectoryPath(scriptDirName);
+    const readmePath = path.join(scriptDir, "README.md");
+
+    if (!fs.existsSync(readmePath)) {
+      return undefined;
+    }
+
+    return fs.readFileSync(readmePath, "utf-8");
+  }
+
+  /**
+   * 创建或更新README.md文件
+   * @param scriptDirName 脚本目录名称
+   * @param content README内容
+   */
+  async writeReadmeFile(scriptDirName: string, content: string): Promise<void> {
+    const scriptDir = this.getScriptDirectoryPath(scriptDirName);
+
+    if (!fs.existsSync(scriptDir)) {
+      throw new Error(`脚本目录不存在: ${scriptDirName}`);
+    }
+
+    const readmePath = path.join(scriptDir, "README.md");
+    fs.writeFileSync(readmePath, content, "utf-8");
+    
+    logger.info(`[ScriptFileService] 更新README文件: ${readmePath}`);
+  }
+
+  /**
+   * 检查README.md文件是否存在
+   * @param scriptDirName 脚本目录名称
+   * @returns 是否存在README文件
+   */
+  async hasReadmeFile(scriptDirName: string): Promise<boolean> {
+    const scriptDir = this.getScriptDirectoryPath(scriptDirName);
+    const readmePath = path.join(scriptDir, "README.md");
+    return fs.existsSync(readmePath);
   }
 
   /**

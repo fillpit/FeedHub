@@ -457,6 +457,93 @@ export class DynamicRouteService {
   }
 
   /**
+   * 获取路由的README内容
+   */
+  async getRouteReadme(routeId: number): Promise<ApiResponseData<string>> {
+    const route = await DynamicRouteConfig.findByPk(routeId);
+    if (!route) {
+      return { success: false, message: "路由不存在", data: undefined };
+    }
+
+    if (route.script.sourceType !== "inline") {
+      return {
+        success: false,
+        message: "只有内联脚本类型的路由支持README查看",
+        data: undefined,
+      };
+    }
+
+    const scriptDirName = route.script.folder;
+    if (!scriptDirName || scriptDirName.trim() === "") {
+      return { success: false, message: "脚本尚未初始化，请先初始化脚本", data: undefined };
+    }
+
+    try {
+      const hasReadme = await this.scriptFileService.hasReadmeFile(scriptDirName);
+      if (!hasReadme) {
+        return {
+          success: true,
+          data: "",
+          message: "README文件不存在",
+        };
+      }
+
+      const content = await this.scriptFileService.readReadmeFile(scriptDirName);
+      return {
+        success: true,
+        data: content,
+        message: "README内容获取成功",
+      };
+    } catch (error) {
+      logger.error(`[DynamicRouteService] 获取README内容失败: ${error}`);
+      return {
+        success: false,
+        message: `获取README内容失败: ${error instanceof Error ? error.message : String(error)}`,
+        data: undefined,
+      };
+    }
+  }
+
+  /**
+   * 更新路由的README内容
+   */
+  async updateRouteReadme(routeId: number, content: string): Promise<ApiResponseData<void>> {
+    const route = await DynamicRouteConfig.findByPk(routeId);
+    if (!route) {
+      return { success: false, message: "路由不存在", data: undefined };
+    }
+
+    if (route.script.sourceType !== "inline") {
+      return {
+        success: false,
+        message: "只有内联脚本类型的路由支持README编辑",
+        data: undefined,
+      };
+    }
+
+    const scriptDirName = route.script.folder;
+    if (!scriptDirName || scriptDirName.trim() === "") {
+      return { success: false, message: "脚本尚未初始化，请先初始化脚本", data: undefined };
+    }
+
+    try {
+      await this.scriptFileService.writeReadmeFile(scriptDirName, content);
+      return {
+        success: true,
+        data: undefined,
+        message: "README内容更新成功",
+      };
+    } catch (error) {
+      logger.error(`[DynamicRouteService] 更新README内容失败: ${error}`);
+      return {
+        success: false,
+        message: `更新README内容失败: ${error instanceof Error ? error.message : String(error)}`,
+        data: undefined,
+      };
+    }
+  }
+
+  /**
    * 初始化路由脚本
    */
   async initializeRouteScript(

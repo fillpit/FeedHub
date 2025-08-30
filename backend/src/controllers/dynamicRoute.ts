@@ -134,6 +134,27 @@ export class DynamicRouteController extends BaseController {
   }
 
   /**
+   * 获取路由的README内容
+   */
+  async getRouteReadme(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const id = Number(req.params.id);
+      return await this.dynamicRouteService.getRouteReadme(id);
+    });
+  }
+
+  /**
+   * 更新路由的README内容
+   */
+  async updateRouteReadme(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const id = Number(req.params.id);
+      const { content } = req.body;
+      return await this.dynamicRouteService.updateRouteReadme(id, content);
+    });
+  }
+
+  /**
    * 初始化路由脚本
    */
   async initializeRouteScript(req: Request, res: Response): Promise<void> {

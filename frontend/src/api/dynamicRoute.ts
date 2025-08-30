@@ -65,6 +65,23 @@ export function debugDynamicRouteScript(
 }
 
 /**
+ * 获取路由的README内容
+ * @param id 路由配置ID
+ */
+export function getRouteReadme(id: number) {
+  return request.get(`/api/dynamic-route/${id}/readme`);
+}
+
+/**
+ * 更新路由的README内容
+ * @param id 路由配置ID
+ * @param content README内容
+ */
+export function updateRouteReadme(id: number, content: string) {
+  return request.put(`/api/dynamic-route/${id}/readme`, { content });
+}
+
+/**
  * 获取内联脚本的文件列表
  * @param routeId 路由ID
  */
