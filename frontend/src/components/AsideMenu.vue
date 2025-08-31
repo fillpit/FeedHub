@@ -98,9 +98,9 @@ const route = useRoute();
 const menuList: MenuItem[] = [
   {
     index: "1",
-    title: "网站内容监控",
+    title: "网页监控",
     icon: Document,
-    router: "/website-rss",
+    router: "/website",
   },
   {
     index: "2",

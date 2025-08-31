@@ -27,4 +27,8 @@ router.post("/:id/refresh", (req, res) => websiteRssController.refreshConfig(req
 // 调试选择器配置
 router.post("/debug-selector", (req, res) => websiteRssController.debugSelector(req, res));
 
+// 统一订阅地址（公开访问）- 支持type参数控制格式
+router.get("/sub/:key", (req, res) => websiteRssController.getSubscriptionFeed(req, res));
+
+
 export default router;

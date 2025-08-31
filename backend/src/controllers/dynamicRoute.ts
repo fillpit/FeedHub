@@ -6,7 +6,8 @@ import { NotificationService } from "../services/NotificationService";
 import { BaseController } from "./BaseController";
 import { logger } from "../utils/logger";
 import { ExceptionHandler } from "winston";
-import { AppError, ValidationError } from "@feedhub/shared";
+import { AppError } from "@feedhub/shared";
+import { ValidationError } from "../middleware/errorHandler";
 
 @injectable()
 export class DynamicRouteController extends BaseController {
@@ -227,7 +228,58 @@ export class DynamicRouteController extends BaseController {
   }
 
   /**
-   * 执行自定义路由脚本并返回RSS
+   * 获取动态路由说明文档
+   */
+  async getRouteHelp(req: Request, res: Response): Promise<void> {
+    try {
+      // 从路径中提取实际的路由路径
+      // /api/dynamic/help/news -> /news
+      const fullPath = req.path;
+      const helpPrefix = '/help';
+      const helpIndex = fullPath.indexOf(helpPrefix);
+      
+      if (helpIndex === -1) {
+        throw new ValidationError('Invalid help path format');
+      }
+      
+      const routePath = fullPath.substring(helpIndex + helpPrefix.length) || '/';
+      
+      logger.info(`Getting help for route: ${routePath}`);
+      
+      const readmeContent = await this.dynamicRouteService.getRouteReadmeByPath(routePath);
+      
+      if (!readmeContent) {
+        res.status(404).json({
+          success: false,
+          message: `No documentation found for route: ${routePath}`
+        });
+        return;
+      }
+      
+      // 返回 Markdown 格式的说明文档
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.send(readmeContent);
+      
+    } catch (error) {
+       logger.error('Error getting route help:', error);
+       
+       if (error instanceof ValidationError) {
+         res.status(400).json({
+           success: false,
+           message: error.message
+         });
+       } else {
+         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+         res.status(500).json({
+           success: false,
+           message: 'Internal server error while getting route help: ' + errorMessage
+         });
+       }
+     }
+  }
+
+  /**
+   * 执行动态路由脚本
    */
   async executeRouteScript(req: Request, res: Response): Promise<void> {
     const routePath = req.params[0]; // 使用通配符路由，获取完整路径

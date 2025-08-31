@@ -50,38 +50,45 @@ export class WebsiteRssController extends BaseController {
     });
   }
 
-  async getRssFeed(req: Request, res: Response): Promise<void> {
-    try {
-      const key = req.params.key;
-      const rssXml = await this.websiteRssService.getRssFeed(key);
-
-      // 设置正确的内容类型
-      res.setHeader("Content-Type", "application/rss+xml");
-      res.send(rssXml);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "未知错误";
-      res.status(404).send(`获取RSS Feed失败: ${errorMessage}`);
-    }
-  }
-
-  async getRssFeedJson(req: Request, res: Response): Promise<void> {
-    try {
-      const key = req.params.key;
-      const rssFeedJson = await this.websiteRssService.getRssFeedJson(key);
-      res.setHeader("Content-Type", "application/json");
-      // 使用JSON.stringify的第三个参数来美化输出，设置缩进为2个空格
-      res.send(JSON.stringify(rssFeedJson, null, 2));
-    } catch (error) {
-      console.error("获取JSON Feed失败:", error);
-      res.status(500).json({
-        error: `获取JSON Feed失败: ${error instanceof Error ? error.message : "未知错误"}`,
-      });
-    }
-  }
-
   async debugSelector(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
       return await this.websiteRssService.debugSelector(req.body);
     });
+  }
+
+  async getSubscriptionFeed(req: Request, res: Response): Promise<void> {
+    try {
+      const key = req.params.key;
+      const type = req.query.type as string || 'rss';
+
+      // 验证type参数
+      if (type !== 'rss' && type !== 'json') {
+        res.status(400).json({
+          error: '无效的type参数，只支持rss或json'
+        });
+        return;
+      }
+
+      if (type === 'json') {
+        // 返回JSON格式
+        const rssFeedJson = await this.websiteRssService.getRssFeedJson(key);
+        res.setHeader("Content-Type", "application/json");
+        res.send(JSON.stringify(rssFeedJson, null, 2));
+      } else {
+        // 返回RSS格式（默认）
+        const rssXml = await this.websiteRssService.getRssFeed(key);
+        res.setHeader("Content-Type", "application/rss+xml");
+        res.send(rssXml);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "未知错误";
+      if (req.query.type === 'json') {
+        res.status(500).json({
+          error: `获取订阅Feed失败: ${errorMessage}`
+        });
+      } else {
+        res.status(404).send(`获取订阅Feed失败: ${errorMessage}`);
+      }
+    }
   }
 }

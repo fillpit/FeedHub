@@ -23,10 +23,7 @@ export const authMiddleware = async (
   if (
     req.path === "/user/login" ||
     req.path === "/user/register" ||
-    req.path === "/api/user/login" ||
-    req.path === "/api/user/register" ||
-    req.path.startsWith("/rss/") ||
-    req.path.startsWith("/json/") ||
+    req.path.startsWith("/website/sub/") ||
     req.path.startsWith("/dynamic") ||
     req.originalUrl.includes("/book-rss/feed/")
   ) {

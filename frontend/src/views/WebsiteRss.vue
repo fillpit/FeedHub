@@ -3,7 +3,7 @@
     <!-- Main content -->
     <div class="main-content">
       <div class="header">
-        <h1>网站RSS源配置</h1>
+        <h1>网页监控</h1>
         <div class="header-actions">
           <el-button type="info" @click="refreshAllData" :loading="refreshingData">
             <el-icon><Refresh /></el-icon>
@@ -44,18 +44,27 @@
         </el-table-column>
         <el-table-column prop="title" label="网站名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="url" label="网站URL" min-width="200" show-overflow-tooltip />
-        <el-table-column label="RSS链接" min-width="200" show-overflow-tooltip>
+        <el-table-column label="订阅链接" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <div v-if="row.key" class="feed-rss-url">
-              <span style="cursor: pointer; color: #409eff; text-decoration: underline;" @click="copyRssLink(row.key, 'rss')">{{ getRssUrl(row.key) }}</span>
-            </div>
-            <span v-else class="text-gray-400">未生成</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="JSON链接" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }">
-            <div v-if="row.key" class="feed-json-url">
-              <span style="cursor: pointer; color: #409eff; text-decoration: underline;" @click="copyRssLink(row.key, 'json')">{{ getJsonUrl(row.key) }}</span>
+            <div v-if="row.key" class="subscription-link">
+              <el-dropdown placement="top-end" trigger="hover" @command="(command: string) => copyRssLink(row.key, command as 'rss' | 'json')">
+                <span class="subscription-link-text">
+                  /website/sub/{{ row.key }}
+                  <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="rss">
+                      <el-icon><Document /></el-icon>
+                      复制 RSS 链接
+                    </el-dropdown-item>
+                    <el-dropdown-item command="json">
+                      <el-icon><DataLine /></el-icon>
+                      复制 JSON 链接
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
             <span v-else class="text-gray-400">未生成</span>
           </template>
@@ -693,8 +702,7 @@ import {
   deleteWebsiteRss,
   refreshWebsiteRss,
   debugSelector,
-  getRssUrl,
-  getJsonUrl,
+  getSubscribeUrl,
 } from "@/api/websiteRss";
 import type { WebsiteRssConfig } from "@/types/websiteRss";
 import {
@@ -707,6 +715,8 @@ import {
   UploadFilled,
   Tools,
   QuestionFilled,
+  ArrowDown,
+  DataLine,
 } from "@element-plus/icons-vue";
 import { authCredentialApi } from "@/api/authCredential";
 import type { AuthCredential } from "@/types";
@@ -995,10 +1005,10 @@ const refreshAllData = async () => {
 };
 
 const copyRssLink = async (text: string, type: "rss" | "json" = "rss") => {
-  const url = type === "rss" ? getRssUrl(text) : getJsonUrl(text);
+  const subscribeUrl = getSubscribeUrl(text, type);
 
   try {
-    const success = await copyTextToClipboard(url);
+    const success = await copyTextToClipboard(subscribeUrl);
     if (success) {
       ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
     } else {
@@ -1602,6 +1612,33 @@ const openSelectorHelp = () => {
   display: block;
   margin-top: 8px;
   line-height: 1.4;
+}
+
+/* 订阅链接样式 */
+.subscription-link {
+  display: flex;
+  align-items: center;
+}
+
+.subscription-link-text {
+  cursor: pointer;
+  color: #409eff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.subscription-link-text:hover {
+  background-color: #ecf5ff;
+  color: #337ecc;
+}
+
+.subscription-link-text .el-icon {
+  margin-left: 4px;
+  font-size: 12px;
 }
 
 

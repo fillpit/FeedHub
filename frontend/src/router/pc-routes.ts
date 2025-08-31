@@ -4,11 +4,11 @@ const routes: RouteRecordRaw[] = [
     path: "/",
     name: "home",
     component: () => import("@/views/Home.vue"),
-    redirect: "/website-rss",
+    redirect: "/website",
     children: [
       {
-        path: "/website-rss",
-        name: "website-rss",
+        path: "/website",
+        name: "website",
         component: () => import("@/views/WebsiteRss.vue"),
       },
       {

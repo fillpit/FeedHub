@@ -1,80 +1,49 @@
 import request from "@/utils/request";
 import type { WebsiteRssConfig, WebsiteRssConfigList } from "@/types/websiteRss";
 
-const baseUrl = "/api/website-rss";
+const baseUrl = "/api/website";
 
-// 获取所有网站RSS配置
-export const getAllConfigs = () => {
-  return request.get<WebsiteRssConfig[]>(baseUrl);
-};
-
-// 获取单个网站RSS配置
-export const getConfigById = (id: number) => {
-  return request.get<WebsiteRssConfig>(`${baseUrl}/${id}`);
-};
-
-// 添加网站RSS配置
-export const addConfig = (config: WebsiteRssConfig) => {
-  return request.post<WebsiteRssConfig>(baseUrl, config);
-};
-
-// 更新网站RSS配置
-export const updateConfig = (id: number, config: WebsiteRssConfig) => {
-  return request.put<WebsiteRssConfig>(`${baseUrl}/${id}`, config);
-};
-
-// 删除网站RSS配置
-export const deleteConfig = (id: number) => {
-  return request.delete(`${baseUrl}/${id}`);
-};
-
-// 刷新网站RSS配置
-export const refreshConfig = (id: number) => {
-  return request.post<WebsiteRssConfig>(`${baseUrl}/${id}/refresh`, {});
-};
-
-// 获取RSS订阅链接
-export const getRssLink = (key: string) => {
-  return `${window.location.origin}/api/rss/${key}`;
-};
-
+// 获取网站 RSS 列表
 export const getWebsiteRssList = () => {
-  return request.get<WebsiteRssConfigList>("/api/website-rss");
+  return request.get<WebsiteRssConfigList>(baseUrl);
 };
 
+// 创建网站 RSS
 export const createWebsiteRss = (data: Partial<WebsiteRssConfig>) => {
-  return request.post("/api/website-rss", data, {
+  return request.post(baseUrl, data, {
     showSuccessMessage: true,
     successMessage: "网站 RSS 创建成功！",
   });
 };
 
+// 更新网站 RSS
 export const updateWebsiteRss = (id: number, data: Partial<WebsiteRssConfig>) => {
-  return request.put(`/api/website-rss/${id}`, data, {
+  return request.put(`${baseUrl}/${id}`, data, {
     showSuccessMessage: true,
     successMessage: "网站 RSS 更新成功！",
   });
 };
 
+// 删除网站 RSS
 export const deleteWebsiteRss = (id: number) => {
-  return request.delete(`/api/website-rss/${id}`, {
+  return request.delete(`${baseUrl}/${id}`, {
     showSuccessMessage: true,
     successMessage: "网站 RSS 删除成功！",
   });
 };
 
+// 刷新网站 RSS
 export const refreshWebsiteRss = (id: number) => {
-  return request.post(`/api/website-rss/${id}/refresh`, {});
+  return request.post(`${baseUrl}/${id}/refresh`, {});  
 };
 
-export const getRssUrl = (key: string) => {
-  return `${window.location.origin}/api/rss/${key}`;
+
+// 获取订阅链接
+export const getSubscribeUrl = (key: string, type: 'rss' | 'json' = "rss") => {
+  return `${window.location.origin}${baseUrl}/sub/${key}?type=${type}`;
 };
 
-export const getJsonUrl = (key: string) => {
-  return `${window.location.origin}/api/json/${key}`;
-};
-
+// 调试选择器
 export const debugSelector = (data: Partial<WebsiteRssConfig>) => {
-  return request.post("/api/website-rss/debug-selector", data);
+  return request.post(`${baseUrl}/debug-selector`, data);
 };

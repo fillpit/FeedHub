@@ -50,27 +50,28 @@
             </el-link>
           </template>
         </el-table-column>
-        <el-table-column prop="path" label="路径" min-width="130" show-overflow-tooltip>
+        <el-table-column prop="path" label="订阅链接" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-popover placement="top" :width="200" trigger="hover" :content="`${baseUrl}/api/dynamic${row.path}`">
-              <template #reference>
-                <el-link type="primary" underline="never">/dynamic{{ row.path }}</el-link>
-              </template>
-              <div class="link-copy-options">
-                <div class="copy-option" @click="copyRssLink(row)">
-                  <el-icon>
-                    <Link />
-                  </el-icon>
-                  <span>复制 RSS 链接</span>
-                </div>
-                <div class="copy-option" @click="copyJsonLink(row)">
-                  <el-icon>
-                    <Document />
-                  </el-icon>
-                  <span>复制 JSON 链接</span>
-                </div>
-              </div>
-            </el-popover>
+            <div class="subscription-link">
+              <el-dropdown placement="top-end" trigger="hover" @command="(command: string) => copyDynamicLink(row, command as 'rss' | 'json')">
+                <span class="subscription-link-text">
+                  /dynamic{{ row.path }}
+                  <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </span>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="rss">
+                      <el-icon><Document /></el-icon>
+                      复制 RSS 链接
+                    </el-dropdown-item>
+                    <el-dropdown-item command="json">
+                      <el-icon><DataLine /></el-icon>
+                      复制 JSON 链接
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </template>
         </el-table-column>
 
@@ -324,7 +325,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
-import { Search, InfoFilled, Setting, Link, Document } from "@element-plus/icons-vue";
+import { Search, InfoFilled, Setting, Link, Document, ArrowDown, DataLine } from "@element-plus/icons-vue";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
@@ -629,35 +630,19 @@ const deleteRoute = async (id: number) => {
   }
 };
 
-// 复制RSS链接
-const copyRssLink = (row: DynamicRouteConfig) => {
-  const link = `${baseUrl}/api/dynamic${row.path}?type=rss`;
+// 复制动态路由链接
+const copyDynamicLink = (row: DynamicRouteConfig, type: 'rss' | 'json') => {
+  const link = `${baseUrl}/api/dynamic${row.path}?type=${type}`;
   copyToClipboard(link)
     .then((success) => {
       if (success) {
-        ElMessage.success("RSS链接已复制到剪贴板");
+        ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
       } else {
-        ElMessage.warning("无法复制RSS链接，请手动复制");
+        ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
       }
     })
     .catch(() => {
-      ElMessage.warning("无法复制RSS链接，请手动复制");
-    });
-};
-
-// 复制JSON链接
-const copyJsonLink = (row: DynamicRouteConfig) => {
-  const link = `${baseUrl}/api/dynamic${row.path}?type=json`;
-  copyToClipboard(link)
-    .then((success) => {
-      if (success) {
-        ElMessage.success("JSON链接已复制到剪贴板");
-      } else {
-        ElMessage.warning("无法复制JSON链接，请手动复制");
-      }
-    })
-    .catch(() => {
-      ElMessage.warning("无法复制JSON链接，请手动复制");
+      ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
     });
 };
 
@@ -1340,6 +1325,33 @@ onMounted(() => {
 
 .no-git-info {
   color: #c0c4cc;
+  font-size: 12px;
+}
+
+/* 订阅链接样式 */
+.subscription-link {
+  display: flex;
+  align-items: center;
+}
+
+.subscription-link-text {
+  cursor: pointer;
+  color: #409eff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.subscription-link-text:hover {
+  background-color: #ecf5ff;
+  color: #337ecc;
+}
+
+.subscription-link-text .el-icon {
+  margin-left: 4px;
   font-size: 12px;
 }
 </style>

@@ -151,13 +151,13 @@
 
 **解决方案：**
 1. **确认正确的API路径**: 
-   - 8008端口访问: `/api/website-rss` (自动添加/api前缀)
-   - 8009端口访问: `/website-rss` (无需/api前缀)
+   - 8008端口访问: `/api/website` (自动添加/api前缀)
+   - 8009端口访问: `/website` (无需/api前缀)
 
 2. **验证路由配置**:
    ```typescript
    // backend/src/routes/index.ts
-   router.use("/website-rss", websiteRssRoutes);
+   router.use("/website", websiteRssRoutes);
    
    // backend/src/routes/websiteRss.ts
    router.get("/", getAllConfigs);        // 获取所有配置
