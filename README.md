@@ -300,6 +300,17 @@ chmod +x deploy-with-chrome-service.sh
 - [x] 临时文件清理：确保下载的临时文件被正确清理
 - [x] 测试验证：验证OPDS书籍能显示完整的真实章节内容
 
+#### Monaco Editor本地化加载 ✅
+- [x] 移除CodeEditor.vue中的loader.config()配置（第40-45行）
+- [x] 修改initEditor函数，直接使用monaco而不是loader.init()
+- [x] 移除@monaco-editor/loader依赖的导入
+- [x] 测试Monaco Editor本地加载功能是否正常
+
+#### 动态路由RSS链接复制优化 ✅
+- [x] 修改copyDynamicLink方法，检测必填参数并替换路径占位符
+- [x] 优化复制成功提示信息，明确告知用户需要替换的参数
+- [x] 测试动态路由RSS链接复制功能，验证必填参数处理
+
 #### 其他任务
 - [ ] 添加更多电子书格式支持（完整解析）
 - [ ] 实现书籍章节的智能分割

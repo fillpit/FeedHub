@@ -632,18 +632,44 @@ const deleteRoute = async (id: number) => {
 
 // 复制动态路由链接
 const copyDynamicLink = (row: DynamicRouteConfig, type: 'rss' | 'json') => {
-  const link = `${baseUrl}/api/dynamic${row.path}?type=${type}`;
-  copyToClipboard(link)
-    .then((success) => {
-      if (success) {
-        ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
-      } else {
-        ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
-      }
-    })
-    .catch(() => {
-      ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
+  let link = `${baseUrl}/api/dynamic${row.path}?type=${type}`;
+  
+  // 检查是否有必填参数
+  const requiredParams = row.params?.filter(param => param.required) || [];
+  
+  if (requiredParams.length > 0) {
+    // 替换路径中的参数占位符
+    requiredParams.forEach(param => {
+      link = link.replace(`:${param.name}`, `{${param.name}}`);
     });
+    
+    // 复制链接
+    copyToClipboard(link)
+      .then((success) => {
+        if (success) {
+          const paramNames = requiredParams.map(p => p.name).join('、');
+          ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板，请将 {${paramNames}} 替换为实际参数值`);
+        } else {
+          ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
+        }
+      })
+      .catch(() => {
+        ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
+      });
+  } else {
+    // 原有逻辑，无必填参数
+    copyToClipboard(link)
+      .then((success) => {
+        if (success) {
+          ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板`);
+        } else {
+          ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
+        }
+      })
+      .catch(() => {
+        ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
+      });
+  }
 };
 
 // 打开内联脚本编辑器

@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
 import * as monaco from "monaco-editor";
-import loader from "@monaco-editor/loader";
 
 interface Props {
   modelValue: string;
@@ -37,29 +36,20 @@ const editorContainer = ref<HTMLElement>();
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let isEditorReady = false;
 
-// 配置 Monaco Editor
-loader.config({
-  paths: {
-    vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs",
-  },
-});
-
 // 初始化编辑器
 const initEditor = async () => {
   if (!editorContainer.value) return;
 
   try {
-    const monacoInstance = await loader.init();
-
     // 设置 JavaScript 语言的默认配置
-    monacoInstance.languages.typescript.javascriptDefaults.setCompilerOptions({
-      target: monacoInstance.languages.typescript.ScriptTarget.ES2020,
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
       allowNonTsExtensions: true,
-      moduleResolution: monacoInstance.languages.typescript.ModuleResolutionKind.NodeJs,
-      module: monacoInstance.languages.typescript.ModuleKind.CommonJS,
+      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: monaco.languages.typescript.ModuleKind.CommonJS,
       noEmit: true,
       esModuleInterop: true,
-      jsx: monacoInstance.languages.typescript.JsxEmit.React,
+      jsx: monaco.languages.typescript.JsxEmit.React,
       reactNamespace: "React",
       allowJs: true,
       typeRoots: ["node_modules/@types"],
@@ -85,13 +75,13 @@ const initEditor = async () => {
       declare const fetch: (url: string, options?: RequestInit) => Promise<Response>;
     `;
 
-    monacoInstance.languages.typescript.javascriptDefaults.addExtraLib(
+    monaco.languages.typescript.javascriptDefaults.addExtraLib(
       customTypes,
       "ts:filename/utils.d.ts"
     );
 
     // 创建编辑器实例
-    editor = monacoInstance.editor.create(editorContainer.value, {
+    editor = monaco.editor.create(editorContainer.value, {
       value: props.modelValue,
       language: props.language,
       theme: props.theme,
