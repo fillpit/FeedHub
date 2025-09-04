@@ -249,16 +249,76 @@ export class DynamicRouteController extends BaseController {
       const readmeContent = await this.dynamicRouteService.getRouteReadmeByPath(routePath);
       
       if (!readmeContent) {
-        res.status(404).json({
-          success: false,
-          message: `No documentation found for route: ${routePath}`
+        // 使用 EJS 模板渲染友好的错误页面
+        const ejs = require('ejs');
+        const path = require('path');
+        const templatePath = path.join(__dirname, '../views/templates/not-found.ejs');
+        
+        ejs.renderFile(templatePath, {
+          routePath
+        }, {}, (err: Error | null, html: string) => {
+          if (err) {
+            logger.error('错误页面模板渲染错误:', err);
+            res.status(404).json({
+              success: false,
+              message: `No documentation found for route: ${routePath}`
+            });
+            return;
+          }
+          
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.status(404).send(html);
         });
         return;
       }
       
-      // 返回 Markdown 格式的说明文档
-      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-      res.send(readmeContent);
+      // 检查是否请求原始 Markdown 格式
+      const format = req.query.format as string;
+      if (format === 'markdown') {
+        // 返回原始 Markdown 格式
+        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        res.send(readmeContent);
+        return;
+      }
+      
+      // 使用 markdown-it 将 Markdown 转换为 HTML
+      const md = require('markdown-it')();
+      const htmlContent = md.render(readmeContent);
+      
+      // 使用 EJS 模板渲染页面
+      const ejs = require('ejs');
+      const path = require('path');
+      const templatePath = path.join(__dirname, '../views/templates/markdown.ejs');
+      
+      // 获取路由名称作为标题
+      let title = '动态路由文档';
+      try {
+        const routeMatch = await this.dynamicRouteService.getRouteByPathPattern(routePath);
+        if (routeMatch && routeMatch.route) {
+          title = routeMatch.route.name || '动态路由文档';
+        }
+      } catch (err) {
+        logger.warn(`无法获取路由名称: ${err}`);
+      }
+      
+      // 渲染模板
+      ejs.renderFile(templatePath, {
+        title,
+        content: htmlContent,
+        routePath
+      }, {}, (err: Error | null, html: string) => {
+        if (err) {
+          logger.error('模板渲染错误:', err);
+          res.status(500).json({
+            success: false,
+            message: '模板渲染错误: ' + err.message
+          });
+          return;
+        }
+        
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(html);
+      });
       
     } catch (error) {
        logger.error('Error getting route help:', error);

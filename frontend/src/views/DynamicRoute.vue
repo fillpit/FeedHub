@@ -55,7 +55,7 @@
             <div class="subscription-link">
               <el-dropdown placement="top-end" trigger="hover" @command="(command: string) => copyDynamicLink(row, command as 'rss' | 'json')">
                 <span class="subscription-link-text">
-                  /dynamic{{ row.path }}
+                  /dynamic/sub{{ row.path }}
                   <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                 </span>
                 <template #dropdown>
@@ -632,7 +632,7 @@ const deleteRoute = async (id: number) => {
 
 // 复制动态路由链接
 const copyDynamicLink = (row: DynamicRouteConfig, type: 'rss' | 'json') => {
-  let link = `${baseUrl}/api/dynamic${row.path}?type=${type}`;
+  let link = `${baseUrl}/api/dynamic/sub${row.path}?type=${type}`;
   
   // 检查是否有必填参数
   const requiredParams = row.params?.filter(param => param.required) || [];

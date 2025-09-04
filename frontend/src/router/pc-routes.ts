@@ -22,7 +22,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/views/AuthCredentialManagement.vue"),
       },
       {
-        path: "/dynamic-route",
+        path: "/dynamic",
         name: "dynamic-route",
         component: () => import("@/views/DynamicRoute.vue"),
       },

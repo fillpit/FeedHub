@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档未找到 - FeedHub</title>
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #5c6bc0;
+      --text-color: #333;
+      --light-text: #666;
+      --border-color: #eaeaea;
+      --error-color: #e74c3c;
+      --header-bg: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0;
+      background-color: #fff;
+    }
+    
+    .header {
+      background: var(--header-bg);
+      color: white;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 600;
+    }
+    
+    .header p {
+      margin: 0.5rem 0 0;
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+    
+    .content {
+      padding: 0 2rem 2rem;
+      text-align: center;
+    }
+    
+    .error-icon {
+      font-size: 5rem;
+      color: var(--error-color);
+      margin-bottom: 1rem;
+    }
+    
+    .error-title {
+      font-size: 2rem;
+      color: var(--error-color);
+      margin-bottom: 1rem;
+    }
+    
+    .error-message {
+      font-size: 1.2rem;
+      color: var(--light-text);
+      margin-bottom: 2rem;
+    }
+    
+    .suggestions {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      text-align: left;
+    }
+    
+    .suggestions h3 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+    
+    .suggestions ul {
+      margin-bottom: 0;
+    }
+    
+    .suggestions li {
+      margin-bottom: 0.5rem;
+    }
+    
+    .action-button {
+      display: inline-block;
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.2s;
+      margin-top: 1rem;
+    }
+    
+    .action-button:hover {
+      background-color: var(--secondary-color);
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding: 1rem;
+      color: var(--light-text);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .header {
+        padding: 1.5rem;
+      }
+      
+      .header h1 {
+        font-size: 1.8rem;
+      }
+      
+      .content {
+        padding: 0 1rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>FeedHub 动态路由</h1>
+    <p>文档未找到</p>
+  </div>
+  
+  <div class="content">
+    <div class="error-icon">📄</div>
+    <h2 class="error-title">未找到文档</h2>
+    <p class="error-message">抱歉，我们无法找到路径 <strong><%= routePath %></strong> 的文档</p>
+    
+    <div class="suggestions">
+      <h3>可能的原因：</h3>
+      <ul>
+        <li>该路由不存在或尚未创建</li>
+        <li>该路由存在但尚未添加文档</li>
+        <li>路径拼写错误</li>
+      </ul>
+      
+      <h3>您可以：</h3>
+      <ul>
+        <li>检查路径是否正确</li>
+        <li>返回动态路由管理页面创建或编辑路由</li>
+        <li>联系管理员获取帮助</li>
+      </ul>
+    </div>
+    
+    <a href="/dynamic" class="action-button">返回动态路由管理</a>
+  </div>
+  
+  <div class="footer">
+    <p>由 FeedHub 动态路由系统提供 | 路径: <%= routePath %></p>
+  </div>
+</body>
+</html>

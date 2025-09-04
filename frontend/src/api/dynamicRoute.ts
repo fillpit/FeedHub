@@ -13,7 +13,7 @@ export type {
  * 获取所有动态路由配置
  */
 export function getAllDynamicRoutes() {
-  return request.get("/api/dynamic-route");
+  return request.get("/api/dynamic");
 }
 
 /**
@@ -21,7 +21,7 @@ export function getAllDynamicRoutes() {
  * @param id 路由配置ID
  */
 export function getDynamicRoute(id: number) {
-  return request.get(`/api/dynamic-route/${id}`);
+  return request.get(`/api/dynamic/${id}`);
 }
 
 /**
@@ -29,7 +29,7 @@ export function getDynamicRoute(id: number) {
  * @param data 路由配置数据
  */
 export function addDynamicRoute(data: DynamicRouteConfig) {
-  return request.post("/api/dynamic-route", data);
+  return request.post("/api/dynamic", data);
 }
 
 /**
@@ -38,7 +38,7 @@ export function addDynamicRoute(data: DynamicRouteConfig) {
  * @param data 路由配置数据
  */
 export function updateDynamicRoute(id: number, data: DynamicRouteConfig) {
-  return request.put(`/api/dynamic-route/${id}`, data);
+  return request.put(`/api/dynamic/${id}`, data);
 }
 
 /**
@@ -46,7 +46,7 @@ export function updateDynamicRoute(id: number, data: DynamicRouteConfig) {
  * @param id 路由配置ID
  */
 export function deleteDynamicRoute(id: number) {
-  return request.delete(`/api/dynamic-route/${id}`);
+  return request.delete(`/api/dynamic/${id}`);
 }
 
 /**
@@ -58,7 +58,7 @@ export function debugDynamicRouteScript(
   routeConfig: DynamicRouteConfig,
   params: Record<string, unknown>
 ) {
-  return request.post("/api/dynamic-route/debug", {
+  return request.post("/api/dynamic/debug", {
     routeConfig,
     params,
   });
@@ -69,7 +69,7 @@ export function debugDynamicRouteScript(
  * @param id 路由配置ID
  */
 export function getRouteReadme(id: number) {
-  return request.get(`/api/dynamic-route/${id}/readme`);
+  return request.get(`/api/dynamic/${id}/readme`);
 }
 
 /**
@@ -78,7 +78,7 @@ export function getRouteReadme(id: number) {
  * @param content README内容
  */
 export function updateRouteReadme(id: number, content: string) {
-  return request.put(`/api/dynamic-route/${id}/readme`, { content });
+  return request.put(`/api/dynamic/${id}/readme`, { content });
 }
 
 /**
@@ -86,7 +86,7 @@ export function updateRouteReadme(id: number, content: string) {
  * @param routeId 路由ID
  */
 export function getInlineScriptFiles(routeId: number) {
-  return request.get(`/api/dynamic-route/${routeId}/inline-script/files`);
+  return request.get(`/api/dynamic/${routeId}/inline-script/files`);
 }
 
 /**
@@ -96,7 +96,7 @@ export function getInlineScriptFiles(routeId: number) {
  */
 export function getInlineScriptFileContent(routeId: number, fileName: string) {
   return request.get(
-    `/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`
+    `/api/dynamic/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`
   );
 }
 
@@ -107,7 +107,7 @@ export function getInlineScriptFileContent(routeId: number, fileName: string) {
  * @param content 文件内容
  */
 export function updateInlineScriptFileContent(routeId: number, fileName: string, content: string) {
-  return request.put(`/api/dynamic-route/${routeId}/inline-script/files`, {
+  return request.put(`/api/dynamic/${routeId}/inline-script/files`, {
     fileName,
     content,
   });
@@ -124,7 +124,7 @@ export function createInlineScriptFile(
   fileName: string,
   template: string = "blank"
 ) {
-  return request.post(`/api/dynamic-route/${routeId}/inline-script/files`, {
+  return request.post(`/api/dynamic/${routeId}/inline-script/files`, {
     fileName,
     template,
   });
@@ -137,7 +137,7 @@ export function createInlineScriptFile(
  */
 export function deleteInlineScriptFile(routeId: number, fileName: string) {
   return request.delete(
-    `/api/dynamic-route/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`
+    `/api/dynamic/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`
   );
 }
 
@@ -147,7 +147,7 @@ export function deleteInlineScriptFile(routeId: number, fileName: string) {
  */
 export function exportRoutesWithScripts(routeIds: number[]) {
   return request.post(
-    "/api/dynamic-route/export-with-scripts",
+    "/api/dynamic/export-with-scripts",
     { routeIds },
     {
       responseType: "blob",
@@ -162,7 +162,7 @@ export function exportRoutesWithScripts(routeIds: number[]) {
 export function importRoutesWithScripts(zipFile: File) {
   const formData = new FormData();
   formData.append("zipFile", zipFile);
-  return request.post("/api/dynamic-route/import-with-scripts", formData, {
+  return request.post("/api/dynamic/import-with-scripts", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -193,7 +193,7 @@ export function initializeRouteScript(
     formData.append("zipFile", options.zipFile);
 
     // 不要手动设置 Content-Type，让浏览器自动设置以包含正确的 boundary
-    return request.post(`/api/dynamic-route/${routeId}/initialize-script`, formData);
+    return request.post(`/api/dynamic/${routeId}/initialize-script`, formData);
   }
 
   // 对于模板和Git，使用JSON
@@ -215,7 +215,7 @@ export function initializeRouteScript(
     data.gitSubPath = options.gitSubPath;
   }
 
-  return request.post(`/api/dynamic-route/${routeId}/initialize-script`, data);
+  return request.post(`/api/dynamic/${routeId}/initialize-script`, data);
 }
 
 /**
@@ -223,5 +223,5 @@ export function initializeRouteScript(
  * @param routeId 路由ID
  */
 export function syncGitRepository(routeId: number) {
-  return request.post(`/api/dynamic-route/${routeId}/sync-git`, {});
+  return request.post(`/api/dynamic/${routeId}/sync-git`, {});
 }

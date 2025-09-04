@@ -106,7 +106,7 @@ const menuList: MenuItem[] = [
     index: "2",
     title: "动态路由",
     icon: Link,
-    router: "/dynamic-route",
+    router: "/dynamic",
   },
   {
     index: "3",

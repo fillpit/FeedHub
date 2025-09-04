@@ -1395,8 +1395,8 @@ export class DynamicRouteService {
       const feed = new RSS({
         title: route.name,
         description: route.description || route.name,
-        feed_url: `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
-        site_url: `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
+        feed_url: `${process.env.API_BASE_URL || ""}/api/dynamic${route.path}`,
+        site_url: `${process.env.API_BASE_URL || ""}/api/dynamic${route.path}`,
         generator: "FeedHub DynamicRoute",
         pubDate: new Date(),
       });
@@ -1431,9 +1431,9 @@ export class DynamicRouteService {
       title: scriptResult.title || route.name,
       description: scriptResult.description || route.description || route.name,
       feed_url:
-        scriptResult.feed_url || `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
+        scriptResult.feed_url || `${process.env.API_BASE_URL || ""}/api/dynamic${route.path}`,
       site_url:
-        scriptResult.site_url || `${process.env.API_BASE_URL || ""}/api/dynamic-route${route.path}`,
+        scriptResult.site_url || `${process.env.API_BASE_URL || ""}/api/dynamic${route.path}`,
       generator: scriptResult.generator || "FeedHub DynamicRoute",
       pubDate: scriptResult.pubDate ? new Date(scriptResult.pubDate) : new Date(),
     };

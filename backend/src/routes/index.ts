@@ -78,7 +78,7 @@ router.use("/book-rss", bookRssRoutes);
 // RSS模板相关路由
 
 // 自定义路由相关路由
-router.use("/dynamic-route", dynamicRouteRoutes);
+router.use("/dynamic", dynamicRouteRoutes);
 
 // npm包管理相关路由
 router.use("/npm-package", npmPackageRoutes);
@@ -91,8 +91,5 @@ router.use("/auth-credential", authCredentialRoutes);
 
 // 文件上传路由
 router.use("/upload", uploadRoutes);
-
-// 自定义路由执行（公开访问）
-router.get("/dynamic/*", (req, res) => dynamicRouteController.executeRouteScript(req, res));
 
 export default router;

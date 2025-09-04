@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #5c6bc0;
+      --text-color: #333;
+      --light-text: #666;
+      --border-color: #eaeaea;
+      --code-bg: #f5f7f9;
+      --blockquote-bg: #f9f9f9;
+      --blockquote-border: #e0e0e0;
+      --header-bg: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0;
+      background-color: #fff;
+    }
+    
+    .header {
+      background: var(--header-bg);
+      color: white;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 600;
+    }
+    
+    .header p {
+      margin: 0.5rem 0 0;
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+    
+    .content {
+      padding: 0 2rem 2rem;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.75em;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--text-color);
+    }
+    
+    h1 { font-size: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+    h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+    h3 { font-size: 1.25rem; }
+    h4 { font-size: 1rem; }
+    
+    p, ul, ol {
+      margin-top: 0;
+      margin-bottom: 1em;
+    }
+    
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    a:hover {
+      text-decoration: underline;
+    }
+    
+    code {
+      font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      background-color: var(--code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    
+    pre {
+      background-color: var(--code-bg);
+      border-radius: 6px;
+      padding: 1em;
+      overflow: auto;
+      margin: 1em 0;
+    }
+    
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      font-size: 0.9em;
+      line-height: 1.5;
+      display: block;
+    }
+    
+    blockquote {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      color: var(--light-text);
+      background-color: var(--blockquote-bg);
+      border-left: 4px solid var(--blockquote-border);
+    }
+    
+    blockquote p {
+      margin: 0.5em 0;
+    }
+    
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1em auto;
+      border-radius: 6px;
+    }
+    
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    
+    table th, table td {
+      border: 1px solid var(--border-color);
+      padding: 0.5em 1em;
+      text-align: left;
+    }
+    
+    table th {
+      background-color: var(--code-bg);
+      font-weight: 600;
+    }
+    
+    hr {
+      height: 1px;
+      background-color: var(--border-color);
+      border: none;
+      margin: 2em 0;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding: 1rem;
+      color: var(--light-text);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .header {
+        padding: 1.5rem;
+      }
+      
+      .header h1 {
+        font-size: 1.8rem;
+      }
+      
+      .content {
+        padding: 0 1rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><%= title %></h1>
+    <p>动态路由文档</p>
+  </div>
+  
+  <div class="content">
+    <%- content %>
+  </div>
+  
+  <div class="footer">
+    <p>由 FeedHub 动态路由系统提供 | 路径: <%= routePath %></p>
+  </div>
+</body>
+</html>

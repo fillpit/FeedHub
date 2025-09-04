@@ -24,7 +24,8 @@ export const authMiddleware = async (
     req.path === "/user/login" ||
     req.path === "/user/register" ||
     req.path.startsWith("/website/sub/") ||
-    req.path.startsWith("/dynamic") ||
+    req.path.startsWith("/dynamic/sub") ||
+    req.path.startsWith("/dynamic/help") ||
     req.originalUrl.includes("/book-rss/feed/")
   ) {
     console.log(`[Auth] 公开路径，跳过认证: ${req.path}`);
