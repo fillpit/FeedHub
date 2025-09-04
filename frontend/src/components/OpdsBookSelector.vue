@@ -20,7 +20,7 @@
         刷新
       </el-button>
     </div>
-    
+
     <div v-if="!opdsEnabled" class="opds-disabled-notice">
       <el-alert
         title="OPDS服务未启用"
@@ -30,11 +30,11 @@
         :closable="false"
       />
     </div>
-    
+
     <div v-else-if="books.length === 0 && !loading" class="opds-empty">
       <el-empty description="暂无书籍数据，请点击搜索或刷新" />
     </div>
-    
+
     <div v-else class="opds-book-list">
       <el-table
         :data="books"
@@ -56,14 +56,9 @@
         </el-table-column>
       </el-table>
     </div>
-    
+
     <div v-if="selectedBook" class="selected-opds-book">
-      <el-alert
-        :title="`已选择: ${selectedBook.title}`"
-        type="success"
-        show-icon
-        :closable="false"
-      >
+      <el-alert :title="`已选择: ${selectedBook.title}`" type="success" show-icon :closable="false">
         <template #default>
           <div>作者: {{ selectedBook.author }}</div>
           <div v-if="selectedBook.description">描述: {{ selectedBook.description }}</div>
@@ -74,15 +69,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import { ElMessage } from 'element-plus';
-import { Search, Refresh } from '@element-plus/icons-vue';
-import type { OpdsBook, Book } from '@feedhub/shared';
-import * as bookRssApi from '@/api/bookRss';
-import { settingApi } from '@/api/setting';
+import { ref, onMounted, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { Search, Refresh } from "@element-plus/icons-vue";
+import type { OpdsBook, Book } from "@feedhub/shared";
+import * as bookRssApi from "@/api/bookRss";
+import { settingApi } from "@/api/setting";
 
 // OPDS书籍类型（从API返回的格式）
-type OpdsBookFromApi = Omit<Book, 'id' | 'createdAt' | 'updatedAt'>;
+type OpdsBookFromApi = Omit<Book, "id" | "createdAt" | "updatedAt">;
 
 // Props
 interface Props {
@@ -90,28 +85,31 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  modelValue: null
+  modelValue: null,
 });
 
 // Emits
 interface Emits {
-  (e: 'update:modelValue', value: OpdsBook | null): void;
-  (e: 'book-selected', book: OpdsBook): void;
+  (e: "update:modelValue", value: OpdsBook | null): void;
+  (e: "book-selected", book: OpdsBook): void;
 }
 
 const emit = defineEmits<Emits>();
 
 // 响应式数据
-const searchQuery = ref('');
+const searchQuery = ref("");
 const books = ref<OpdsBookFromApi[]>([]);
 const loading = ref(false);
 const opdsEnabled = ref(false);
 const selectedBook = ref<OpdsBook | null>(props.modelValue);
 
 // 监听props变化
-watch(() => props.modelValue, (newValue) => {
-  selectedBook.value = newValue;
-});
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    selectedBook.value = newValue;
+  }
+);
 
 // 检查OPDS状态
 const checkOpdsStatus = async () => {
@@ -121,7 +119,7 @@ const checkOpdsStatus = async () => {
       opdsEnabled.value = response.data.globalSetting.opdsEnabled || false;
     }
   } catch (error) {
-    console.error('检查OPDS状态失败:', error);
+    console.error("检查OPDS状态失败:", error);
     opdsEnabled.value = false;
   }
 };
@@ -129,17 +127,17 @@ const checkOpdsStatus = async () => {
 // 搜索书籍
 const handleSearch = async () => {
   if (!opdsEnabled.value) {
-    ElMessage.warning('OPDS服务未启用');
+    ElMessage.warning("OPDS服务未启用");
     return;
   }
-  
+
   loading.value = true;
   try {
     const response = await bookRssApi.fetchBooksFromOpds(searchQuery.value);
     books.value = response.data?.books || [];
   } catch (error) {
-    console.error('搜索OPDS书籍失败:', error);
-    ElMessage.error('搜索书籍失败');
+    console.error("搜索OPDS书籍失败:", error);
+    ElMessage.error("搜索书籍失败");
   } finally {
     loading.value = false;
   }
@@ -148,17 +146,17 @@ const handleSearch = async () => {
 // 刷新书籍列表
 const handleRefresh = async () => {
   if (!opdsEnabled.value) {
-    ElMessage.warning('OPDS服务未启用');
+    ElMessage.warning("OPDS服务未启用");
     return;
   }
-  
+
   loading.value = true;
   try {
-    const response = await bookRssApi.fetchBooksFromOpds('');
+    const response = await bookRssApi.fetchBooksFromOpds("");
     books.value = response.data?.books || [];
   } catch (error) {
-    console.error('获取OPDS书籍失败:', error);
-    ElMessage.error('获取书籍列表失败');
+    console.error("获取OPDS书籍失败:", error);
+    ElMessage.error("获取书籍列表失败");
   } finally {
     loading.value = false;
   }
@@ -172,11 +170,11 @@ const handleSelectBook = (book: OpdsBookFromApi) => {
     title: book.title,
     author: book.author,
     description: book.description,
-    link: book.sourceUrl
+    link: book.sourceUrl,
   };
   selectedBook.value = opdsBook;
-  emit('update:modelValue', opdsBook);
-  emit('book-selected', opdsBook);
+  emit("update:modelValue", opdsBook);
+  emit("book-selected", opdsBook);
 };
 
 // 组件挂载时检查OPDS状态
@@ -189,7 +187,7 @@ onMounted(async () => {
 defineExpose({
   refresh: handleRefresh,
   search: handleSearch,
-  checkStatus: checkOpdsStatus
+  checkStatus: checkOpdsStatus,
 });
 </script>
 

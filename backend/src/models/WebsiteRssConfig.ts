@@ -34,7 +34,7 @@ class WebsiteRssConfig
   public selector!: WebsiteRssSelector;
   public auth!: WebsiteRssAuth;
   public authCredentialId?: number;
-  public renderMode?: 'static' | 'rendered';
+  public renderMode?: "static" | "rendered";
   public lastContent!: string;
   public lastFetchTime!: Date;
   public fetchInterval!: number;

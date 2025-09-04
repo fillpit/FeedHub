@@ -89,8 +89,7 @@ router.post("/import-with-scripts", upload.single("zipFile"), (req, res) =>
 // 自定义路由执行（公开访问）
 router.get("/sub/*", (req, res) => controller.executeRouteScript(req, res));
 
-
 // 获取动态路由说明文档
-router.get('/help/*', (req, res) => controller.getRouteHelp(req, res));
+router.get("/help/*", (req, res) => controller.getRouteHelp(req, res));
 
 export default router;

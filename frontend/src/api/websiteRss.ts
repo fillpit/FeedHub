@@ -34,12 +34,11 @@ export const deleteWebsiteRss = (id: number) => {
 
 // 刷新网站 RSS
 export const refreshWebsiteRss = (id: number) => {
-  return request.post(`${baseUrl}/${id}/refresh`, {});  
+  return request.post(`${baseUrl}/${id}/refresh`, {});
 };
 
-
 // 获取订阅链接
-export const getSubscribeUrl = (key: string, type: 'rss' | 'json' = "rss") => {
+export const getSubscribeUrl = (key: string, type: "rss" | "json" = "rss") => {
   return `${window.location.origin}${baseUrl}/sub/${key}?type=${type}`;
 };
 

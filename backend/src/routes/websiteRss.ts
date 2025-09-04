@@ -30,5 +30,4 @@ router.post("/debug-selector", (req, res) => websiteRssController.debugSelector(
 // 统一订阅地址（公开访问）- 支持type参数控制格式
 router.get("/sub/:key", (req, res) => websiteRssController.getSubscriptionFeed(req, res));
 
-
 export default router;

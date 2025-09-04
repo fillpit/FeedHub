@@ -188,7 +188,10 @@ export class BookService {
                 authType: opdsConfig.authType,
                 bearerToken: opdsConfig.bearerToken,
               };
-              console.log("[BookService.addBookFromOpds] 使用OPDS配置授权信息，认证类型:", opdsConfig.authType);
+              console.log(
+                "[BookService.addBookFromOpds] 使用OPDS配置授权信息，认证类型:",
+                opdsConfig.authType
+              );
             }
           } else {
             // 使用全局OPDS设置
@@ -260,10 +263,7 @@ export class BookService {
 
             // 处理封面URL
             if (parseResult.coverUrl) {
-              console.log(
-                "[BookService.addBookFromOpds] 更新书籍封面:",
-                parseResult.coverUrl
-              );
+              console.log("[BookService.addBookFromOpds] 更新书籍封面:", parseResult.coverUrl);
               updateData.coverUrl = parseResult.coverUrl;
             }
 
@@ -856,7 +856,10 @@ export class BookService {
             authType: opdsConfig.authType,
             bearerToken: opdsConfig.bearerToken,
           };
-          console.log("[BookService.redownloadAndParseOpdsBook] 使用OPDS配置授权信息，认证类型:", opdsConfig.authType);
+          console.log(
+            "[BookService.redownloadAndParseOpdsBook] 使用OPDS配置授权信息，认证类型:",
+            opdsConfig.authType
+          );
         }
       } else {
         // 使用全局OPDS设置
@@ -957,12 +960,15 @@ export class BookService {
   /**
    * 下载EPUB文件到临时目录
    */
-  private async downloadEpubFile(url: string, authConfig?: {
-    username?: string;
-    password?: string;
-    authType?: "none" | "basic" | "bearer";
-    bearerToken?: string;
-  }): Promise<{
+  private async downloadEpubFile(
+    url: string,
+    authConfig?: {
+      username?: string;
+      password?: string;
+      authType?: "none" | "basic" | "bearer";
+      bearerToken?: string;
+    }
+  ): Promise<{
     success: boolean;
     filePath?: string;
     error?: string;

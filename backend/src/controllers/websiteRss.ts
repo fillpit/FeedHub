@@ -59,17 +59,17 @@ export class WebsiteRssController extends BaseController {
   async getSubscriptionFeed(req: Request, res: Response): Promise<void> {
     try {
       const key = req.params.key;
-      const type = req.query.type as string || 'rss';
+      const type = (req.query.type as string) || "rss";
 
       // 验证type参数
-      if (type !== 'rss' && type !== 'json') {
+      if (type !== "rss" && type !== "json") {
         res.status(400).json({
-          error: '无效的type参数，只支持rss或json'
+          error: "无效的type参数，只支持rss或json",
         });
         return;
       }
 
-      if (type === 'json') {
+      if (type === "json") {
         // 返回JSON格式
         const rssFeedJson = await this.websiteRssService.getRssFeedJson(key);
         res.setHeader("Content-Type", "application/json");
@@ -82,9 +82,9 @@ export class WebsiteRssController extends BaseController {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
-      if (req.query.type === 'json') {
+      if (req.query.type === "json") {
         res.status(500).json({
-          error: `获取订阅Feed失败: ${errorMessage}`
+          error: `获取订阅Feed失败: ${errorMessage}`,
         });
       } else {
         res.status(404).send(`获取订阅Feed失败: ${errorMessage}`);

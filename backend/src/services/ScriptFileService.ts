@@ -362,7 +362,7 @@ async function main(context) {
 
     const readmePath = path.join(scriptDir, "README.md");
     fs.writeFileSync(readmePath, content, "utf-8");
-    
+
     logger.info(`[ScriptFileService] 更新README文件: ${readmePath}`);
   }
 

@@ -47,7 +47,13 @@
             >
               <template #default="{ row }">
                 <div class="content-preview">
-                  <span>{{ row.content ? (row.content.length > 100 ? row.content.substring(0, 100) + '...' : row.content) : '无内容' }}</span>
+                  <span>{{
+                    row.content
+                      ? row.content.length > 100
+                        ? row.content.substring(0, 100) + "..."
+                        : row.content
+                      : "无内容"
+                  }}</span>
                 </div>
               </template>
             </el-table-column>
@@ -189,7 +195,7 @@ watch(
 .content-preview {
   max-width: 300px;
   text-align: left;
-  
+
   span {
     display: block;
     line-height: 1.4;

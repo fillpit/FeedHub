@@ -197,11 +197,11 @@ export class WebsiteRssService {
    */
   private async getAuthInfo(authCredentialId?: number, existingAuth?: any): Promise<any> {
     let auth = existingAuth || { enabled: false, authType: "none" };
-    
+
     if (authCredentialId) {
       const authObj = await AuthCredential.findByPk(authCredentialId);
       if (!authObj) throw new Error("未找到授权信息");
-      
+
       let customHeaders: Record<string, string> | undefined = undefined;
       if (authObj.customHeaders && typeof authObj.customHeaders === "object") {
         try {
@@ -210,10 +210,10 @@ export class WebsiteRssService {
           customHeaders = undefined;
         }
       }
-      
+
       auth = { ...authObj.toJSON(), enabled: true, authType: authObj.authType, customHeaders };
     }
-    
+
     return auth;
   }
 
@@ -221,9 +221,9 @@ export class WebsiteRssService {
    * 获取网页内容（支持渲染模式）
    */
   private async fetchPageContent(
-    url: string, 
-    auth: any, 
-    renderMode: string = 'static',
+    url: string,
+    auth: any,
+    renderMode: string = "static",
     logs?: string[]
   ): Promise<string> {
     const requestConfig = createRequestConfig(auth);
@@ -236,7 +236,7 @@ export class WebsiteRssService {
       logs.push(`[INFO] 使用渲染模式: ${renderMode}`);
     }
 
-    if (renderMode === 'rendered') {
+    if (renderMode === "rendered") {
       // 使用浏览器渲染模式
       msg = `使用浏览器渲染模式获取页面: ${url}`;
       console.log(msg);
@@ -244,15 +244,15 @@ export class WebsiteRssService {
       if (logs) {
         logs.push(`[INFO] ${msg}`);
       }
-      
+
       try {
         html = await PageRenderer.renderPage({
           url: url,
           auth: auth,
           timeout: 30000,
-          waitTime: 2000 // 等待2秒确保JavaScript执行完成
+          waitTime: 2000, // 等待2秒确保JavaScript执行完成
         });
-        
+
         msg = `浏览器渲染成功: ${url}`;
         console.log(msg);
         if (logs) {
@@ -264,11 +264,10 @@ export class WebsiteRssService {
         if (logs) {
           logs.push(`[WARN] ${msg}`);
         }
-        
+
         // 回退到静态模式
         const response = await this.axiosInstance.get(url, requestConfig);
         html = response.data;
-        
 
         msg = `静态模式获取成功，状态码: ${response.status}`;
         console.log(msg);
@@ -283,10 +282,10 @@ export class WebsiteRssService {
       if (logs) {
         logs.push(`[INFO] ${msg}`);
       }
-      
+
       const response = await this.axiosInstance.get(url, requestConfig);
       html = response.data;
-      
+
       msg = `网页获取成功，状态码: ${response.status}`;
       console.log(msg);
       if (logs) {
@@ -294,21 +293,21 @@ export class WebsiteRssService {
         logs.push(`[INFO] 响应头: ${JSON.stringify(response.headers, null, 2)}`);
       }
     }
-    
+
     msg = `网页内容长度: ${html.length} 字符`;
     console.log(msg);
     if (logs) {
       logs.push(`[INFO] ${msg}`);
     }
-    
+
     return html;
   }
 
   /**
    * 刷新配置后更新内容
    */
-  private async fetchAndUpdateContent(config: WebsiteRssConfigAttributes):Promise<void> {
-    let content = await this.fetchContent(config, undefined);
+  private async fetchAndUpdateContent(config: WebsiteRssConfigAttributes): Promise<void> {
+    const content = await this.fetchContent(config, undefined);
 
     // 更新配置
     await WebsiteRssConfig.update(
@@ -330,7 +329,7 @@ export class WebsiteRssService {
       const auth = await this.getAuthInfo(config.authCredentialId, config.auth);
       config.auth = auth;
       if (config.authCredentialId && auth.enabled) {
-        msg = `获取授权信息: ${auth.name || 'Unknown'} (${auth.authType})`;
+        msg = `获取授权信息: ${auth.name || "Unknown"} (${auth.authType})`;
         console.log(msg);
         if (logs) {
           logs.push(`[INFO] ${msg}`);
@@ -338,7 +337,7 @@ export class WebsiteRssService {
       }
 
       // 获取网页内容
-      const renderMode = config.renderMode || 'static';
+      const renderMode = config.renderMode || "static";
       const html = await this.fetchPageContent(config.url, auth, renderMode, logs);
 
       // 提取内容并格式化日期
@@ -368,7 +367,6 @@ export class WebsiteRssService {
       }));
 
       return formattedContent;
-
     } catch (error: any) {
       console.error(`RSS订阅更新失败 [ID: ${config.id}]:`, error.message);
       if (logs) {

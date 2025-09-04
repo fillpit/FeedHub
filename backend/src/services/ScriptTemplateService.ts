@@ -354,23 +354,23 @@ module.exports = { main };
    * 获取README模板
    */
   getReadmeTemplate(routeConfig?: any): string {
-    const routeName = routeConfig?.name || '动态路由脚本';
-    const routePath = routeConfig?.path || '/example';
-    const routeMethod = routeConfig?.method || 'GET';
-    const routeDescription = routeConfig?.description || '这是一个动态路由脚本';
-    
+    const routeName = routeConfig?.name || "动态路由脚本";
+    const routePath = routeConfig?.path || "/example";
+    const routeMethod = routeConfig?.method || "GET";
+    const routeDescription = routeConfig?.description || "这是一个动态路由脚本";
+
     // 生成参数说明
-    let paramsSection = '';
+    let paramsSection = "";
     if (routeConfig?.params && routeConfig.params.length > 0) {
-      paramsSection = '## 参数说明\n\n';
+      paramsSection = "## 参数说明\n\n";
       routeConfig.params.forEach((param: any) => {
-        const required = param.required ? '（必需）' : '（可选）';
-        const defaultValue = param.defaultValue ? ` 默认值: \`${param.defaultValue}\`` : '';
-        paramsSection += `- **${param.name}** ${required}: ${param.description || '无描述'}${defaultValue}\n`;
+        const required = param.required ? "（必需）" : "（可选）";
+        const defaultValue = param.defaultValue ? ` 默认值: \`${param.defaultValue}\`` : "";
+        paramsSection += `- **${param.name}** ${required}: ${param.description || "无描述"}${defaultValue}\n`;
       });
-      paramsSection += '\n';
+      paramsSection += "\n";
     }
-    
+
     return `# ${routeName}
 
 ${routeDescription}

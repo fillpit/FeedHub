@@ -463,49 +463,48 @@ export class DynamicRouteService {
     try {
       // 根据路径查找路由配置
       const routeMatch = await this.getRouteByPathPattern(routePath);
-      
+
       if (!routeMatch) {
         logger.warn(`Route not found for path: ${routePath}`);
         return null;
       }
-      
+
       const route = routeMatch.route;
-      
+
       // 检查是否为内联脚本类型
       if (route.script.sourceType !== "inline" || !route.script.folder) {
         logger.warn(`Route ${routePath} is not an inline script or has no folder`);
         return null;
       }
-      
+
       // 检查README文件是否存在
       const hasReadme = await this.scriptFileService.hasReadmeFile(route.script.folder);
       if (!hasReadme) {
         logger.warn(`No README found for route: ${routePath}`);
         return null;
       }
-      
+
       // 获取README内容
       const readmeContent = await this.scriptFileService.readReadmeFile(route.script.folder);
-      
+
       if (!readmeContent) {
         logger.warn(`README content is empty for route: ${routePath}`);
         return null;
       }
-      
+
       // 在README内容中动态替换路径参数信息
       let processedContent = readmeContent;
-      
+
       if (routeMatch.pathParams && Object.keys(routeMatch.pathParams).length > 0) {
         // 添加当前请求的路径参数信息
         const pathParamsInfo = Object.entries(routeMatch.pathParams)
           .map(([key, value]) => `- ${key}: ${value}`)
-          .join('\n');
-        
+          .join("\n");
+
         processedContent += `\n\n## 当前请求路径参数\n\n${pathParamsInfo}`;
       }
-      
+
       return processedContent;
-      
     } catch (error) {
       logger.error(`Error getting route README by path ${routePath}:`, error);
       return null;

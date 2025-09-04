@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
 import { injectable, inject } from "inversify";
+import * as ejs from "ejs";
+import * as path from "path";
+import MarkdownIt from "markdown-it";
 import { TYPES } from "../core/types";
 import { DynamicRouteService } from "../services/DynamicRouteService";
 import { NotificationService } from "../services/NotificationService";
@@ -235,107 +238,112 @@ export class DynamicRouteController extends BaseController {
       // 从路径中提取实际的路由路径
       // /api/dynamic/help/news -> /news
       const fullPath = req.path;
-      const helpPrefix = '/help';
+      const helpPrefix = "/help";
       const helpIndex = fullPath.indexOf(helpPrefix);
-      
+
       if (helpIndex === -1) {
-        throw new ValidationError('Invalid help path format');
+        throw new ValidationError("Invalid help path format");
       }
-      
-      const routePath = fullPath.substring(helpIndex + helpPrefix.length) || '/';
-      
+
+      const routePath = fullPath.substring(helpIndex + helpPrefix.length) || "/";
+
       logger.info(`Getting help for route: ${routePath}`);
-      
+
       const readmeContent = await this.dynamicRouteService.getRouteReadmeByPath(routePath);
-      
+
       if (!readmeContent) {
         // 使用 EJS 模板渲染友好的错误页面
-        const ejs = require('ejs');
-        const path = require('path');
-        const templatePath = path.join(__dirname, '../views/templates/not-found.ejs');
-        
-        ejs.renderFile(templatePath, {
-          routePath
-        }, {}, (err: Error | null, html: string) => {
-          if (err) {
-            logger.error('错误页面模板渲染错误:', err);
-            res.status(404).json({
-              success: false,
-              message: `No documentation found for route: ${routePath}`
-            });
-            return;
+        const templatePath = path.join(__dirname, "../views/templates/not-found.ejs");
+
+        ejs.renderFile(
+          templatePath,
+          {
+            routePath,
+          },
+          {},
+          (err: Error | null, html: string) => {
+            if (err) {
+              logger.error("错误页面模板渲染错误:", err);
+              res.status(404).json({
+                success: false,
+                message: `No documentation found for route: ${routePath}`,
+              });
+              return;
+            }
+
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            res.status(404).send(html);
           }
-          
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.status(404).send(html);
-        });
+        );
         return;
       }
-      
+
       // 检查是否请求原始 Markdown 格式
       const format = req.query.format as string;
-      if (format === 'markdown') {
+      if (format === "markdown") {
         // 返回原始 Markdown 格式
-        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        res.setHeader("Content-Type", "text/markdown; charset=utf-8");
         res.send(readmeContent);
         return;
       }
-      
+
       // 使用 markdown-it 将 Markdown 转换为 HTML
-      const md = require('markdown-it')();
+      const md = new MarkdownIt();
       const htmlContent = md.render(readmeContent);
-      
+
       // 使用 EJS 模板渲染页面
-      const ejs = require('ejs');
-      const path = require('path');
-      const templatePath = path.join(__dirname, '../views/templates/markdown.ejs');
-      
+      const templatePath = path.join(__dirname, "../views/templates/markdown.ejs");
+
       // 获取路由名称作为标题
-      let title = '动态路由文档';
+      let title = "动态路由文档";
       try {
         const routeMatch = await this.dynamicRouteService.getRouteByPathPattern(routePath);
         if (routeMatch && routeMatch.route) {
-          title = routeMatch.route.name || '动态路由文档';
+          title = routeMatch.route.name || "动态路由文档";
         }
       } catch (err) {
         logger.warn(`无法获取路由名称: ${err}`);
       }
-      
+
       // 渲染模板
-      ejs.renderFile(templatePath, {
-        title,
-        content: htmlContent,
-        routePath
-      }, {}, (err: Error | null, html: string) => {
-        if (err) {
-          logger.error('模板渲染错误:', err);
-          res.status(500).json({
-            success: false,
-            message: '模板渲染错误: ' + err.message
-          });
-          return;
+      ejs.renderFile(
+        templatePath,
+        {
+          title,
+          content: htmlContent,
+          routePath,
+        },
+        {},
+        (err: Error | null, html: string) => {
+          if (err) {
+            logger.error("模板渲染错误:", err);
+            res.status(500).json({
+              success: false,
+              message: "模板渲染错误: " + err.message,
+            });
+            return;
+          }
+
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.send(html);
         }
-        
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.send(html);
-      });
-      
+      );
     } catch (error) {
-       logger.error('Error getting route help:', error);
-       
-       if (error instanceof ValidationError) {
-         res.status(400).json({
-           success: false,
-           message: error.message
-         });
-       } else {
-         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-         res.status(500).json({
-           success: false,
-           message: 'Internal server error while getting route help: ' + errorMessage
-         });
-       }
-     }
+      logger.error("Error getting route help:", error);
+
+      if (error instanceof ValidationError) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        res.status(500).json({
+          success: false,
+          message: "Internal server error while getting route help: " + errorMessage,
+        });
+      }
+    }
   }
 
   /**

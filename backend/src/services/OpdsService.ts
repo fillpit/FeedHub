@@ -619,7 +619,7 @@ export class OpdsService {
         // 如果没有找到下载链接，返回第一个链接
         href = links[0].$.href;
       }
-      
+
       // 处理相对路径，转换为完整URL
       if (href !== "#" && href.startsWith("/")) {
         const base = new URL(baseUrl);
@@ -627,10 +627,10 @@ export class OpdsService {
         console.log("[OpdsService.extractDownloadLink] 转换相对路径:", {
           original: downloadLink?.$.href || links[0]?.$.href,
           converted: href,
-          baseUrl: baseUrl
+          baseUrl: baseUrl,
         });
       }
-      
+
       return href;
     }
     return "#";
@@ -660,7 +660,7 @@ export class OpdsService {
           console.log("[OpdsService.extractNextPageUrl] 转换相对路径:", {
             original: nextLink.$.href,
             converted: href,
-            baseUrl: baseUrl
+            baseUrl: baseUrl,
           });
         }
         return href;

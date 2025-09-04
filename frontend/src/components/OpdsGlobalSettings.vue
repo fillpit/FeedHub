@@ -72,7 +72,11 @@
                 <el-icon v-if="!testing"><Connection /></el-icon>
                 测试连接
               </el-button>
-              <span v-if="testResult" class="test-result" :class="testResult.success ? 'success' : 'error'">
+              <span
+                v-if="testResult"
+                class="test-result"
+                :class="testResult.success ? 'success' : 'error'"
+              >
                 {{ testResult.message }}
               </span>
             </el-form-item>
@@ -80,11 +84,7 @@
 
           <!-- 保存按钮 -->
           <el-form-item>
-            <el-button
-              type="primary"
-              :loading="saving"
-              @click="saveSettings"
-            >
+            <el-button type="primary" :loading="saving" @click="saveSettings">
               <el-icon v-if="!saving"><Check /></el-icon>
               保存设置
             </el-button>
@@ -96,26 +96,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Connection, Link, User, Lock, Check } from '@element-plus/icons-vue'
-import { useUserSettingStore } from '@/stores/userSetting'
-import type { GlobalSettingAttributes } from '@feedhub/shared'
+import { ref, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { Connection, Link, User, Lock, Check } from "@element-plus/icons-vue";
+import { useUserSettingStore } from "@/stores/userSetting";
+import type { GlobalSettingAttributes } from "@feedhub/shared";
 
 // Store
-const settingStore = useUserSettingStore()
+const settingStore = useUserSettingStore();
 
 // 响应式数据
 const opdsSettings = ref({
   opdsEnabled: false,
-  opdsServerUrl: '',
-  opdsUsername: '',
-  opdsPassword: ''
-})
+  opdsServerUrl: "",
+  opdsUsername: "",
+  opdsPassword: "",
+});
 
-const saving = ref(false)
-const testing = ref(false)
-const testResult = ref<{ success: boolean; message: string } | null>(null)
+const saving = ref(false);
+const testing = ref(false);
+const testResult = ref<{ success: boolean; message: string } | null>(null);
 
 // 监听 store 中的全局设置变化
 watch(
@@ -124,85 +124,85 @@ watch(
     if (newVal) {
       opdsSettings.value = {
         opdsEnabled: (newVal as any).opdsEnabled || false,
-        opdsServerUrl: (newVal as any).opdsServerUrl || '',
-        opdsUsername: (newVal as any).opdsUsername || '',
-        opdsPassword: (newVal as any).opdsPassword || ''
-      }
+        opdsServerUrl: (newVal as any).opdsServerUrl || "",
+        opdsUsername: (newVal as any).opdsUsername || "",
+        opdsPassword: (newVal as any).opdsPassword || "",
+      };
     }
   },
   { immediate: true }
-)
+);
 
 // 处理启用开关变化
 const handleOpdsEnabledChange = async (enabled: boolean) => {
   if (!enabled) {
     // 禁用时清空测试结果
-    testResult.value = null
+    testResult.value = null;
   }
   // 自动保存启用状态
-  await saveSettings()
-}
+  await saveSettings();
+};
 
 // 测试连接
 const testConnection = async () => {
   if (!opdsSettings.value.opdsServerUrl) {
-    ElMessage.warning('请先输入服务器地址')
-    return
+    ElMessage.warning("请先输入服务器地址");
+    return;
   }
 
-  testing.value = true
-  testResult.value = null
+  testing.value = true;
+  testResult.value = null;
 
   try {
     // 这里应该调用后端API测试OPDS连接
     // 暂时模拟测试
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // 简单的URL格式验证
-    const url = opdsSettings.value.opdsServerUrl
-    if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
-      throw new Error('服务器地址必须以 http:// 或 https:// 开头')
+    const url = opdsSettings.value.opdsServerUrl;
+    if (!url || (!url.startsWith("http://") && !url.startsWith("https://"))) {
+      throw new Error("服务器地址必须以 http:// 或 https:// 开头");
     }
 
     testResult.value = {
       success: true,
-      message: '连接测试成功'
-    }
-    ElMessage.success('OPDS 服务器连接测试成功')
+      message: "连接测试成功",
+    };
+    ElMessage.success("OPDS 服务器连接测试成功");
   } catch (error) {
     testResult.value = {
       success: false,
-      message: error instanceof Error ? error.message : '连接测试失败'
-    }
-    ElMessage.error('OPDS 服务器连接测试失败')
+      message: error instanceof Error ? error.message : "连接测试失败",
+    };
+    ElMessage.error("OPDS 服务器连接测试失败");
   } finally {
-    testing.value = false
+    testing.value = false;
   }
-}
+};
 
 // 保存设置
 const saveSettings = async () => {
-  saving.value = true
+  saving.value = true;
   try {
     // 构建完整的全局设置对象
     const globalSetting = {
       ...settingStore.globalSetting,
-      ...(opdsSettings.value as any)
-    } as GlobalSettingAttributes
+      ...(opdsSettings.value as any),
+    } as GlobalSettingAttributes;
 
     await settingStore.saveSettings({
       globalSetting,
-      userSettings: settingStore.userSettings
-    })
+      userSettings: settingStore.userSettings,
+    });
 
-    ElMessage.success('OPDS 设置保存成功')
+    ElMessage.success("OPDS 设置保存成功");
   } catch (error) {
-    console.error('保存OPDS设置失败:', error)
-    ElMessage.error('保存OPDS设置失败')
+    console.error("保存OPDS设置失败:", error);
+    ElMessage.error("保存OPDS设置失败");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 </script>
 
 <style lang="scss" scoped>

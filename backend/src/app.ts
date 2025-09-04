@@ -23,10 +23,10 @@ class App {
   private setupExpress(): void {
     // 设置中间件
     setupMiddlewares(this.app);
-    
+
     // 配置 EJS 模板引擎
-    this.app.set('view engine', 'ejs');
-    this.app.set('views', __dirname + '/views');
+    this.app.set("view engine", "ejs");
+    this.app.set("views", __dirname + "/views");
 
     // 设置路由
     this.app.use("/", routes);

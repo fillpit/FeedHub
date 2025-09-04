@@ -10,8 +10,8 @@
             刷新数据
           </el-button>
           <el-button type="primary" @click="addConfig">添加配置</el-button>
-          <el-button 
-            type="success" 
+          <el-button
+            type="success"
             @click="exportSelectedConfigs"
             :disabled="selectedConfigs.length === 0"
           >
@@ -24,8 +24,8 @@
           </el-button>
         </div>
       </div>
-      <el-table 
-        :data="configs" 
+      <el-table
+        :data="configs"
         border
         v-loading="configsLoading"
         @selection-change="handleSelectionChange"
@@ -47,7 +47,11 @@
         <el-table-column label="订阅链接" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <div v-if="row.key" class="subscription-link">
-              <el-dropdown placement="top-end" trigger="hover" @command="(command: string) => copyRssLink(row.key, command as 'rss' | 'json')">
+              <el-dropdown
+                placement="top-end"
+                trigger="hover"
+                @command="(command: string) => copyRssLink(row.key, command as 'rss' | 'json')"
+              >
                 <span class="subscription-link-text">
                   /website/sub/{{ row.key }}
                   <el-icon class="el-icon--right"><arrow-down /></el-icon>
@@ -133,7 +137,10 @@
               <el-radio-button label="static">静态页面</el-radio-button>
               <el-radio-button label="rendered">浏览器渲染</el-radio-button>
             </el-radio-group>
-            <el-tooltip content="静态页面：直接请求HTML内容，速度快但无法获取JavaScript动态生成的内容；浏览器渲染：使用无头浏览器渲染页面，可获取JavaScript动态内容但速度较慢" placement="top">
+            <el-tooltip
+              content="静态页面：直接请求HTML内容，速度快但无法获取JavaScript动态生成的内容；浏览器渲染：使用无头浏览器渲染页面，可获取JavaScript动态内容但速度较慢"
+              placement="top"
+            >
               <el-icon style="color: #909399; cursor: help"><QuestionFilled /></el-icon>
             </el-tooltip>
           </div>
@@ -176,9 +183,9 @@
             />
             <el-popover placement="top" width="400" trigger="click">
               <template #reference>
-                <el-button 
-                  size="small" 
-                  :type="form.selector.title.regexPattern ? 'success' : 'info'" 
+                <el-button
+                  size="small"
+                  :type="form.selector.title.regexPattern ? 'success' : 'info'"
                   :plain="!form.selector.title.regexPattern"
                 >
                   <el-icon><Setting /></el-icon>
@@ -239,9 +246,9 @@
             />
             <el-popover placement="top" width="400" trigger="click">
               <template #reference>
-                <el-button 
-                  size="small" 
-                  :type="form.selector.link!.regexPattern ? 'success' : 'info'" 
+                <el-button
+                  size="small"
+                  :type="form.selector.link!.regexPattern ? 'success' : 'info'"
                   :plain="!form.selector.link!.regexPattern"
                 >
                   <el-icon><Setting /></el-icon>
@@ -250,11 +257,11 @@
               </template>
               <div class="regex-config">
                 <el-form-item label="正则表达式" size="small">
-                   <el-input
-                     v-model="form.selector.link!.regexPattern"
-                     placeholder="如: href=&quot;([^&quot;]+)&quot;"
-                     clearable
-                   />
+                  <el-input
+                    v-model="form.selector.link!.regexPattern"
+                    placeholder='如: href="([^"]+)"'
+                    clearable
+                  />
                 </el-form-item>
                 <el-form-item label="标志" size="small">
                   <el-input
@@ -302,9 +309,9 @@
             />
             <el-popover placement="top" width="400" trigger="click">
               <template #reference>
-                <el-button 
-                  size="small" 
-                  :type="form.selector.content.regexPattern ? 'success' : 'info'" 
+                <el-button
+                  size="small"
+                  :type="form.selector.content.regexPattern ? 'success' : 'info'"
                   :plain="!form.selector.content.regexPattern"
                 >
                   <el-icon><Setting /></el-icon>
@@ -365,9 +372,9 @@
             />
             <el-popover placement="top" width="400" trigger="click">
               <template #reference>
-                <el-button 
-                  size="small" 
-                  :type="form.selector.author!.regexPattern ? 'success' : 'info'" 
+                <el-button
+                  size="small"
+                  :type="form.selector.author!.regexPattern ? 'success' : 'info'"
                   :plain="!form.selector.author!.regexPattern"
                 >
                   <el-icon><Setting /></el-icon>
@@ -428,9 +435,9 @@
             />
             <el-popover placement="top" width="400" trigger="click">
               <template #reference>
-                <el-button 
-                  size="small" 
-                  :type="form.selector.date!.regexPattern ? 'success' : 'info'" 
+                <el-button
+                  size="small"
+                  :type="form.selector.date!.regexPattern ? 'success' : 'info'"
                   :plain="!form.selector.date!.regexPattern"
                 >
                   <el-icon><Setting /></el-icon>
@@ -683,10 +690,7 @@
     </el-dialog>
 
     <!-- Selector Help Dialog -->
-    <SelectorHelpDialog 
-      v-model="showSelectorHelp" 
-      :selector-type="form.selector.selectorType" 
-    />
+    <SelectorHelpDialog v-model="showSelectorHelp" :selector-type="form.selector.selectorType" />
   </div>
 </template>
 
@@ -1145,7 +1149,7 @@ const importConfigs = async () => {
         const cleanConfig = {
           ...config,
           id: undefined,
-          key: undefined
+          key: undefined,
         };
 
         if (exists && importOptions.overwrite) {
@@ -1640,6 +1644,4 @@ const openSelectorHelp = () => {
   margin-left: 4px;
   font-size: 12px;
 }
-
-
 </style>

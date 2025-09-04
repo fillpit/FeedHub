@@ -95,9 +95,7 @@ export function getInlineScriptFiles(routeId: number) {
  * @param fileName 文件名
  */
 export function getInlineScriptFileContent(routeId: number, fileName: string) {
-  return request.get(
-    `/api/dynamic/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`
-  );
+  return request.get(`/api/dynamic/${routeId}/inline-script/files/${encodeURIComponent(fileName)}`);
 }
 
 /**

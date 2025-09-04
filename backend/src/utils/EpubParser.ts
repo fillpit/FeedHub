@@ -182,11 +182,11 @@ export class EpubParser {
       if (manifest.item) {
         for (const item of manifest.item) {
           const attrs = item.$;
-          if (attrs.properties && attrs.properties.includes('cover-image')) {
+          if (attrs.properties && attrs.properties.includes("cover-image")) {
             coverItem = attrs;
             break;
           }
-          if (attrs.id === 'cover' || attrs.id === 'cover-image') {
+          if (attrs.id === "cover" || attrs.id === "cover-image") {
             coverItem = attrs;
             break;
           }
@@ -195,12 +195,12 @@ export class EpubParser {
 
       // 方法2: 查找常见的封面文件名
       if (!coverItem && manifest.item) {
-        const coverPatterns = ['cover', 'Cover', 'COVER', 'cover.jpg', 'cover.png', 'cover.jpeg'];
+        const coverPatterns = ["cover", "Cover", "COVER", "cover.jpg", "cover.png", "cover.jpeg"];
         for (const item of manifest.item) {
           const attrs = item.$;
           const href = attrs.href;
-          if (href && coverPatterns.some(pattern => href.includes(pattern))) {
-            if (attrs['media-type'] && attrs['media-type'].startsWith('image/')) {
+          if (href && coverPatterns.some((pattern) => href.includes(pattern))) {
+            if (attrs["media-type"] && attrs["media-type"].startsWith("image/")) {
               coverItem = attrs;
               break;
             }
@@ -219,7 +219,7 @@ export class EpubParser {
       }
 
       // 创建封面存储目录
-      const uploadsDir = path.join(process.cwd(), 'uploads', 'covers');
+      const uploadsDir = path.join(process.cwd(), "uploads", "covers");
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }

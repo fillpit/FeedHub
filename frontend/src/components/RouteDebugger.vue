@@ -53,7 +53,13 @@
                   <template #default="{ row }">
                     <div class="content-preview">
                       <el-tooltip :content="row.content" placement="top" :disabled="!row.content">
-                        <span>{{ row.content ? (row.content.length > 100 ? row.content.substring(0, 100) + '...' : row.content) : '无内容' }}</span>
+                        <span>{{
+                          row.content
+                            ? row.content.length > 100
+                              ? row.content.substring(0, 100) + "..."
+                              : row.content
+                            : "无内容"
+                        }}</span>
                       </el-tooltip>
                     </div>
                   </template>
@@ -93,18 +99,18 @@
         </el-tabs>
       </div>
     </div>
-    
+
     <!-- 内联脚本在线编辑器 -->
     <InlineScriptEditor v-model="scriptEditorVisible" :route-id="props.route.id || 0" />
   </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { ElMessage } from 'element-plus';
-import { Edit } from '@element-plus/icons-vue';
-import { debugDynamicRouteScript, type DynamicRouteConfig } from '@/api/dynamicRoute';
-import InlineScriptEditor from './InlineScriptEditor.vue';
+import { ref, computed, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { Edit } from "@element-plus/icons-vue";
+import { debugDynamicRouteScript, type DynamicRouteConfig } from "@/api/dynamicRoute";
+import InlineScriptEditor from "./InlineScriptEditor.vue";
 
 interface Props {
   modelValue: boolean;
@@ -112,7 +118,7 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: boolean): void;
+  (e: "update:modelValue", value: boolean): void;
 }
 
 const props = defineProps<Props>();
@@ -122,20 +128,20 @@ const emit = defineEmits<Emits>();
 const loading = ref(false);
 const testParams = ref<Record<string, unknown>>({});
 const debugResult = ref<Record<string, any>>();
-const activeTab = ref('result');
+const activeTab = ref("result");
 const scriptEditorVisible = ref(false);
 
 // 计算属性
 const visible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit("update:modelValue", value),
 });
 
 // 重置调试状态
 const resetDebugState = () => {
   testParams.value = {};
   debugResult.value = undefined;
-  activeTab.value = 'result';
+  activeTab.value = "result";
 };
 
 // 执行调试
@@ -146,13 +152,13 @@ const executeDebug = async () => {
 
     if (res.code === 0) {
       debugResult.value = res.data as Record<string, unknown> | undefined;
-      activeTab.value = 'result';
+      activeTab.value = "result";
     } else {
-      ElMessage.error(res.message || '脚本调试失败');
+      ElMessage.error(res.message || "脚本调试失败");
     }
   } catch (error) {
-    console.error('调试脚本出错:', error);
-    ElMessage.error('调试脚本出错');
+    console.error("调试脚本出错:", error);
+    ElMessage.error("调试脚本出错");
   } finally {
     loading.value = false;
   }
@@ -161,7 +167,7 @@ const executeDebug = async () => {
 // 打开脚本编辑器
 const openScriptEditor = () => {
   if (!props.route.id) {
-    ElMessage.warning('请先保存路由配置');
+    ElMessage.warning("请先保存路由配置");
     return;
   }
   scriptEditorVisible.value = true;
@@ -224,29 +230,29 @@ watch(visible, (newValue) => {
   padding: 12px;
   max-height: 300px;
   overflow-y: auto;
-  
+
   .log-item {
     padding: 4px 0;
     border-bottom: 1px solid #e4e7ed;
     font-family: monospace;
     font-size: 12px;
-    
+
     &:last-child {
       border-bottom: none;
     }
-    
+
     .log-info {
       color: #409eff;
     }
-    
+
     .log-warn {
       color: #e6a23c;
     }
-    
+
     .log-error {
       color: #f56c6c;
     }
-    
+
     .log-debug {
       color: #909399;
     }
@@ -268,7 +274,7 @@ watch(visible, (newValue) => {
 
 .content-preview {
   max-width: 300px;
-  
+
   span {
     display: block;
     line-height: 1.4;

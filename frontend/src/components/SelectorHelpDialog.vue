@@ -96,9 +96,7 @@
                 <p><strong>作用：</strong>定位包含文章列表的容器元素</p>
                 <p><strong>示例：</strong></p>
                 <ul>
-                  <li>
-                    <code>//div[@class='article-list']</code> - 选择class为article-list的div
-                  </li>
+                  <li><code>//div[@class='article-list']</code> - 选择class为article-list的div</li>
                   <li><code>//ul[contains(@class, 'news')]</code> - 选择class包含news的ul</li>
                   <li>
                     <code>//div[@id='content']//div[@class='posts']</code> -
@@ -168,15 +166,34 @@
               :closable="false"
               style="margin-bottom: 15px"
             >
-              <p>正则处理功能允许您对选择器抓取的结果进行进一步的文本提取和清洗，适用于需要从复杂文本中提取特定内容的场景。</p>
+              <p>
+                正则处理功能允许您对选择器抓取的结果进行进一步的文本提取和清洗，适用于需要从复杂文本中提取特定内容的场景。
+              </p>
             </el-alert>
 
             <h3>配置参数</h3>
-            <el-table :data="[
-              { param: '正则表达式', description: '用于匹配和提取文本的正则表达式模式', example: '^(.+?)\\s*-\\s*作者' },
-              { param: '标志', description: '正则表达式标志，如 g(全局)、i(忽略大小写)、m(多行)', example: 'gi' },
-              { param: '捕获组', description: '要提取的捕获组索引，0表示整个匹配，1表示第一个括号内容', example: '1' }
-            ]" size="small" border style="margin-bottom: 20px">
+            <el-table
+              :data="[
+                {
+                  param: '正则表达式',
+                  description: '用于匹配和提取文本的正则表达式模式',
+                  example: '^(.+?)\\s*-\\s*作者',
+                },
+                {
+                  param: '标志',
+                  description: '正则表达式标志，如 g(全局)、i(忽略大小写)、m(多行)',
+                  example: 'gi',
+                },
+                {
+                  param: '捕获组',
+                  description: '要提取的捕获组索引，0表示整个匹配，1表示第一个括号内容',
+                  example: '1',
+                },
+              ]"
+              size="small"
+              border
+              style="margin-bottom: 20px"
+            >
               <el-table-column prop="param" label="参数" width="120" />
               <el-table-column prop="description" label="说明" />
               <el-table-column prop="example" label="示例" width="200" />
@@ -196,7 +213,10 @@
               </el-collapse-item>
 
               <el-collapse-item title="场景2：从链接文本中提取URL" name="regex-link">
-                <p><strong>原始文本：</strong><code>点击查看详情：https://example.com/article/123</code></p>
+                <p>
+                  <strong>原始文本：</strong
+                  ><code>点击查看详情：https://example.com/article/123</code>
+                </p>
                 <p><strong>目标：</strong>提取URL部分</p>
                 <p><strong>配置：</strong></p>
                 <ul>
@@ -229,7 +249,10 @@
               </el-collapse-item>
 
               <el-collapse-item title="场景5：清理HTML标签" name="regex-clean">
-                <p><strong>原始文本：</strong><code>&lt;p&gt;这是一段&lt;strong&gt;重要&lt;/strong&gt;内容&lt;/p&gt;</code></p>
+                <p>
+                  <strong>原始文本：</strong
+                  ><code>&lt;p&gt;这是一段&lt;strong&gt;重要&lt;/strong&gt;内容&lt;/p&gt;</code>
+                </p>
                 <p><strong>目标：</strong>提取纯文本内容</p>
                 <p><strong>配置：</strong></p>
                 <ul>
@@ -327,7 +350,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 interface Props {
   modelValue: boolean;
@@ -335,11 +358,11 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: boolean): void;
+  (e: "update:modelValue", value: boolean): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  selectorType: 'css'
+  selectorType: "css",
 });
 
 const emit = defineEmits<Emits>();
@@ -380,17 +403,23 @@ const xpathExamples = ref([
 ]);
 
 // 监听props变化
-watch(() => props.modelValue, (newVal) => {
-  visible.value = newVal;
-});
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    visible.value = newVal;
+  }
+);
 
-watch(() => props.selectorType, (newVal) => {
-  activeTab.value = newVal;
-});
+watch(
+  () => props.selectorType,
+  (newVal) => {
+    activeTab.value = newVal;
+  }
+);
 
 // 监听visible变化
 watch(visible, (newVal) => {
-  emit('update:modelValue', newVal);
+  emit("update:modelValue", newVal);
 });
 
 const handleClose = () => {
