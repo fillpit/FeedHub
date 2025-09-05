@@ -48,8 +48,11 @@ RUN pnpm run build:backend
 # 生产镜像
 FROM node:20-alpine AS production
 
-# 安装 nginx 和 git
-RUN apk add --no-cache nginx git
+# 设置时区环境变量（默认为 Asia/Shanghai）
+ENV TZ=Asia/Shanghai
+
+# 安装 nginx、git 和 tzdata（时区数据包）
+RUN apk add --no-cache nginx git tzdata
 
 # 创建应用目录
 WORKDIR /app
@@ -77,7 +80,15 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # 创建启动脚本
 RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo '# 设置时区' >> /app/start.sh && \
+    echo 'if [ -n "$TZ" ]; then' >> /app/start.sh && \
+    echo '  ln -snf /usr/share/zoneinfo/$TZ /etc/localtime' >> /app/start.sh && \
+    echo '  echo $TZ > /etc/timezone' >> /app/start.sh && \
+    echo '  echo "时区已设置为: $TZ"' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo '# 启动后端服务' >> /app/start.sh && \
     echo 'cd /app/backend && node dist/backend/src/app.js &' >> /app/start.sh && \
+    echo '# 启动 nginx' >> /app/start.sh && \
     echo 'nginx -g "daemon off;"' >> /app/start.sh && \
     chmod +x /app/start.sh
 

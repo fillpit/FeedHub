@@ -181,6 +181,7 @@ chmod +x deploy-with-chrome-service.sh
 | BASIC_AUTH_USERNAME | Basic Auth 用户名 | admin |
 | BASIC_AUTH_PASSWORD | Basic Auth 密码 | admin@123 |
 | API_BASE_URL | API 基础 URL | http://localhost:8008 |
+| TZ | 时区设置 | Asia/Shanghai |
 | SCRIPTS_DIR | 脚本存放目录 | 项目根目录/scripts |
 | CUSTOM_PACKAGES_DIR | 自定义包存放目录 | 项目根目录/custom_packages |
 
@@ -195,6 +196,19 @@ chmod +x deploy-with-chrome-service.sh
 - 可以设置为相对路径：`custom-packages`（相对于项目根目录）
 - 如果不设置，默认使用项目根目录下的 `custom_packages` 目录
 - 该目录用于存放通过包管理功能安装的npm包
+
+**TZ 时区配置说明**：
+- 用于设置容器的时区，影响日志时间、文件时间戳等
+- 支持标准时区格式，如：`Asia/Shanghai`、`America/New_York`、`Europe/London`
+- 容器启动时会自动根据此环境变量同步系统时区
+- 如果不设置，默认使用 `Asia/Shanghai` 时区
+- 常用时区示例：
+  - 中国：`Asia/Shanghai`
+  - 美国东部：`America/New_York`
+  - 美国西部：`America/Los_Angeles`
+  - 英国：`Europe/London`
+  - 日本：`Asia/Tokyo`
+  - UTC：`UTC`
 
 ## 特别声明
 

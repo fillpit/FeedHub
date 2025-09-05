@@ -370,10 +370,6 @@ export class DynamicRouteService {
     const route = await DynamicRouteConfig.findByPk(routeId);
     if (!route) throw new Error(`未找到ID为${routeId}的动态路由配置`);
 
-    if (route.script.sourceType !== "inline") {
-      throw new Error("该路由不是内联脚本类型");
-    }
-
     const scriptDirName = route.script.folder;
     if (!scriptDirName || scriptDirName.trim() === "") {
       throw new Error("脚本尚未初始化，请先初始化脚本");

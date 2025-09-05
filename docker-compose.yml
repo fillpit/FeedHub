@@ -31,6 +31,8 @@ services:
       - BASIC_AUTH_PASSWORD=admin@123
       - API_BASE_URL=http://localhost:8008
       - CHROME_SERVICE_URL=http://chrome:9222
+      # 时区设置（可选，默认为 Asia/Shanghai）
+      - TZ=Asia/Shanghai
     depends_on:
       - chrome
     volumes:
