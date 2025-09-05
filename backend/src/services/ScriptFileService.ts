@@ -262,6 +262,86 @@ async function main(context) {
 - \`helpers\`: 辅助函数
 - \`customRequire\`: 自定义require函数
 
+### utils.fetchApi 使用示例
+
+\`utils.fetchApi\` 是一个强大的HTTP请求工具，支持GET、POST等各种请求方法，并自动处理授权信息。
+
+#### GET请求示例（带查询参数）
+\`\`\`javascript
+async function main(context) {
+  const { utils, queryParams, console } = context;
+  
+  try {
+    // 方式1：通过params参数传递查询参数
+    const response1 = await utils.fetchApi('https://api.example.com/articles', {
+      method: 'GET',
+      params: {
+        page: queryParams.page || 1,
+        limit: queryParams.limit || 10,
+        category: queryParams.category || 'tech',
+        sort: 'date'
+      },
+      headers: {
+        'User-Agent': 'FeedHub/1.0'
+      },
+      timeout: 10000
+    });
+    
+    console.log('API响应状态:', response1.status);
+    console.log('返回数据:', response1.data);
+    
+    // 方式2：直接在URL中拼接查询参数
+    const page = queryParams.page || 1;
+    const limit = queryParams.limit || 10;
+    const apiUrl = \`https://api.example.com/news?page=\${page}&limit=\${limit}&format=json\`;
+    
+    const response2 = await utils.fetchApi(apiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    // 处理响应数据
+    const articles = response2.data.articles || [];
+    
+    return {
+      title: '新闻RSS源',
+      description: '从API获取的新闻内容',
+      link: 'https://example.com',
+      items: articles.map(article => ({
+        title: article.title,
+        link: article.url,
+        content: article.summary,
+        author: article.author,
+        pubDate: utils.parseDate(article.publishedAt)
+      }))
+    };
+    
+  } catch (error) {
+    console.error('API请求失败:', error.message);
+    throw new Error(\`获取数据失败: \${error.message}\`);
+  }
+}
+\`\`\`
+
+#### fetchApi 参数说明
+
+- \`url\`: 请求的URL地址（必需）
+- \`options\`: 请求选项对象（可选），支持以下属性：
+  - \`method\`: HTTP方法，如 'GET'、'POST'、'PUT'、'DELETE' 等，默认为 'GET'
+  - \`params\`: 查询参数对象，会自动转换为URL查询字符串
+  - \`data\`: 请求体数据（用于POST、PUT等请求）
+  - \`headers\`: 自定义请求头对象
+  - \`timeout\`: 请求超时时间（毫秒），默认30000ms
+
+#### 返回值说明
+
+\`fetchApi\` 返回一个包含以下属性的对象：
+- \`data\`: 响应数据
+- \`status\`: HTTP状态码
+- \`headers\`: 响应头信息
+
 ## 返回格式
 
 脚本应该返回以下格式的数据：

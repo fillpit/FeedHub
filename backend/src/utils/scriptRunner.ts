@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { logger } from "./logger";
 import { sanitizeCookie } from "./requestUtils";
 import { formatDate } from "./dateUtils";
+import { NpmPackageService } from "../services/NpmPackageService";
 
 function colorizeLog(level: string, message: string): string {
   return `[${level}] ${message}`;
@@ -331,10 +332,15 @@ export async function executeScriptPackage(
       );
     }
 
-    // 创建安全的require函数，限制只能访问脚本包内的模块
+    // 创建安全的require函数，允许访问脚本包内的模块和已安装的第三方包
     const createSafeRequire = () => {
+      // 获取npm包安装目录
+      const npmPackageService = new NpmPackageService();
+      const packagesDir = npmPackageService.getPackagesDirectory();
+      const nodeModulesPath = path.join(packagesDir, "node_modules");
+
       return (modulePath: string) => {
-        // 只允许相对路径引用（脚本包内的模块）
+        // 允许相对路径引用（脚本包内的模块）
         if (modulePath.startsWith("./") || modulePath.startsWith("../")) {
           const resolvedPath = path.resolve(packageDir, modulePath);
 
@@ -346,8 +352,37 @@ export async function executeScriptPackage(
           return require(resolvedPath);
         }
 
-        // 对于非相对路径，抛出错误（安全考虑）
-        throw new Error(`不允许访问外部模块: ${modulePath}`);
+        // 允许访问已安装的第三方npm包
+        if (!modulePath.startsWith("./") && !modulePath.startsWith("../")) {
+          try {
+            // 检查是否为已安装的第三方包
+            const packagePath = path.join(nodeModulesPath, modulePath);
+            if (fs.existsSync(packagePath)) {
+              return require(packagePath);
+            }
+
+            // 尝试通过Node.js模块解析机制查找包
+            const Module = require("module");
+            const originalResolveFilename = Module._resolveFilename;
+            
+            // 临时修改模块解析路径，添加自定义包目录
+            const resolvedPath = Module._resolveFilename(modulePath, {
+              paths: [nodeModulesPath, ...module.paths]
+            });
+
+            // 确保解析的路径在允许的目录内
+            if (resolvedPath.startsWith(nodeModulesPath)) {
+              return require(resolvedPath);
+            }
+
+            throw new Error(`包未安装或不在允许的目录内: ${modulePath}`);
+          } catch (error: any) {
+             throw new Error(`无法加载第三方包 "${modulePath}": ${error.message}`);
+           }
+        }
+
+        // 其他情况不允许访问
+        throw new Error(`不允许访问的模块路径: ${modulePath}`);
       };
     };
 

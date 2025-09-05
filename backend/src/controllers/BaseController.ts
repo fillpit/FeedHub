@@ -8,6 +8,12 @@ export abstract class BaseController {
     res: Response,
     action: () => Promise<ApiResponseData<T> | any | void>
   ): Promise<void> {
+
+    // 设置防缓存头
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
       const result = await action();
       if (result) {

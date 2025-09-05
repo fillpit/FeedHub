@@ -39,11 +39,7 @@ export class ScriptTemplateService {
    * 获取主文件模板
    */
   getMainFileTemplate(): string {
-    return `/**
- * 动态路由脚本主文件
- * 这是您的自定义脚本入口文件
- */
-
+    return `
 /**
  * 主函数 - 脚本的入口点
  * @param {Object} context - 脚本执行上下文
