@@ -39,8 +39,32 @@
         <!-- 右侧代码编辑器 -->
         <div class="code-editor-panel">
           <div class="panel-header">
-            <h4>{{ selectedFile || "请选择文件" }}</h4>
+            <div class="header-left">
+              <h4>
+                {{ selectedFile || "请选择文件" }}
+                <span v-if="selectedFile && hasUnsavedChanges" class="unsaved-indicator">*</span>
+              </h4>
+              <div v-if="selectedFile && syntaxErrors.length > 0" class="syntax-status">
+                <el-badge :value="syntaxErrors.length" type="danger">
+                  <el-icon class="error-icon"><Warning /></el-icon>
+                </el-badge>
+                <span class="error-text">{{ syntaxErrors.length }} 个语法问题</span>
+              </div>
+              <div v-else-if="selectedFile" class="syntax-status">
+                <el-icon class="success-icon"><CircleCheck /></el-icon>
+                <span class="success-text">语法正确</span>
+              </div>
+            </div>
             <div class="panel-actions">
+              <el-button 
+                v-if="selectedFile && syntaxErrors.length > 0" 
+                type="warning" 
+                size="small" 
+                @click="toggleErrorPanel"
+              >
+                <el-icon><Warning /></el-icon>
+                {{ showErrorPanel ? '隐藏' : '显示' }}错误
+              </el-button>
               <el-button type="info" size="small" @click="showScriptHelp">
                 <el-icon><QuestionFilled /></el-icon>
                 脚本帮助指南
@@ -49,22 +73,62 @@
                 <el-icon><DocumentCopy /></el-icon>
                 保存
               </el-button>
+              <el-button 
+                :type="autoSaveEnabled ? 'success' : 'info'" 
+                size="small" 
+                @click="toggleAutoSave"
+                :title="autoSaveEnabled ? `自动保存已开启 (${autoSaveInterval}秒)` : '点击开启自动保存'"
+              >
+                {{ autoSaveEnabled ? '自动保存: 开' : '自动保存: 关' }}
+              </el-button>
             </div>
           </div>
           <div class="editor-container">
-            <CodeEditor
-              v-if="selectedFile"
-              v-model="fileContent"
-              :language="getLanguageFromFileName(selectedFile)"
-              theme="vs-dark"
-              height="100%"
-              :options="{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                wordWrap: 'on',
-                automaticLayout: true,
-              }"
-            />
+            <div v-if="selectedFile" class="editor-with-errors">
+              <CodeEditor
+                ref="codeEditorRef"
+                v-model="fileContent"
+                :language="getLanguageFromFileName(selectedFile)"
+                theme="vs-dark"
+                height="100%"
+                :enable-syntax-check="true"
+                :options="{
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                }"
+                @syntax-errors="handleSyntaxErrors"
+              />
+              <!-- 错误面板 -->
+              <div v-if="showErrorPanel && syntaxErrors.length > 0" class="error-panel">
+                <div class="error-panel-header">
+                  <h5>语法错误 ({{ syntaxErrors.length }})</h5>
+                  <el-button size="small" text @click="showErrorPanel = false">
+                    <el-icon><Close /></el-icon>
+                  </el-button>
+                </div>
+                <div class="error-list">
+                  <div 
+                    v-for="(error, index) in syntaxErrors" 
+                    :key="index" 
+                    class="error-item"
+                    @click="goToError(error)"
+                  >
+                    <div class="error-icon">
+                      <el-icon v-if="error.severity === 8" class="error"><CircleCloseFilled /></el-icon>
+                      <el-icon v-else class="warning"><WarningFilled /></el-icon>
+                    </div>
+                    <div class="error-content">
+                      <div class="error-message">{{ error.message }}</div>
+                      <div class="error-location">
+                        第 {{ error.startLineNumber }} 行，第 {{ error.startColumn }} 列
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div v-else class="empty-editor">
               <el-empty description="请选择要编辑的文件" />
             </div>
@@ -131,9 +195,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Refresh, DocumentCopy, Plus } from "@element-plus/icons-vue";
+import { 
+  Refresh, 
+  DocumentCopy, 
+  Plus, 
+  QuestionFilled,
+  Warning,
+  CircleCheck,
+  Close,
+  CircleCloseFilled,
+  WarningFilled
+} from "@element-plus/icons-vue";
 import CodeEditor from "@/components/CodeEditor.vue";
 import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
 import FileTreeNode from "@/components/FileTreeNode.vue";
@@ -171,6 +245,20 @@ const selectedFile = ref<string>("");
 const fileContent = ref<string>("");
 const scriptHelpVisible = ref(false);
 
+// 未保存状态跟踪
+const hasUnsavedChanges = ref(false);
+const originalContent = ref<string>("");
+
+// 自动保存功能
+const autoSaveEnabled = ref(false);
+const autoSaveInterval = ref(30); // 自动保存间隔（秒）
+let autoSaveTimer: NodeJS.Timeout | null = null;
+
+// 语法检查相关状态
+const syntaxErrors = ref<any[]>([]);
+const showErrorPanel = ref(false);
+const codeEditorRef = ref<any>(null);
+
 // 新建文件对话框状态
 const createFileDialogVisible = ref(false);
 const createFileForm = ref({
@@ -195,6 +283,13 @@ watch(visible, (newValue) => {
   emit("update:modelValue", newValue);
 });
 
+// 监听文件内容变化，跟踪未保存状态
+watch(fileContent, (newContent) => {
+  if (selectedFile.value && originalContent.value !== undefined) {
+    hasUnsavedChanges.value = newContent !== originalContent.value;
+  }
+});
+
 // 加载文件列表
 const loadFiles = async () => {
   if (!props.routeId) return;
@@ -206,10 +301,11 @@ const loadFiles = async () => {
       // 构建树形结构
       files.value = buildFileTree(result.data);
 
-      // 默认选择第一个文件
-      const firstFile = findFirstFile(files.value);
-      if (firstFile) {
-        await selectFile(firstFile.path);
+      // 优先选择main.js文件，如果没有则选择第一个文件
+      const mainFile = findFileByName(files.value, "main.js");
+      const targetFile = mainFile || findFirstFile(files.value);
+      if (targetFile) {
+        await selectFile(targetFile.path);
       }
     } else {
       ElMessage.error(result.message || "获取文件列表失败");
@@ -300,6 +396,20 @@ const findFirstFile = (tree: any[]): any => {
   return null;
 };
 
+// 根据文件名查找文件
+const findFileByName = (tree: any[], fileName: string): any => {
+  for (const node of tree) {
+    if (node.type === "file" && node.name === fileName) {
+      return node;
+    }
+    if (node.children && node.children.length > 0) {
+      const found = findFileByName(node.children, fileName);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 // 根据文件扩展名获取语言模式
 const getLanguageFromFileName = (fileName: string): string => {
   const ext = fileName.split(".").pop()?.toLowerCase();
@@ -343,11 +453,42 @@ const getLanguageFromFileName = (fileName: string): string => {
 const selectFile = async (fileName: string) => {
   if (!props.routeId) return;
 
+  // 检查当前文件是否有未保存的修改
+  if (hasUnsavedChanges.value && selectedFile.value) {
+    try {
+      await ElMessageBox.confirm(
+        `文件 "${selectedFile.value}" 有未保存的修改，是否要保存？`,
+        '未保存的修改',
+        {
+          confirmButtonText: '保存并切换',
+          cancelButtonText: '丢弃并切换',
+          distinguishCancelAndClose: true,
+          type: 'warning',
+        }
+      );
+      // 用户选择保存
+      await saveFile();
+    } catch (action) {
+      if (action === 'cancel') {
+        // 用户选择丢弃修改，继续切换
+      } else {
+        // 用户点击了关闭按钮，取消切换
+        return;
+      }
+    }
+  }
+
   try {
     selectedFile.value = fileName;
     const result = (await getInlineScriptFileContent(props.routeId, fileName)) as any;
     if (result.success) {
       fileContent.value = result.data.content;
+      originalContent.value = result.data.content;
+      hasUnsavedChanges.value = false;
+      // 重新启动自动保存
+      if (autoSaveEnabled.value) {
+        startAutoSave();
+      }
     } else {
       ElMessage.error(result.message || "获取文件内容失败");
     }
@@ -370,6 +511,9 @@ const saveFile = async () => {
 
     if (result.success) {
       ElMessage.success("文件保存成功");
+      // 更新原始内容并重置未保存状态
+      originalContent.value = fileContent.value;
+      hasUnsavedChanges.value = false;
     } else {
       ElMessage.error(result.message || "文件保存失败");
     }
@@ -460,13 +604,128 @@ const showScriptHelp = () => {
   scriptHelpVisible.value = true;
 };
 
+// 处理语法错误
+const handleSyntaxErrors = (errors: any[]) => {
+  syntaxErrors.value = errors;
+  // 如果有错误且错误面板未显示，自动显示
+  if (errors.length > 0 && !showErrorPanel.value) {
+    showErrorPanel.value = true;
+  }
+};
+
+// 切换错误面板显示
+const toggleErrorPanel = () => {
+  showErrorPanel.value = !showErrorPanel.value;
+};
+
+// 跳转到错误位置
+const goToError = (error: any) => {
+  if (codeEditorRef.value) {
+    const editor = codeEditorRef.value.getEditor();
+    if (editor) {
+      editor.setPosition({
+        lineNumber: error.startLineNumber,
+        column: error.startColumn
+      });
+      editor.focus();
+    }
+  }
+};
+
+// 自动保存函数
+const startAutoSave = () => {
+  if (autoSaveTimer) {
+    clearInterval(autoSaveTimer);
+  }
+  if (autoSaveEnabled.value && selectedFile.value) {
+    autoSaveTimer = setInterval(() => {
+      if (hasUnsavedChanges.value && selectedFile.value) {
+        saveFile();
+      }
+    }, autoSaveInterval.value * 1000);
+  }
+};
+
+// 停止自动保存
+const stopAutoSave = () => {
+  if (autoSaveTimer) {
+    clearInterval(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+};
+
+// 切换自动保存状态
+const toggleAutoSave = () => {
+  autoSaveEnabled.value = !autoSaveEnabled.value;
+  if (autoSaveEnabled.value) {
+    startAutoSave();
+    ElMessage.success(`自动保存已开启，每${autoSaveInterval.value}秒自动保存`);
+  } else {
+    stopAutoSave();
+    ElMessage.info('自动保存已关闭');
+  }
+};
+
+// 键盘事件处理
+const handleKeyDown = (event: KeyboardEvent) => {
+  // 检测 Ctrl+S (Windows/Linux) 或 Cmd+S (Mac)
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault(); // 阻止浏览器默认保存行为
+    if (selectedFile.value) {
+      saveFile();
+    }
+  }
+};
+
+// 组件挂载时添加键盘事件监听
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown);
+});
+
+// 组件卸载时移除键盘事件监听和清理定时器
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown);
+  stopAutoSave();
+});
+
 // 关闭对话框
-const handleClose = () => {
+const handleClose = async () => {
+  // 检查是否有未保存的修改
+  if (hasUnsavedChanges.value && selectedFile.value) {
+    try {
+      await ElMessageBox.confirm(
+        `文件 "${selectedFile.value}" 有未保存的修改，是否要保存？`,
+        '未保存的修改',
+        {
+          confirmButtonText: '保存并关闭',
+          cancelButtonText: '丢弃并关闭',
+          distinguishCancelAndClose: true,
+          type: 'warning',
+        }
+      );
+      // 用户选择保存
+      await saveFile();
+    } catch (action) {
+      if (action === 'cancel') {
+        // 用户选择丢弃修改，继续关闭
+      } else {
+        // 用户点击了关闭按钮，取消关闭
+        return;
+      }
+    }
+  }
+
   visible.value = false;
   selectedFile.value = "";
   fileContent.value = "";
+  originalContent.value = "";
+  hasUnsavedChanges.value = false;
   files.value = [];
+  syntaxErrors.value = [];
+  showErrorPanel.value = false;
   createFileDialogVisible.value = false;
+  // 停止自动保存
+  stopAutoSave();
 };
 </script>
 
@@ -542,37 +801,148 @@ const handleClose = () => {
       flex-direction: column;
 
       .panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 16px;
-        border-bottom: 1px solid #e4e7ed;
-        background: #f5f7fa;
-        min-width: 0; // 确保header不会溢出
-
-        h4 {
-          margin: 0;
-          font-size: 14px;
-          font-weight: 500;
-          flex: 1;
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .panel-actions {
           display: flex;
-          gap: 8px;
-          flex-shrink: 0; // 防止按钮被压缩
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          border-bottom: 1px solid #e4e7ed;
+          background: #f5f7fa;
+          min-width: 0; // 确保header不会溢出
+
+          .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+
+            h4 {
+              margin: 0;
+              font-size: 14px;
+              font-weight: 500;
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+
+            .syntax-status {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              font-size: 12px;
+              flex-shrink: 0;
+
+              .error-icon {
+                color: #f56c6c;
+              }
+
+              .success-icon {
+                color: #67c23a;
+              }
+
+              .error-text {
+                color: #f56c6c;
+              }
+
+              .success-text {
+                color: #67c23a;
+              }
+            }
+          }
+
+          .panel-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0; // 防止按钮被压缩
+          }
         }
-      }
 
       .editor-container {
         flex: 1;
         min-width: 0;
         position: relative;
         overflow: hidden;
+
+        .editor-with-errors {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+
+          .error-panel {
+            height: 200px;
+            border-top: 1px solid #3c3c3c;
+            background: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+
+            .error-panel-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 8px 12px;
+              border-bottom: 1px solid #3c3c3c;
+              background: #2d2d30;
+
+              h5 {
+                margin: 0;
+                font-size: 13px;
+                color: #cccccc;
+                font-weight: 500;
+              }
+            }
+
+            .error-list {
+              flex: 1;
+              overflow-y: auto;
+              padding: 4px 0;
+
+              .error-item {
+                display: flex;
+                align-items: flex-start;
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #2d2d30;
+                transition: background-color 0.2s;
+
+                &:hover {
+                  background: #2d2d30;
+                }
+
+                .error-icon {
+                  margin-right: 8px;
+                  margin-top: 2px;
+                  flex-shrink: 0;
+
+                  .error {
+                    color: #f56c6c;
+                  }
+
+                  .warning {
+                    color: #e6a23c;
+                  }
+                }
+
+                .error-content {
+                  flex: 1;
+                  min-width: 0;
+
+                  .error-message {
+                    font-size: 13px;
+                    color: #cccccc;
+                    line-height: 1.4;
+                    margin-bottom: 2px;
+                  }
+
+                  .error-location {
+                    font-size: 11px;
+                    color: #858585;
+                  }
+                }
+              }
+            }
+          }
+        }
 
         .empty-editor {
           display: flex;
@@ -599,5 +969,18 @@ const handleClose = () => {
     color: #909399;
     line-height: 1.4;
   }
+}
+
+// 未保存标识样式
+.unsaved-indicator {
+  color: #f56c6c;
+  font-weight: bold;
+  margin-left: 4px;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
 }
 </style>

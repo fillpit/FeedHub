@@ -15,11 +15,13 @@ interface Props {
   height?: string | number;
   options?: monaco.editor.IStandaloneEditorConstructionOptions;
   readonly?: boolean;
+  enableSyntaxCheck?: boolean;
 }
 
 interface Emits {
   (e: "update:modelValue", value: string): void;
   (e: "change", value: string): void;
+  (e: "syntax-errors", errors: monaco.editor.IMarkerData[]): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
   theme: "vs-dark",
   height: "300px",
   readonly: false,
+  enableSyntaxCheck: true,
   options: () => ({}),
 });
 
@@ -35,6 +38,7 @@ const emit = defineEmits<Emits>();
 const editorContainer = ref<HTMLElement>();
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let isEditorReady = false;
+let syntaxCheckTimer: NodeJS.Timeout | null = null;
 
 // 初始化编辑器
 const initEditor = async () => {
@@ -53,7 +57,21 @@ const initEditor = async () => {
       reactNamespace: "React",
       allowJs: true,
       typeRoots: ["node_modules/@types"],
+      strict: true,
+      noImplicitAny: true,
+      noImplicitReturns: true,
+      noUnusedLocals: false,
+      noUnusedParameters: false,
     });
+
+    // 启用语法检查
+    if (props.enableSyntaxCheck) {
+      monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+        noSuggestionDiagnostics: false,
+      });
+    }
 
     // 添加自定义类型定义
     const customTypes = `
@@ -70,9 +88,35 @@ const initEditor = async () => {
         resolveUrl(base: string, relative: string): string;
         unique<T>(array: T[]): T[];
         sortBy<T>(array: T[], key: keyof T): T[];
+        formatDate(date: Date | string, format?: string): string;
+        uuid(): string;
+        dayjs: any;
+        parseJson(jsonString: string): any;
+        chunk<T>(array: T[], size: number): T[][];
+        pick<T>(obj: T, keys: (keyof T)[]): Partial<T>;
+        safeGet(obj: any, path: string, defaultValue?: any): any;
+        safeArray(value: any): any[];
+        safeObject(value: any): Record<string, any>;
+        validateItem(item: any, schema: any): boolean;
       };
       
       declare const fetch: (url: string, options?: RequestInit) => Promise<Response>;
+      declare const console: {
+        log(...args: any[]): void;
+        warn(...args: any[]): void;
+        error(...args: any[]): void;
+        info(...args: any[]): void;
+        debug(...args: any[]): void;
+      };
+      
+      // 动态路由脚本必须导出的函数
+      declare function handler(params: {
+        routeParams: Record<string, any>;
+        queryParams: Record<string, any>;
+        utils: typeof utils;
+        console: typeof console;
+        secrets: Record<string, string>;
+      }): Promise<any> | any;
     `;
 
     monaco.languages.typescript.javascriptDefaults.addExtraLib(
@@ -113,8 +157,35 @@ const initEditor = async () => {
         const value = editor.getValue();
         emit("update:modelValue", value);
         emit("change", value);
+        
+        // 延迟语法检查
+        if (props.enableSyntaxCheck) {
+          if (syntaxCheckTimer) {
+            clearTimeout(syntaxCheckTimer);
+          }
+          syntaxCheckTimer = setTimeout(() => {
+            checkSyntaxErrors();
+          }, 500);
+        }
       }
     });
+
+    // 监听语法错误变化
+    if (props.enableSyntaxCheck) {
+      monaco.editor.onDidChangeMarkers((uris) => {
+        if (editor && isEditorReady) {
+          const model = editor.getModel();
+          if (model && uris.some(uri => uri.toString() === model.uri.toString())) {
+            const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+            const errors = markers.filter(marker => 
+              marker.severity === monaco.MarkerSeverity.Error ||
+              marker.severity === monaco.MarkerSeverity.Warning
+            );
+            emit("syntax-errors", errors);
+          }
+        }
+      });
+    }
 
     isEditorReady = true;
   } catch (error) {
@@ -193,8 +264,68 @@ onMounted(async () => {
   await initEditor();
 });
 
+// 语法检查函数
+const checkSyntaxErrors = () => {
+  if (!editor || !isEditorReady || !props.enableSyntaxCheck) return;
+  
+  const model = editor.getModel();
+  if (!model) return;
+  
+  // 获取当前模型的错误标记
+  const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+  const errors = markers.filter(marker => 
+    marker.severity === monaco.MarkerSeverity.Error ||
+    marker.severity === monaco.MarkerSeverity.Warning
+  );
+  
+  emit("syntax-errors", errors);
+};
+
+// 自定义验证动态路由脚本
+const validateDynamicRouteScript = (code: string): monaco.editor.IMarkerData[] => {
+  const errors: monaco.editor.IMarkerData[] = [];
+  
+  // 检查是否包含handler函数
+  if (!code.includes('function handler') && !code.includes('const handler') && !code.includes('export')) {
+    errors.push({
+      severity: monaco.MarkerSeverity.Warning,
+      message: '动态路由脚本应该包含一个handler函数或导出函数',
+      startLineNumber: 1,
+      startColumn: 1,
+      endLineNumber: 1,
+      endColumn: 1,
+    });
+  }
+  
+  // 检查是否使用了不安全的函数
+  const unsafeFunctions = ['eval', 'Function', 'setTimeout', 'setInterval'];
+  unsafeFunctions.forEach(func => {
+    if (code.includes(func)) {
+      const lines = code.split('\n');
+      lines.forEach((line, index) => {
+        if (line.includes(func)) {
+          errors.push({
+            severity: monaco.MarkerSeverity.Warning,
+            message: `不建议在动态路由脚本中使用 ${func} 函数`,
+            startLineNumber: index + 1,
+            startColumn: line.indexOf(func) + 1,
+            endLineNumber: index + 1,
+            endColumn: line.indexOf(func) + func.length + 1,
+          });
+        }
+      });
+    }
+  });
+  
+  return errors;
+};
+
 // 组件卸载
 onBeforeUnmount(() => {
+  if (syntaxCheckTimer) {
+    clearTimeout(syntaxCheckTimer);
+    syntaxCheckTimer = null;
+  }
   if (editor) {
     editor.dispose();
     editor = null;
@@ -221,6 +352,18 @@ defineExpose({
         ]);
       }
     }
+  },
+  checkSyntax: () => checkSyntaxErrors(),
+  validateScript: (code: string) => validateDynamicRouteScript(code),
+  getSyntaxErrors: () => {
+    if (!editor || !isEditorReady) return [];
+    const model = editor.getModel();
+    if (!model) return [];
+    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+    return markers.filter(marker => 
+      marker.severity === monaco.MarkerSeverity.Error ||
+      marker.severity === monaco.MarkerSeverity.Warning
+    );
   },
 });
 </script>
