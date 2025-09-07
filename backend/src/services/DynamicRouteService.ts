@@ -1400,11 +1400,13 @@ export class DynamicRouteService {
       scriptResult.items.forEach((item: any) => {
         const itemOptions: any = {
           title: item.title,
-          description: item.content || item.contentSnippet || "",
+          description: item.description || item.content || "",
           url: item.link,
           guid: item.guid || item.link || uuidv4(),
           date: item.pubDate,
           author: item.author,
+          image: item.image,
+          attachments: item.attachments,
         };
 
         // 添加封面图片作为enclosure（如果存在）
