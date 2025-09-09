@@ -192,6 +192,17 @@ export class DynamicRouteController extends BaseController {
   }
 
   /**
+   * 上传脚本到Git仓库
+   */
+  async uploadToGit(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const routeId = Number(req.params.id);
+      const { gitConfig, commitMessage } = req.body;
+      return await this.dynamicRouteService.uploadToGit(routeId, gitConfig, commitMessage);
+    });
+  }
+
+  /**
    * 导出路由配置和脚本文件
    */
   async exportRoutesWithScripts(req: Request, res: Response): Promise<void> {

@@ -1638,4 +1638,65 @@ export class DynamicRouteService {
       throw new Error(`解析导入包失败: ${(error as Error).message}`);
     }
   }
+
+  /**
+   * 上传脚本到Git仓库
+   */
+  async uploadToGit(
+    routeId: number,
+    gitConfig: any,
+    commitMessage?: string
+  ): Promise<ApiResponseData<void>> {
+    try {
+      const route = await DynamicRouteConfig.findByPk(routeId);
+      if (!route) {
+        throw new AppError("路由不存在", HTTP_STATUS.NOT_FOUND);
+      }
+
+      if (route.script.sourceType !== "inline") {
+        throw new AppError("只有内联脚本类型的路由才能上传到Git", HTTP_STATUS.BAD_REQUEST);
+      }
+
+      // 导入GitUploadService
+      const { GitUploadService } = await import("./GitUploadService");
+      const gitUploadService = new GitUploadService(this.scriptFileService);
+
+      // 执行上传
+       await gitUploadService.uploadToGit(
+         route.script.folder!,
+         {
+           gitUrl: gitConfig.gitUrl,
+           gitBranch: gitConfig.gitBranch || 'main',
+           gitSubPath: gitConfig.gitSubPath,
+           authType: gitConfig.authType || 'https',
+           username: gitConfig.username,
+           password: gitConfig.password,
+           token: gitConfig.token,
+           email: gitConfig.email,
+           commitMessage: commitMessage || `Update scripts for route: ${route.name}`,
+         }
+       );
+
+      // 保存Git上传配置到路由
+      const updatedScript = {
+        ...route.script,
+        gitUploadConfig: {
+          ...gitConfig,
+          lastUploadTime: new Date().toISOString(),
+        },
+      };
+
+      await route.update({ script: updatedScript });
+
+      logger.info(`[DynamicRouteService] 成功上传路由 ${route.name} 的脚本到Git仓库`);
+
+      return {
+        success: true,
+        message: "脚本已成功上传到Git仓库",
+      };
+    } catch (error) {
+      logger.error(`[DynamicRouteService] 上传脚本到Git失败:`, error);
+      throw error;
+    }
+  }
 }

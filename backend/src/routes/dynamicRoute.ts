@@ -78,6 +78,9 @@ router.post(
 // 同步Git仓库
 router.post("/:id/sync-git", (req, res) => controller.syncGitRepository(req, res));
 
+// 上传脚本到Git仓库
+router.post("/:id/upload-to-git", (req, res) => controller.uploadToGit(req, res));
+
 // 导出路由配置和脚本文件
 router.post("/export-with-scripts", (req, res) => controller.exportRoutesWithScripts(req, res));
 

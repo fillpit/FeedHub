@@ -81,6 +81,24 @@
               >
                 {{ autoSaveEnabled ? '自动保存: 开' : '自动保存: 关' }}
               </el-button>
+              <el-button 
+                type="text" 
+                size="small" 
+                @click="showAutoSaveSettings"
+                title="自动保存设置"
+              >
+                <el-icon><Setting /></el-icon>
+              </el-button>
+              <el-button 
+                type="warning" 
+                size="small" 
+                @click="showGitUploadDialog"
+                :disabled="!selectedFile"
+                title="上传脚本到Git仓库"
+              >
+                <el-icon><Upload /></el-icon>
+                上传到Git
+              </el-button>
             </div>
           </div>
           <div class="editor-container">
@@ -192,6 +210,127 @@
       </div>
     </template>
   </el-dialog>
+
+  <!-- Git上传对话框 -->
+  <el-dialog
+    v-model="gitUploadDialogVisible"
+    title="上传到Git仓库"
+    width="600px"
+    :close-on-click-modal="false"
+  >
+    <el-form :model="gitUploadForm" label-width="120px" label-position="left">
+      <el-form-item label="仓库地址" required>
+        <el-input
+          v-model="gitUploadForm.gitUrl"
+          placeholder="https://github.com/username/repo.git"
+          clearable
+        />
+      </el-form-item>
+      
+      <el-form-item label="分支">
+        <el-input
+          v-model="gitUploadForm.gitBranch"
+          placeholder="main"
+          clearable
+        />
+      </el-form-item>
+      
+      <el-form-item label="子目录路径">
+        <el-input
+          v-model="gitUploadForm.gitSubPath"
+          placeholder="可选，如：scripts/feedhub"
+          clearable
+        />
+        <div class="form-tip">可选，指定上传到仓库中的子目录</div>
+      </el-form-item>
+      
+      <el-form-item label="访问令牌" required>
+        <el-input
+          v-model="gitUploadForm.token"
+          type="password"
+          placeholder="Personal Access Token"
+          show-password
+          clearable
+        />
+        <div class="form-tip">
+          <div style="margin-bottom: 8px;"><strong>如何获取 Personal Access Token：</strong></div>
+          <div style="margin-bottom: 4px;">1. 登录 GitHub，进入 Settings → Developer settings → Personal access tokens → Tokens (classic)</div>
+          <div style="margin-bottom: 4px;">2. 点击 "Generate new token" → "Generate new token (classic)"</div>
+          <div style="margin-bottom: 4px;">3. 设置 Token 名称和过期时间</div>
+          <div style="margin-bottom: 4px;">4. 选择权限范围（Scopes）：</div>
+          <div style="margin-left: 16px; margin-bottom: 4px;">• <strong>repo</strong> - 完整的仓库访问权限（必需）</div>
+          <div style="margin-left: 16px; margin-bottom: 4px;">• <strong>workflow</strong> - 更新 GitHub Actions 工作流（可选）</div>
+          <div style="margin-bottom: 4px;">5. 点击 "Generate token" 并复制生成的 Token</div>
+          <div style="color: #e6a23c; font-size: 12px;">⚠️ Token 只会显示一次，请妥善保存</div>
+        </div>
+      </el-form-item>
+      
+      <el-form-item label="邮箱地址" required>
+        <el-input
+          v-model="gitUploadForm.email"
+          placeholder="用于Git提交的邮箱地址"
+          clearable
+        />
+      </el-form-item>
+      
+      <el-form-item label="提交信息" required>
+        <el-input
+          v-model="gitUploadForm.commitMessage"
+          type="textarea"
+          :rows="3"
+          placeholder="描述本次提交的内容"
+        />
+      </el-form-item>
+    </el-form>
+    
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="gitUploadDialogVisible = false" :disabled="gitUploadLoading">
+          取消
+        </el-button>
+        <el-button 
+          type="primary" 
+          @click="handleGitUpload" 
+          :loading="gitUploadLoading"
+        >
+          {{ gitUploadLoading ? '上传中...' : '上传' }}
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+
+  <!-- 自动保存设置对话框 -->
+  <el-dialog
+    v-model="autoSaveSettingsVisible"
+    title="自动保存设置"
+    width="400px"
+    :close-on-click-modal="false"
+  >
+    <el-form label-width="120px">
+      <el-form-item label="保存间隔">
+        <el-input-number
+          v-model="tempAutoSaveInterval"
+          :min="5"
+          :max="300"
+          :step="5"
+          controls-position="right"
+        />
+        <span style="margin-left: 8px; color: #909399; font-size: 12px;">秒</span>
+      </el-form-item>
+      <el-form-item>
+        <div style="font-size: 12px; color: #909399; line-height: 1.4;">
+          自动保存间隔范围：5-300秒<br>
+          建议设置：30-60秒
+        </div>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="autoSaveSettingsVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveAutoSaveSettings">保存</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -206,7 +345,9 @@ import {
   CircleCheck,
   Close,
   CircleCloseFilled,
-  WarningFilled
+  WarningFilled,
+  Setting,
+  Upload
 } from "@element-plus/icons-vue";
 import CodeEditor from "@/components/CodeEditor.vue";
 import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
@@ -253,6 +394,8 @@ const originalContent = ref<string>("");
 const autoSaveEnabled = ref(false);
 const autoSaveInterval = ref(30); // 自动保存间隔（秒）
 let autoSaveTimer: NodeJS.Timeout | null = null;
+const autoSaveSettingsVisible = ref(false);
+const tempAutoSaveInterval = ref(30);
 
 // 语法检查相关状态
 const syntaxErrors = ref<any[]>([]);
@@ -265,6 +408,18 @@ const createFileForm = ref({
   fileName: "",
   template: "blank",
 });
+
+// Git上传对话框状态
+const gitUploadDialogVisible = ref(false);
+const gitUploadForm = ref({
+  gitUrl: "",
+  gitBranch: "main",
+  gitSubPath: "",
+  token: "",
+  email: "",
+  commitMessage: "",
+});
+const gitUploadLoading = ref(false);
 
 // 监听 modelValue 变化
 watch(
@@ -666,6 +821,26 @@ const toggleAutoSave = () => {
   }
 };
 
+// 显示自动保存设置对话框
+const showAutoSaveSettings = () => {
+  tempAutoSaveInterval.value = autoSaveInterval.value;
+  autoSaveSettingsVisible.value = true;
+};
+
+// 保存自动保存设置
+const saveAutoSaveSettings = () => {
+  autoSaveInterval.value = tempAutoSaveInterval.value;
+  autoSaveSettingsVisible.value = false;
+  
+  // 如果自动保存已开启，重新启动定时器
+  if (autoSaveEnabled.value) {
+    startAutoSave();
+    ElMessage.success(`自动保存间隔已更新为${autoSaveInterval.value}秒`);
+  } else {
+    ElMessage.success('自动保存设置已保存');
+  }
+};
+
 // 键盘事件处理
 const handleKeyDown = (event: KeyboardEvent) => {
   // 检测 Ctrl+S (Windows/Linux) 或 Cmd+S (Mac)
@@ -687,6 +862,137 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyDown);
   stopAutoSave();
 });
+
+// 显示Git上传对话框
+const showGitUploadDialog = () => {
+  // 从路由配置中加载已保存的Git配置
+  loadGitUploadConfig();
+  gitUploadDialogVisible.value = true;
+};
+
+// 加载Git上传配置
+const loadGitUploadConfig = async () => {
+  if (!props.routeId) {
+    // 使用默认值
+    gitUploadForm.value = {
+      gitUrl: "",
+      gitBranch: "main",
+      gitSubPath: "",
+      token: "",
+      email: "",
+      commitMessage: `Update scripts at ${new Date().toLocaleString()}`,
+    };
+    return;
+  }
+
+  try {
+    // 从后端获取路由配置
+    const result = await fetch(`/api/dynamic/${props.routeId}`);
+    const response = await result.json();
+    
+    if (response.success && response.data && response.data.script && response.data.script.gitUploadConfig) {
+      const savedConfig = response.data.script.gitUploadConfig;
+      // 加载已保存的配置，但不包含敏感信息
+      gitUploadForm.value = {
+        gitUrl: savedConfig.gitUrl || "",
+        gitBranch: savedConfig.gitBranch || "main",
+        gitSubPath: savedConfig.gitSubPath || "",
+        token: "", // 令牌不从后端加载，需要重新输入
+        email: savedConfig.email || "",
+        commitMessage: savedConfig.defaultCommitMessage || `Update scripts at ${new Date().toLocaleString()}`,
+      };
+    } else {
+      // 使用默认值
+      gitUploadForm.value = {
+        gitUrl: "",
+        gitBranch: "main",
+        gitSubPath: "",
+        token: "",
+        email: "",
+        commitMessage: `Update scripts at ${new Date().toLocaleString()}`,
+      };
+    }
+  } catch (error) {
+    console.error("加载Git配置失败:", error);
+    // 使用默认值
+    gitUploadForm.value = {
+      gitUrl: "",
+      gitBranch: "main",
+      gitSubPath: "",
+      token: "",
+      email: "",
+      commitMessage: `Update scripts at ${new Date().toLocaleString()}`,
+    };
+  }
+};
+
+// 执行Git上传
+const handleGitUpload = async () => {
+  if (!props.routeId) return;
+  
+  // 验证必填字段
+  if (!gitUploadForm.value.gitUrl.trim()) {
+    ElMessage.error("请填写Git仓库地址");
+    return;
+  }
+  
+  if (!gitUploadForm.value.token.trim()) {
+    ElMessage.error("请填写访问令牌");
+    return;
+  }
+  
+  if (!gitUploadForm.value.email.trim()) {
+    ElMessage.error("请填写邮箱地址");
+    return;
+  }
+  
+  if (!gitUploadForm.value.commitMessage.trim()) {
+    ElMessage.error("请填写提交信息");
+    return;
+  }
+
+  gitUploadLoading.value = true;
+  
+  try {
+    const uploadData = {
+      routeId: props.routeId,
+      gitConfig: {
+        gitUrl: gitUploadForm.value.gitUrl.trim(),
+        gitBranch: gitUploadForm.value.gitBranch.trim() || "main",
+        gitSubPath: gitUploadForm.value.gitSubPath.trim(),
+        authType: "token",
+        token: gitUploadForm.value.token,
+        email: gitUploadForm.value.email.trim(),
+      },
+      commitMessage: gitUploadForm.value.commitMessage.trim(),
+    };
+    
+    const result = await fetch(`/api/dynamic/${props.routeId}/upload-to-git`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        gitConfig: uploadData.gitConfig,
+        commitMessage: uploadData.commitMessage
+      }),
+    });
+    
+    const response = await result.json();
+    
+    if (response.success) {
+      ElMessage.success("脚本上传到Git仓库成功！");
+      gitUploadDialogVisible.value = false;
+    } else {
+      ElMessage.error(response.message || "上传失败");
+    }
+  } catch (error) {
+    console.error("Git上传失败:", error);
+    ElMessage.error("上传失败，请检查网络连接和配置");
+  } finally {
+    gitUploadLoading.value = false;
+  }
+};
 
 // 关闭对话框
 const handleClose = async () => {
@@ -982,5 +1288,19 @@ const handleClose = async () => {
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0.3; }
+}
+
+// Git上传对话框样式
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 </style>

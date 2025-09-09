@@ -54,8 +54,26 @@ FeedHub 是一个现代化的 RSS 订阅管理平台，支持多种内容抓取�
   - 实时错误提示和语法高亮
   - 错误面板显示详细的错误信息和位置
   - 自定义验证规则，检查动态路由脚本的特定语法要求
+- **自动保存功能**: 智能的文件自动保存机制
+  - 可开启/关闭自动保存功能
+  - 可自定义保存间隔（5-300秒，建议30-60秒）
+  - 仅在文件有修改时才执行保存操作
+  - 支持 Ctrl+S / Cmd+S 快捷键手动保存
+  - 切换文件时自动检测未保存内容并提示
 - **脚本编辑入口**: 在调试页面直接提供脚本编辑入口，便于快速修改和测试
 - **多格式链接**: 路径列支持悬浮选择复制RSS或JSON格式链接
+- **Git上传功能**: 支持将脚本文件上传到Git仓库进行版本管理
+  - 支持Personal Access Token认证方式
+  - 可配置仓库地址、分支、子目录路径
+  - 支持自定义提交信息和邮箱地址
+  - 自动保存上传配置，便于重复使用
+  - 实时上传状态反馈和错误提示
+  - **Personal Access Token 获取指引**：
+    1. 登录 GitHub，进入 Settings → Developer settings → Personal access tokens → Tokens (classic)
+    2. 点击 "Generate new token" → "Generate new token (classic)"
+    3. 设置 Token 名称和过期时间
+    4. 选择权限范围（Scopes）：repo（必需）、workflow（可选）
+    5. 点击 "Generate token" 并复制生成的 Token（仅显示一次）
 
 ### 🔐 授权凭证管理
 - **多种认证方式**: 支持 Bearer Token、Basic Auth、Cookie、自定义请求头
