@@ -1657,6 +1657,17 @@ export class DynamicRouteService {
         throw new AppError("只有内联脚本类型的路由才能上传到Git", HTTP_STATUS.BAD_REQUEST);
       }
 
+      // 保存Git上传配置到路由
+      const updatedScript = {
+        ...route.script,
+        gitConfig: {
+          ...gitConfig,
+          lastUploadTime: new Date().toISOString(),
+        },
+      };
+
+      await route.update({ script: updatedScript });
+
       // 导入GitUploadService
       const { GitUploadService } = await import("./GitUploadService");
       const gitUploadService = new GitUploadService(this.scriptFileService);
@@ -1673,20 +1684,9 @@ export class DynamicRouteService {
            password: gitConfig.password,
            token: gitConfig.token,
            email: gitConfig.email,
-           commitMessage: commitMessage || `Update scripts for route: ${route.name}`,
+           defaultCommitMessage: commitMessage || `Update scripts for route: ${route.name}`,
          }
        );
-
-      // 保存Git上传配置到路由
-      const updatedScript = {
-        ...route.script,
-        gitUploadConfig: {
-          ...gitConfig,
-          lastUploadTime: new Date().toISOString(),
-        },
-      };
-
-      await route.update({ script: updatedScript });
 
       logger.info(`[DynamicRouteService] 成功上传路由 ${route.name} 的脚本到Git仓库`);
 

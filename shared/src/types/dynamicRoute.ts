@@ -7,11 +7,13 @@ export interface GitConfig {
   gitBranch: string; // Git分支
   gitSubPath?: string; // Git子目录路径
   lastSyncAt?: Date; // 最后同步时间
-  authType: 'https' | 'ssh' | 'token'; // 认证类型
+  authType?: 'https' | 'ssh' | 'token'; // 认证类型
   username?: string; // 用户名（HTTPS认证）
   email?: string; // 邮箱地址
   lastUploadAt?: Date; // 最后上传时间
   defaultCommitMessage?: string; // 默认提交信息
+  password?: string; // 密码（HTTPS认证）
+  token?: string; // 个人访问令牌（HTTPS或SSH认证）
 }
 
 // 脚本配置接口

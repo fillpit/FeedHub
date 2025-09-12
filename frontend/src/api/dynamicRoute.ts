@@ -1,5 +1,5 @@
 import request from "@/utils/request";
-import type { DynamicRouteConfig } from "../../../shared/src/types/dynamicRoute";
+import type { DynamicRouteConfig } from "@feedhub/shared";
 
 // 重新导出共享类型以保持向后兼容
 export type {
@@ -7,7 +7,8 @@ export type {
   RouteParam,
   CustomRouteScript,
   ScriptSourceType,
-} from "../../../shared/src/types/dynamicRoute";
+  GitConfig,
+} from "@feedhub/shared";
 
 /**
  * 获取所有动态路由配置
@@ -222,4 +223,13 @@ export function initializeRouteScript(
  */
 export function syncGitRepository(routeId: number) {
   return request.post(`/api/dynamic/${routeId}/sync-git`, {});
+}
+
+/**
+ * 上传脚本到Git仓库
+ * @param routeId 路由ID
+ * @param options 上传选项
+ */
+export function uploadToGit(routeId: number, options: any) {
+  return request.post(`/api/dynamic/${routeId}/upload-to-git`, options);
 }

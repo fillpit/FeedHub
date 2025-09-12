@@ -254,7 +254,7 @@
         />
         <div class="form-tip">
           <div style="margin-bottom: 8px;"><strong>如何获取 Personal Access Token：</strong></div>
-          <div style="margin-bottom: 4px;">1. 登录 GitHub，进入 Settings → Developer settings → Personal access tokens → Tokens (classic)</div>
+          <div style="margin-bottom: 4px;">1. 登录 GitHub，访问: <el-link type="primary" href="https://github.com/settings/tokens" target="_blank">Personal access tokens</el-link></div>
           <div style="margin-bottom: 4px;">2. 点击 "Generate new token" → "Generate new token (classic)"</div>
           <div style="margin-bottom: 4px;">3. 设置 Token 名称和过期时间</div>
           <div style="margin-bottom: 4px;">4. 选择权限范围（Scopes）：</div>
@@ -358,7 +358,10 @@ import {
   updateInlineScriptFileContent,
   createInlineScriptFile,
   deleteInlineScriptFile,
+  getDynamicRoute,
+  uploadToGit,
 } from "@/api/dynamicRoute";
+import type { DynamicRouteConfig } from "@/api/dynamicRoute";
 
 // Props
 interface Props {
@@ -421,30 +424,6 @@ const gitUploadForm = ref({
 });
 const gitUploadLoading = ref(false);
 
-// 监听 modelValue 变化
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    visible.value = newValue;
-    if (newValue && props.routeId) {
-      loadFiles();
-    }
-  },
-  { immediate: true }
-);
-
-// 监听 visible 变化
-watch(visible, (newValue) => {
-  emit("update:modelValue", newValue);
-});
-
-// 监听文件内容变化，跟踪未保存状态
-watch(fileContent, (newContent) => {
-  if (selectedFile.value && originalContent.value !== undefined) {
-    hasUnsavedChanges.value = newContent !== originalContent.value;
-  }
-});
-
 // 加载文件列表
 const loadFiles = async () => {
   if (!props.routeId) return;
@@ -472,6 +451,30 @@ const loadFiles = async () => {
     loading.value = false;
   }
 };
+
+// 监听 modelValue 变化
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    visible.value = newValue;
+    if (newValue && props.routeId) {
+      loadFiles();
+    }
+  },
+  { immediate: true }
+);
+
+// 监听 visible 变化
+watch(visible, (newValue) => {
+  emit("update:modelValue", newValue);
+});
+
+// 监听文件内容变化，跟踪未保存状态
+watch(fileContent, (newContent) => {
+  if (selectedFile.value && originalContent.value !== undefined) {
+    hasUnsavedChanges.value = newContent !== originalContent.value;
+  }
+});
 
 // 构建文件树结构
 const buildFileTree = (fileList: any[]) => {
@@ -887,19 +890,18 @@ const loadGitUploadConfig = async () => {
 
   try {
     // 从后端获取路由配置
-    const result = await fetch(`/api/dynamic/${props.routeId}`);
-    const response = await result.json();
-    
-    if (response.success && response.data && response.data.script && response.data.script.gitUploadConfig) {
-      const savedConfig = response.data.script.gitUploadConfig;
+    const response = await getDynamicRoute(props.routeId);
+    if (response.code === 0) {
+      const routeConfig = response.data as DynamicRouteConfig;
+      const savedConfig = routeConfig?.script?.gitConfig;
       // 加载已保存的配置，但不包含敏感信息
       gitUploadForm.value = {
-        gitUrl: savedConfig.gitUrl || "",
-        gitBranch: savedConfig.gitBranch || "main",
-        gitSubPath: savedConfig.gitSubPath || "",
-        token: "", // 令牌不从后端加载，需要重新输入
-        email: savedConfig.email || "",
-        commitMessage: savedConfig.defaultCommitMessage || `Update scripts at ${new Date().toLocaleString()}`,
+        gitUrl: savedConfig?.gitUrl || "",
+        gitBranch: savedConfig?.gitBranch || "main",
+        gitSubPath: savedConfig?.gitSubPath || "",
+        token: savedConfig?.token || "",
+        email: savedConfig?.email || "",
+        commitMessage: savedConfig?.defaultCommitMessage || `Update scripts at ${new Date().toLocaleString()}`,
       };
     } else {
       // 使用默认值
@@ -967,20 +969,9 @@ const handleGitUpload = async () => {
       commitMessage: gitUploadForm.value.commitMessage.trim(),
     };
     
-    const result = await fetch(`/api/dynamic/${props.routeId}/upload-to-git`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        gitConfig: uploadData.gitConfig,
-        commitMessage: uploadData.commitMessage
-      }),
-    });
+    const response = await uploadToGit(props.routeId, uploadData);
     
-    const response = await result.json();
-    
-    if (response.success) {
+    if (response.code === 0) {
       ElMessage.success("脚本上传到Git仓库成功！");
       gitUploadDialogVisible.value = false;
     } else {
