@@ -22,14 +22,14 @@ export class ScriptFileService {
         ? envScriptsDir
         : path.join(process.cwd(), envScriptsDir);
     } else {
-      // 如果环境变量未设置，默认使用项目根目录下的scripts目录
+      // 如果环境变量未设置，默认使用项目根目录下的data/scripts目录
       const cwd = process.cwd();
       if (cwd.endsWith("/backend") || cwd.endsWith("\\backend")) {
-        // 如果当前在backend目录，则使用上级目录的scripts
-        this.scriptsDir = path.join(path.dirname(cwd), "scripts");
+        // 如果当前在backend目录，则使用上级目录的data/scripts
+        this.scriptsDir = path.join(path.dirname(cwd), "data", "scripts");
       } else {
-        // 否则使用当前目录的scripts
-        this.scriptsDir = path.join(cwd, "scripts");
+        // 否则使用当前目录的data/scripts
+        this.scriptsDir = path.join(cwd, "data", "scripts");
       }
     }
 

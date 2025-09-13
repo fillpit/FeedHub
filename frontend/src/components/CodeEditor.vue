@@ -38,7 +38,7 @@ const emit = defineEmits<Emits>();
 const editorContainer = ref<HTMLElement>();
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let isEditorReady = false;
-let syntaxCheckTimer: NodeJS.Timeout | null = null;
+let syntaxCheckTimer: number | null = null;
 
 // 初始化编辑器
 const initEditor = async () => {
@@ -49,17 +49,15 @@ const initEditor = async () => {
     monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.ES2020,
       allowNonTsExtensions: true,
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
       module: monaco.languages.typescript.ModuleKind.CommonJS,
       noEmit: true,
       esModuleInterop: true,
       jsx: monaco.languages.typescript.JsxEmit.React,
       reactNamespace: "React",
       allowJs: true,
-      typeRoots: ["node_modules/@types"],
-      strict: true,
-      noImplicitAny: true,
-      noImplicitReturns: true,
+      strict: false, // 降低严格模式以避免浏览器环境问题
+      noImplicitAny: false,
+      noImplicitReturns: false,
       noUnusedLocals: false,
       noUnusedParameters: false,
     });
@@ -67,9 +65,9 @@ const initEditor = async () => {
     // 启用语法检查
     if (props.enableSyntaxCheck) {
       monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-        noSemanticValidation: false,
+        noSemanticValidation: true, // 禁用语义验证以避免模块解析问题
         noSyntaxValidation: false,
-        noSuggestionDiagnostics: false,
+        noSuggestionDiagnostics: true, // 禁用建议诊断
       });
     }
 

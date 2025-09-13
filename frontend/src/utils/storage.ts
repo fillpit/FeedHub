@@ -278,6 +278,11 @@ class TypedStorageManager {
     return this.storage.get<string>(STORAGE_KEYS.TOKEN);
   }
 
+  // 清除令牌
+  clearToken(): boolean {
+    return this.storage.remove(STORAGE_KEYS.TOKEN);
+  }
+
   // 设置用户信息
   setUserInfo(userInfo: TypedStorage["userInfo"]): boolean {
     return this.storage.set("userInfo", userInfo, {
@@ -289,6 +294,11 @@ class TypedStorageManager {
   // 获取用户信息
   getUserInfo(): TypedStorage["userInfo"] | undefined {
     return this.storage.get<TypedStorage["userInfo"]>("userInfo");
+  }
+
+  // 清除用户信息
+  clearUserInfo(): boolean {
+    return this.storage.remove("userInfo");
   }
 
   // 设置主题

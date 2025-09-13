@@ -11,8 +11,13 @@
 
 <script setup lang="ts">
 import { useGlobalLoading } from "./utils/loading";
+import { useAuthStore } from "@/stores/auth";
 
 const { isGlobalLoading } = useGlobalLoading();
+const authStore = useAuthStore();
+
+// 初始化认证状态
+authStore.initAuth();
 </script>
 
 <style>

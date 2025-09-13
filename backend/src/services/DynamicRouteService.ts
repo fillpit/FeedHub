@@ -789,7 +789,7 @@ export class DynamicRouteService {
     subPath?: string
   ): Promise<void> {
     const git = simpleGit();
-    const tempDir = path.join(process.cwd(), "temp", `git-clone-${Date.now()}`);
+    const tempDir = path.join(process.cwd(), "data", "temp", `git-clone-${Date.now()}`);
     const scriptDir = this.scriptFileService.getScriptDirectoryPath(scriptDirName);
 
     try {

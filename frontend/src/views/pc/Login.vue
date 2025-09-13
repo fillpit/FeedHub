@@ -48,6 +48,7 @@ import { ElMessage } from "element-plus";
 import { User, Lock } from "@element-plus/icons-vue";
 import { userApi } from "@/api/user";
 import { STORAGE_KEYS } from "@/constants/storage";
+import { useAuthStore } from "@/stores/auth";
 
 // 状态
 const loading = ref(false);
@@ -72,6 +73,7 @@ const loginRules = {
 
 const router = useRouter();
 const loginFormRef = ref();
+const authStore = useAuthStore();
 
 // 记住密码相关
 onMounted(() => {
@@ -103,7 +105,20 @@ const handleLogin = async () => {
             localStorage.removeItem(STORAGE_KEYS.PASSWORD);
           }
 
-          localStorage.setItem(STORAGE_KEYS.TOKEN, res.data?.token || "");
+          const token = res.data?.token || "";
+          const userInfo = res.data?.user;
+          
+          // 验证用户信息是否完整
+          if (token && userInfo) {
+            // 设置认证信息到store
+            authStore.setAuth(token, userInfo);
+            console.log('用户登录成功，信息已存储到状态管理:', userInfo);
+          } else {
+            console.error('登录响应数据不完整:', res.data);
+            // 降级处理：仅保存token
+            localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+          }
+          
           router.push("/");
         } else {
           ElMessage.error(res.message || "登录失败");

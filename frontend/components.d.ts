@@ -12,6 +12,7 @@ declare module 'vue' {
     DebugResultDialog: typeof import('./src/components/DebugResultDialog.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
+    ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBadge: typeof import('element-plus/es')['ElBadge']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
@@ -32,6 +33,7 @@ declare module 'vue' {
     ElEmpty: typeof import('element-plus/es')['ElEmpty']
     ElForm: typeof import('element-plus/es')['ElForm']
     ElFormItem: typeof import('element-plus/es')['ElFormItem']
+    ElHeader: typeof import('element-plus/es')['ElHeader']
     ElIcon: typeof import('element-plus/es')['ElIcon']
     ElInput: typeof import('element-plus/es')['ElInput']
     ElInputNumber: typeof import('element-plus/es')['ElInputNumber']
@@ -75,6 +77,7 @@ declare module 'vue' {
     ScriptInitializer: typeof import('./src/components/ScriptInitializer.vue')['default']
     SelectorHelpDialog: typeof import('./src/components/SelectorHelpDialog.vue')['default']
     SimpleIcon: typeof import('./src/components/SimpleIcon.vue')['default']
+    UserHeader: typeof import('./src/components/UserHeader.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

@@ -9,10 +9,17 @@
 
       <!-- 主内容区 -->
       <el-container class="pc-home__main">
-        <!-- 顶部搜索栏 -->
-        <!-- <el-header class="pc-home__header" :class="{ 'is-scrolled': !store.scrollTop }">
-          <search-bar />
-        </el-header> -->
+        <!-- 顶部导航栏 -->
+        <el-header class="pc-home__header" :class="{ 'is-scrolled': !store.scrollTop }">
+          <div class="header-content">
+            <div class="header-left">
+              <h2 class="app-title">FeedHub</h2>
+            </div>
+            <div class="header-right">
+              <user-header />
+            </div>
+          </div>
+        </el-header>
 
         <!-- 内容区域 -->
         <el-main class="pc-home__content">
@@ -36,6 +43,7 @@ import { useUserSettingStore } from "@/stores/userSetting";
 import { throttle } from "@/utils/index";
 import "element-plus/es/components/loading/style/css";
 import AsideMenu from "@/components/AsideMenu.vue";
+import UserHeader from "@/components/UserHeader.vue";
 
 // 状态管理
 const store = useStore();
@@ -95,21 +103,50 @@ const handleScroll = throttle(() => {
     height: 100%;
   }
 
-  // 顶部搜索栏
+  // 顶部导航栏
   &__header {
     position: sticky;
     top: 0;
     z-index: 10;
-    height: auto;
-    padding: 16px;
+    height: 64px;
+    padding: 0;
     background: var(--theme-card-bg);
     backdrop-filter: var(--theme-blur);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     transition: var(--theme-transition);
 
     &.is-scrolled {
-      padding: 12px;
       box-shadow: var(--theme-shadow-sm);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      padding: 0 24px;
+
+      .header-left {
+        display: flex;
+        align-items: center;
+
+        .app-title {
+          margin: 0;
+          font-size: 20px;
+          font-weight: 600;
+          color: var(--theme-text-primary);
+          background: linear-gradient(135deg, var(--theme-primary), var(--theme-theme));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
     }
   }
 

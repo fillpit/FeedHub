@@ -1,6 +1,5 @@
-import { injectable, inject } from "inversify";
+import { injectable } from "inversify";
 import AuthCredential, { AuthCredentialAttributes } from "../models/AuthCredential";
-// import { ApiResponseData } from "../core/ApiResponse";
 import { logger } from "../utils/logger";
 import axios from "axios";
 import { AxiosInstance } from "axios";

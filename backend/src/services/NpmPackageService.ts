@@ -25,14 +25,14 @@ export class NpmPackageService {
         ? envPackagesDir
         : path.join(process.cwd(), envPackagesDir);
     } else {
-      // 如果环境变量未设置，默认使用项目根目录下的custom_packages目录
+      // 如果环境变量未设置，默认使用项目根目录下的data/custom_packages目录
       const cwd = process.cwd();
       if (cwd.endsWith("/backend") || cwd.endsWith("\\backend")) {
-        // 如果当前在backend目录，则使用上级目录的custom_packages
-        this.packagesDir = path.join(path.dirname(cwd), "custom_packages");
+        // 如果当前在backend目录，则使用上级目录的data/custom_packages
+        this.packagesDir = path.join(path.dirname(cwd), "data", "custom_packages");
       } else {
-        // 否则使用当前目录的custom_packages
-        this.packagesDir = path.join(cwd, "custom_packages");
+        // 否则使用当前目录的data/custom_packages
+        this.packagesDir = path.join(cwd, "data", "custom_packages");
       }
     }
 

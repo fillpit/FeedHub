@@ -1,7 +1,7 @@
 import axios, { AxiosResponse, AxiosRequestConfig, AxiosError } from "axios";
 import { ElMessage, ElNotification } from "element-plus";
 import type { ApiResponse } from "@feedhub/shared";
-import { STORAGE_KEYS } from "@/constants/storage";
+import { localStorage as typedLocalStorage } from "@/utils/storage";
 import { CSRFProtection, XSSProtection } from "@/utils/security";
 import { DetailedErrorResponse } from "@feedhub/shared";
 
@@ -129,7 +129,7 @@ axiosInstance.interceptors.request.use(
       }
     }
 
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    const token = typedLocalStorage.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else if (!isLoginAndRedirect(config.url || "")) {
@@ -199,7 +199,7 @@ axiosInstance.interceptors.response.use(
         break;
       case 401:
         showErrorMessage("登录已过期，请重新登录");
-        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        typedLocalStorage.clearToken();
         setTimeout(() => {
           window.location.href = "/login";
         }, 1000);

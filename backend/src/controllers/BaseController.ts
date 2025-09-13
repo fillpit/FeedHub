@@ -25,6 +25,15 @@ export abstract class BaseController {
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
+      console.error(`[BaseController] 请求处理失败:`, {
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : error
+      });
       res.status(500).json(ApiResponse.error(errorMessage));
     }
   }

@@ -15,7 +15,7 @@ export class GitUploadService {
 
   /**
    * 获取Git上传临时目录的基础路径
-   * 优先从环境变量 GIT_UPLOAD_TEMP_DIR 读取，没有则使用项目根目录下的temp目录
+   * 优先从环境变量 GIT_UPLOAD_TEMP_DIR 读取，没有则使用项目根目录下的data/temp目录
    */
   private getGitUploadTempBasePath(): string {
     const envTempDir = process.env.GIT_UPLOAD_TEMP_DIR;
@@ -24,12 +24,12 @@ export class GitUploadService {
       return envTempDir;
     }
 
-    // 如果环境变量未设置，默认使用项目根目录下的custom_packages目录
+    // 如果环境变量未设置，默认使用项目根目录下的data/temp目录
     const cwd = process.cwd();
-    let defaultTempDir = path.join(cwd, "temp");
+    let defaultTempDir = path.join(cwd, "data", "temp");
     if (cwd.endsWith("/backend") || cwd.endsWith("\\backend")) {
-      // 如果当前在backend目录，则使用上级目录的custom_packages
-      defaultTempDir = path.join(path.dirname(cwd), "temp");
+      // 如果当前在backend目录，则使用上级目录的data/temp
+      defaultTempDir = path.join(path.dirname(cwd), "data", "temp");
     }
     
     logger.info(`[GitUploadService] 使用默认临时目录: ${defaultTempDir}`);
