@@ -1050,17 +1050,39 @@ export class DynamicRouteService {
     // 添加路由参数到上下文
     (context as any).routeParams = processedParams;
 
-    // 执行脚本
-    const result = await executeScript(
-      { script: { enabled: true, script: scriptContent, timeout: route.script.timeout || 30000 } },
-      context,
-      this.axiosInstance,
-      undefined,
-      this.npmPackageService
-    );
+    let validatedResult: any;
+    try {
+      // 执行脚本
+      const result = await executeScript(
+        { script: { enabled: true, script: scriptContent, timeout: route.script.timeout || 30000 } },
+        context,
+        this.axiosInstance,
+        undefined,
+        this.npmPackageService
+      );
 
-    // 验证结果
-    const validatedResult = validateScriptResult(result);
+      // 验证结果
+      validatedResult = validateScriptResult(result);
+
+      // 持久化成功状态
+      await DynamicRouteConfig.update(
+        ({ lastRunAt: new Date(), lastRunStatus: "success", lastRunError: null } as any),
+        { where: { id: route.id } }
+      );
+    } catch (error: any) {
+      // 持久化失败状态
+      await DynamicRouteConfig.update(
+        (
+          {
+            lastRunAt: new Date(),
+            lastRunStatus: "failure",
+            lastRunError: error?.message || String(error),
+          } as any
+        ),
+        { where: { id: route.id } }
+      );
+      throw error;
+    }
 
     // 检查type参数，决定返回格式（直接从查询参数获取，不通过路由参数配置）
     const responseType = (queryParams.type as string) || "rss";
@@ -1164,6 +1186,16 @@ export class DynamicRouteService {
       const executionTime = Date.now() - startTime;
       logs.push(`[INFO] 脚本执行成功，耗时 ${executionTime}ms`);
 
+      // 调试成功后，若是已保存的路由，更新状态
+      if (routeData.id) {
+        try {
+          await DynamicRouteConfig.update(
+            ({ lastRunAt: new Date(), lastRunStatus: "success", lastRunError: null } as any),
+            { where: { id: routeData.id } }
+          );
+        } catch {}
+      }
+
       return {
         success: true,
         data: {
@@ -1177,6 +1209,21 @@ export class DynamicRouteService {
     } catch (error) {
       const executionTime = Date.now() - startTime;
       logs.push(`[FATAL] 脚本执行失败: ${(error as Error).message}`);
+      // 调试失败后，若是已保存的路由，更新状态
+      if ((routeData as any).id) {
+        try {
+          await DynamicRouteConfig.update(
+            (
+              {
+                lastRunAt: new Date(),
+                lastRunStatus: "failure",
+                lastRunError: (error as Error)?.message || String(error),
+              } as any
+            ),
+            { where: { id: (routeData as any).id } }
+          );
+        } catch {}
+      }
 
       return {
         success: false,

@@ -307,16 +307,35 @@ export class WebsiteRssService {
    * 刷新配置后更新内容
    */
   private async fetchAndUpdateContent(config: WebsiteRssConfigAttributes): Promise<void> {
-    const content = await this.fetchContent(config, undefined);
+    try {
+      const content = await this.fetchContent(config, undefined);
 
-    // 更新配置
-    await WebsiteRssConfig.update(
-      {
-        lastContent: JSON.stringify(content),
-        lastFetchTime: new Date(),
-      },
-      { where: { id: config.id } }
-    );
+      // 抓取成功，更新内容与状态
+      await WebsiteRssConfig.update(
+        (
+          {
+            lastContent: JSON.stringify(content),
+            lastFetchTime: new Date(),
+            lastFetchStatus: "success",
+            lastFetchError: null,
+          } as any
+        ),
+        { where: { id: config.id } }
+      );
+    } catch (error: any) {
+      // 抓取失败，仅更新状态与错误摘要，保留原有lastContent
+      await WebsiteRssConfig.update(
+        (
+          {
+            lastFetchStatus: "failure",
+            lastFetchError: error?.message || String(error),
+          } as any
+        ),
+        { where: { id: config.id } }
+      );
+      // 继续抛出错误以保持原有调用方逻辑
+      throw error;
+    }
   }
 
   /**

@@ -7,7 +7,6 @@ import { WebsiteRssController } from "../controllers/websiteRss";
 import { DynamicRouteController } from "../controllers/dynamicRoute";
 import { BackupController } from "../controllers/backup";
 import websiteRssRoutes from "./websiteRss";
-import bookRssRoutes from "./bookRss";
 import dynamicRouteRoutes from "./dynamicRoute";
 import npmPackageRoutes from "./npmPackage";
 import notificationRoutes from "./notification";
@@ -72,8 +71,6 @@ router.post(
 // 网站RSS相关路由
 router.use("/website", websiteRssRoutes);
 
-// 图书RSS相关路由
-router.use("/book-rss", bookRssRoutes);
 
 // RSS模板相关路由
 

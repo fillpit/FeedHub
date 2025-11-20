@@ -52,6 +52,8 @@ export interface WebsiteRssConfigBase {
   renderMode?: "static" | "rendered"; // 页面渲染模式：static-直接请求HTML，rendered-使用浏览器渲染
   lastContent?: string; // 上次抓取的内容
   lastFetchTime?: Date | string; // 上次抓取时间
+  lastFetchStatus?: "success" | "failure"; // 上次抓取状态：成功或失败
+  lastFetchError?: string; // 上次抓取失败的错误摘要
   fetchInterval: number; // 抓取间隔（分钟）
   rssDescription?: string; // RSS描述
   favicon?: string; // 网站图标

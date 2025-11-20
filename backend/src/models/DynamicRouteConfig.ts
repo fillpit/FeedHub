@@ -26,12 +26,15 @@ class DynamicRouteConfig
   public description!: string;
   public refreshInterval!: number;
   public authCredentialId?: number;
+  public lastRunAt?: Date;
+  public lastRunStatus?: "success" | "failure";
+  public lastRunError?: string;
   public createdAt!: Date;
   public updatedAt!: Date;
 }
 
 DynamicRouteConfig.init(
-  {
+  ({
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -77,6 +80,21 @@ DynamicRouteConfig.init(
         key: "id",
       },
     },
+    lastRunAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "最近一次执行时间",
+    },
+    lastRunStatus: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "最近一次执行状态：success 或 failure",
+    },
+    lastRunError: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "最近一次执行失败的错误摘要",
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -87,7 +105,7 @@ DynamicRouteConfig.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-  },
+  } as any),
   {
     sequelize,
     tableName: "custom_route_configs",

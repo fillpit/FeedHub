@@ -15,7 +15,7 @@ router.get("/:id", (req, res) => authCredentialController.getById(req, res));
 
 router.post("/", (req, res) => authCredentialController.create(req, res));
 
-router.put(":id", (req, res) => authCredentialController.update(req, res));
+router.put("/:id", (req, res) => authCredentialController.update(req, res));
 
 //
 router.delete("/:id", (req, res) => authCredentialController.delete(req, res));

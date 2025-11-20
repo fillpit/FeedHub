@@ -37,13 +37,15 @@ class WebsiteRssConfig
   public renderMode?: "static" | "rendered";
   public lastContent!: string;
   public lastFetchTime!: Date;
+  public lastFetchStatus?: "success" | "failure";
+  public lastFetchError?: string;
   public fetchInterval!: number;
   public rssDescription!: string;
   public favicon!: string;
 }
 
 WebsiteRssConfig.init(
-  {
+  ({
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -94,6 +96,16 @@ WebsiteRssConfig.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    lastFetchStatus: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "最后一次抓取状态：success 或 failure",
+    },
+    lastFetchError: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "最后一次抓取失败的错误摘要",
+    },
     fetchInterval: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -107,7 +119,7 @@ WebsiteRssConfig.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-  },
+  } as any),
   {
     sequelize,
     modelName: "WebsiteRssConfig",

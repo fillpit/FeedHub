@@ -31,11 +31,7 @@ const routes: RouteRecordRaw[] = [
         name: "npm-package",
         component: () => import("@/views/PackageManagement.vue"),
       },
-      {
-        path: "/book-rss",
-        name: "book-rss",
-        component: () => import("@/views/BookRss.vue"),
-      },
+      
     ],
   },
   {
