@@ -38,7 +38,7 @@ const emit = defineEmits<Emits>();
 const editorContainer = ref<HTMLElement>();
 let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let isEditorReady = false;
-let syntaxCheckTimer: number | null = null;
+let syntaxCheckTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 初始化编辑器
 const initEditor = async () => {
