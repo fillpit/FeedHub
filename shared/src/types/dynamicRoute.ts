@@ -45,6 +45,9 @@ export interface DynamicRouteConfig {
   description?: string; // 路由描述
   refreshInterval: number; // 刷新间隔（分钟）
   authCredentialId?: number; // 关联的授权信息ID
+  lastRunAt?: Date; // 最近一次执行时间
+  lastRunStatus?: "success" | "failure"; // 最近一次执行状态
+  lastRunError?: string; // 最近一次执行失败的错误摘要
   createdAt?: Date;
   updatedAt?: Date;
 }

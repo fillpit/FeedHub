@@ -310,7 +310,32 @@ const loadStats = async () => {
   try {
     const response = await npmPackageApi.getStats();
     if (response.data) {
-      stats.value = response.data;
+      const d: any = response.data;
+      const computedTotalPackages = packages.value.length;
+      const computedInstalledPackages = packages.value.filter((pkg) => pkg.status === "installed").length;
+      const computedTotalSize = packages.value
+        .filter((pkg) => pkg.status === "installed" && pkg.size)
+        .reduce((sum, pkg) => sum + (pkg.size || 0), 0);
+      const computedTotalUsage = packages.value.reduce((sum, pkg) => sum + (pkg.usageCount || 0), 0);
+
+      stats.value = {
+        totalPackages:
+          typeof d.totalPackages === "number"
+            ? d.totalPackages
+            : typeof d.total === "number"
+            ? d.total
+            : computedTotalPackages,
+        installedPackages:
+          typeof d.installedPackages === "number"
+            ? d.installedPackages
+            : typeof d.installed === "number"
+            ? d.installed
+            : computedInstalledPackages,
+        totalSize:
+          typeof d.totalSize === "number" ? d.totalSize : computedTotalSize,
+        totalUsage:
+          typeof d.totalUsage === "number" ? d.totalUsage : computedTotalUsage,
+      };
     }
   } catch (error) {
     console.error("加载统计信息失败:", error);

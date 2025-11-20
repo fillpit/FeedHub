@@ -6,7 +6,6 @@ export * from "./types/auth";
 export * from "./types/user";
 export * from "./types/websiteRss";
 export * from "./types/dynamicRoute";
-export * from "./types/bookRss";
 
 // 导出常量
 export * from "./constants";

@@ -84,23 +84,28 @@ export class NpmPackageController extends BaseController {
       }
 
       const packages = allPackages.data || [];
+      const totalPackages = packages.length;
+      const installedPackages = packages.filter((pkg) => pkg.status === "installed").length;
+      const totalSize = packages
+        .filter((pkg) => pkg.status === "installed" && pkg.size)
+        .reduce((sum, pkg) => sum + (pkg.size || 0), 0);
+      const totalUsage = packages.reduce((sum, pkg) => sum + (pkg.usageCount || 0), 0);
+
       const stats = {
-        total: packages.length,
-        installed: packages.filter((pkg) => pkg.status === "installed").length,
+        totalPackages,
+        installedPackages,
+        totalSize,
+        totalUsage,
+        // 兼容保留原有字段，避免其它调用方受影响
+        total: totalPackages,
+        installed: installedPackages,
         installing: packages.filter((pkg) => pkg.status === "installing").length,
         failed: packages.filter((pkg) => pkg.status === "failed").length,
-        totalSize: packages
-          .filter((pkg) => pkg.status === "installed" && pkg.size)
-          .reduce((sum, pkg) => sum + (pkg.size || 0), 0),
         mostUsed: packages
           .filter((pkg) => pkg.status === "installed")
           .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
           .slice(0, 5)
-          .map((pkg) => ({
-            name: pkg.name,
-            usageCount: pkg.usageCount,
-            lastUsed: pkg.lastUsed,
-          })),
+          .map((pkg) => ({ name: pkg.name, usageCount: pkg.usageCount, lastUsed: pkg.lastUsed })),
       };
 
       return {

@@ -188,18 +188,7 @@
         </div>
       </el-tab-pane>
 
-      <!-- OPDS设置标签页 -->
-      <el-tab-pane label="OPDS设置" name="opds">
-        <template #label>
-          <div class="tab-label">
-            <el-icon><Connection /></el-icon>
-            <span>OPDS设置</span>
-          </div>
-        </template>
-        <div class="tab-content">
-          <OpdsGlobalSettings />
-        </div>
-      </el-tab-pane>
+      
 
       <!-- 用户设置标签页 -->
       <el-tab-pane label="用户设置" name="user">
@@ -328,7 +317,6 @@ import type {
   NotificationSettings,
 } from "@feedhub/shared";
 import NotificationSettingsComponent from "@/components/NotificationSettings.vue";
-import OpdsGlobalSettings from "@/components/OpdsGlobalSettings.vue";
 import { backupApi, downloadBackupFile, readBackupFile } from "@/api/backup";
 import {
   Monitor,
@@ -344,7 +332,7 @@ import {
   Upload,
   RefreshRight,
   Close,
-  Connection,
+  
 } from "@element-plus/icons-vue";
 
 const settingStore = useUserSettingStore();

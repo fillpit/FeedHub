@@ -75,6 +75,21 @@
           </template>
         </el-table-column>
 
+        <el-table-column label="最近执行时间" width="160" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span>{{ row.lastRunAt ? new Date(row.lastRunAt as any).toLocaleString() : '—' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="最近执行状态" width="120">
+          <template #default="{ row }">
+            <el-tooltip v-if="row.lastRunStatus === 'failure' && row.lastRunError" :content="row.lastRunError" placement="top">
+              <el-tag type="danger" size="small">失败</el-tag>
+            </el-tooltip>
+            <el-tag v-else-if="row.lastRunStatus === 'success'" type="success" size="small">成功</el-tag>
+            <el-tag v-else type="info" size="small">未知</el-tag>
+          </template>
+        </el-table-column>
+
         <el-table-column label="参数信息" min-width="200">
           <template #default="{ row }">
             <div class="route-info">

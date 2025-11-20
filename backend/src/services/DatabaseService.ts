@@ -5,11 +5,6 @@ import User from "../models/User";
 import UserSetting from "../models/UserSetting";
 import NotificationSetting from "../models/NotificationSetting";
 // 书籍订阅相关模型
-import Book from "../models/Book";
-import BookRssConfig from "../models/BookRssConfig";
-import Chapter from "../models/Chapter";
-import Subscription from "../models/Subscription";
-import OpdsConfig from "../models/OpdsConfig";
 import sequelize from "../config/database";
 
 // 全局设置默认值
@@ -36,14 +31,12 @@ export class DatabaseService {
       await this.sequelize.query("PRAGMA foreign_keys = OFF");
       await this.cleanupBackupTables();
 
-      // 检查chapters表是否存在错误的约束
-      await this.fixChaptersTableIfNeeded();
-
-      // 检查并添加BookRssConfig表的缺失字段
-      await this.fixBookRssConfigTableIfNeeded();
+      // 图书RSS相关数据库表维护逻辑已移除
 
       // 检查并添加WebsiteRssConfig表的缺失字段
       await this.fixWebsiteRssConfigTableIfNeeded();
+      // 检查并添加DynamicRouteConfig表的缺失字段
+      await this.fixDynamicRouteConfigTableIfNeeded();
 
       // 使用force: false确保不会重新创建已存在的表
       await this.sequelize.sync({ force: false });
@@ -132,200 +125,6 @@ export class DatabaseService {
   /**
    * 修复chapters表的错误约束
    */
-  private async fixChaptersTableIfNeeded(): Promise<void> {
-    try {
-      // 检查chapters表是否存在
-      const tables = await this.sequelize.query<{ name: string }>(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='chapters'",
-        { type: QueryTypes.SELECT }
-      );
-
-      if (tables.length === 0) {
-        console.log("chapters表不存在，将由sync创建");
-        return;
-      }
-
-      // 检查表结构是否有错误的UNIQUE约束
-      const createSql = await this.sequelize.query<{ sql: string }>(
-        "SELECT sql FROM sqlite_master WHERE type='table' AND name='chapters'",
-        { type: QueryTypes.SELECT }
-      );
-
-      if (createSql.length > 0 && createSql[0].sql) {
-        const sql = createSql[0].sql;
-        // 检查是否有错误的UNIQUE约束
-        if (
-          sql.includes("bookId` INTEGER NOT NULL UNIQUE") ||
-          sql.includes("chapterNumber` INTEGER NOT NULL UNIQUE")
-        ) {
-          console.log("检测到chapters表有错误的UNIQUE约束，开始修复...");
-
-          // 备份现有数据
-          await this.sequelize.query(
-            "CREATE TABLE IF NOT EXISTS chapters_backup AS SELECT * FROM chapters"
-          );
-
-          // 删除原表
-          await this.sequelize.query("DROP TABLE chapters");
-
-          // 重新创建正确的表结构
-          await this.sequelize.query(`
-            CREATE TABLE chapters (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              bookId INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-              chapterNumber INTEGER NOT NULL,
-              title VARCHAR(255) NOT NULL,
-              content TEXT,
-              wordCount INTEGER,
-              publishTime DATETIME,
-              isNew TINYINT(1) NOT NULL DEFAULT 1,
-              createdAt DATETIME NOT NULL,
-              updatedAt DATETIME NOT NULL
-            )
-          `);
-
-          // 创建正确的组合唯一索引
-          await this.sequelize.query(
-            "CREATE UNIQUE INDEX chapters_book_id_chapter_number ON chapters(bookId, chapterNumber)"
-          );
-
-          // 恢复数据
-          await this.sequelize.query("INSERT INTO chapters SELECT * FROM chapters_backup");
-
-          // 删除备份表
-          await this.sequelize.query("DROP TABLE chapters_backup");
-
-          console.log("✅ chapters表修复完成");
-        }
-      }
-    } catch (error) {
-      console.warn("修复chapters表时出现警告:", (error as Error).message);
-    }
-  }
-
-  /**
-   * 检查并添加BookRssConfig表的缺失字段
-   */
-  private async fixBookRssConfigTableIfNeeded(): Promise<void> {
-    try {
-      // 检查book_rss_configs表是否存在
-      const tables = await this.sequelize.query<{ name: string }>(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='book_rss_configs'",
-        { type: QueryTypes.SELECT }
-      );
-
-      if (tables.length === 0) {
-        console.log("book_rss_configs表不存在，将由sync创建");
-        return;
-      }
-
-      // 检查表中是否存在新字段
-      const columns = await this.sequelize.query<{ name: string }>(
-        "PRAGMA table_info(book_rss_configs)",
-        { type: QueryTypes.SELECT }
-      );
-
-      const columnNames = columns.map((col) => col.name);
-      const missingColumns = [];
-
-      if (!columnNames.includes("parseStatus")) {
-        missingColumns.push("parseStatus");
-      }
-      if (!columnNames.includes("parseError")) {
-        missingColumns.push("parseError");
-      }
-      if (!columnNames.includes("lastParseTime")) {
-        missingColumns.push("lastParseTime");
-      }
-      if (!columnNames.includes("lastFeedTime")) {
-        missingColumns.push("lastFeedTime");
-      }
-      if (!columnNames.includes("minReturnChapters")) {
-        missingColumns.push("minReturnChapters");
-      }
-
-      // 添加缺失的字段
-      for (const column of missingColumns) {
-        try {
-          if (column === "parseStatus") {
-            await this.sequelize.query(
-              "ALTER TABLE book_rss_configs ADD COLUMN parseStatus VARCHAR(255) DEFAULT 'pending'"
-            );
-            console.log("✅ 已添加parseStatus字段到book_rss_configs表");
-          } else if (column === "parseError") {
-            await this.sequelize.query("ALTER TABLE book_rss_configs ADD COLUMN parseError TEXT");
-            console.log("✅ 已添加parseError字段到book_rss_configs表");
-          } else if (column === "lastParseTime") {
-            await this.sequelize.query(
-              "ALTER TABLE book_rss_configs ADD COLUMN lastParseTime DATETIME"
-            );
-            console.log("✅ 已添加lastParseTime字段到book_rss_configs表");
-          } else if (column === "lastFeedTime") {
-            await this.sequelize.query(
-              "ALTER TABLE book_rss_configs ADD COLUMN lastFeedTime DATETIME"
-            );
-            console.log("✅ 已添加lastFeedTime字段到book_rss_configs表");
-          } else if (column === "minReturnChapters") {
-            await this.sequelize.query(
-              "ALTER TABLE book_rss_configs ADD COLUMN minReturnChapters INTEGER DEFAULT 3"
-            );
-            console.log("✅ 已添加minReturnChapters字段到book_rss_configs表");
-          }
-        } catch (addColumnError) {
-          console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);
-        }
-      }
-
-      if (missingColumns.length === 0) {
-        console.log("✅ book_rss_configs表字段检查完成，无需添加新字段");
-      }
-
-      // 检查并迁移updateInterval单位（从分钟改为天）
-      await this.migrateUpdateIntervalUnit();
-    } catch (error) {
-      console.warn("检查book_rss_configs表字段时出现警告:", (error as Error).message);
-    }
-  }
-
-  private async migrateUpdateIntervalUnit(): Promise<void> {
-    try {
-      // 检查是否已经迁移过（通过检查是否有大于1440的值，因为1440分钟=1天）
-      const largeIntervals = await this.sequelize.query<{ count: number }>(
-        "SELECT COUNT(*) as count FROM book_rss_configs WHERE updateInterval > 1440",
-        { type: QueryTypes.SELECT }
-      );
-
-      // 如果已经有大于1440的值，说明可能已经迁移过了
-      if (largeIntervals[0]?.count > 0) {
-        console.log("✅ updateInterval单位迁移检查完成，数据已是天单位");
-        return;
-      }
-
-      // 获取所有需要迁移的记录（分钟值转换为天值）
-      const configs = await this.sequelize.query<{ id: number; updateInterval: number }>(
-        "SELECT id, updateInterval FROM book_rss_configs WHERE updateInterval IS NOT NULL",
-        { type: QueryTypes.SELECT }
-      );
-
-      if (configs.length === 0) {
-        console.log("✅ 无需迁移updateInterval单位，表中无数据");
-        return;
-      }
-
-      // 批量更新：将分钟转换为天（向上取整，最小为1天）
-      for (const config of configs) {
-        const daysValue = Math.max(1, Math.ceil(config.updateInterval / 1440));
-        await this.sequelize.query("UPDATE book_rss_configs SET updateInterval = ? WHERE id = ?", {
-          replacements: [daysValue, config.id],
-          type: QueryTypes.UPDATE,
-        });
-      }
-
-      console.log(`✅ 已迁移 ${configs.length} 条记录的updateInterval单位从分钟改为天`);
-    } catch (error) {
-      console.warn("迁移updateInterval单位时出现警告:", (error as Error).message);
-    }
-  }
 
   private async fixWebsiteRssConfigTableIfNeeded(): Promise<void> {
     try {
@@ -341,6 +140,12 @@ export class DatabaseService {
       if (!columns.includes("renderMode")) {
         missingColumns.push("renderMode");
       }
+      if (!columns.includes("lastFetchStatus")) {
+        missingColumns.push("lastFetchStatus");
+      }
+      if (!columns.includes("lastFetchError")) {
+        missingColumns.push("lastFetchError");
+      }
 
       // 添加缺失的字段
       for (const column of missingColumns) {
@@ -350,6 +155,16 @@ export class DatabaseService {
               "ALTER TABLE website_rss_configs ADD COLUMN renderMode VARCHAR(255) DEFAULT 'static'"
             );
             console.log("✅ 已添加renderMode字段到website_rss_configs表");
+          } else if (column === "lastFetchStatus") {
+            await this.sequelize.query(
+              "ALTER TABLE website_rss_configs ADD COLUMN lastFetchStatus VARCHAR(32)"
+            );
+            console.log("✅ 已添加lastFetchStatus字段到website_rss_configs表");
+          } else if (column === "lastFetchError") {
+            await this.sequelize.query(
+              "ALTER TABLE website_rss_configs ADD COLUMN lastFetchError TEXT"
+            );
+            console.log("✅ 已添加lastFetchError字段到website_rss_configs表");
           }
         } catch (addColumnError) {
           console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);
@@ -361,6 +176,57 @@ export class DatabaseService {
       }
     } catch (error) {
       console.warn("检查website_rss_configs表字段时出现警告:", (error as Error).message);
+    }
+  }
+
+  private async fixDynamicRouteConfigTableIfNeeded(): Promise<void> {
+    try {
+      const tableInfo = await this.sequelize.query<{ name: string }>(
+        "PRAGMA table_info(custom_route_configs)",
+        { type: QueryTypes.SELECT }
+      );
+
+      const columns = tableInfo.map((col) => col.name);
+      const missingColumns: string[] = [];
+
+      if (!columns.includes("lastRunAt")) {
+        missingColumns.push("lastRunAt");
+      }
+      if (!columns.includes("lastRunStatus")) {
+        missingColumns.push("lastRunStatus");
+      }
+      if (!columns.includes("lastRunError")) {
+        missingColumns.push("lastRunError");
+      }
+
+      for (const column of missingColumns) {
+        try {
+          if (column === "lastRunAt") {
+            await this.sequelize.query(
+              "ALTER TABLE custom_route_configs ADD COLUMN lastRunAt DATETIME"
+            );
+            console.log("✅ 已添加lastRunAt字段到custom_route_configs表");
+          } else if (column === "lastRunStatus") {
+            await this.sequelize.query(
+              "ALTER TABLE custom_route_configs ADD COLUMN lastRunStatus VARCHAR(32)"
+            );
+            console.log("✅ 已添加lastRunStatus字段到custom_route_configs表");
+          } else if (column === "lastRunError") {
+            await this.sequelize.query(
+              "ALTER TABLE custom_route_configs ADD COLUMN lastRunError TEXT"
+            );
+            console.log("✅ 已添加lastRunError字段到custom_route_configs表");
+          }
+        } catch (addColumnError) {
+          console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);
+        }
+      }
+
+      if (missingColumns.length === 0) {
+        console.log("✅ custom_route_configs表字段检查完成，无需添加新字段");
+      }
+    } catch (error) {
+      console.warn("检查custom_route_configs表字段时出现警告:", (error as Error).message);
     }
   }
 
