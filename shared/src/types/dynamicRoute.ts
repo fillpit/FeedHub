@@ -62,12 +62,19 @@ export const DEFAULT_TYPE_PARAM: RouteParam = {
 };
 
 // 后端数据库模型属性接口
-export interface DynamicRouteConfigAttributes
-  extends Required<Omit<DynamicRouteConfig, "id" | "params" | "authCredentialId">> {
+export interface DynamicRouteConfigAttributes {
   id: number;
+  name: string;
+  path: string;
+  method: "GET" | "POST" | string;
   params: RouteParam[];
-  description: string;
+  script: CustomRouteScript;
+  description?: string;
+  refreshInterval: number;
   authCredentialId?: number;
+  lastRunAt?: Date;
+  lastRunStatus?: "success" | "failure";
+  lastRunError?: string;
   createdAt: Date;
   updatedAt: Date;
 }

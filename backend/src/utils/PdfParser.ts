@@ -1,6 +1,14 @@
 import * as fs from "fs";
 import pdf from "pdf-parse";
-import { Chapter } from "@feedhub/shared";
+// 本地章节类型定义，替代已移除的共享 Chapter 类型
+interface ParsedChapter {
+  chapterNumber: number;
+  title: string;
+  content: string;
+  wordCount: number;
+  publishTime: Date;
+  isNew: boolean;
+}
 
 export interface PdfMetadata {
   title?: string;
@@ -20,7 +28,7 @@ export class PdfParser {
    */
   async parse(): Promise<{
     metadata: PdfMetadata;
-    chapters: Omit<Chapter, "id" | "bookId" | "createdAt" | "updatedAt">[];
+    chapters: ParsedChapter[];
   }> {
     try {
       const dataBuffer = fs.readFileSync(this.pdfFilePath);
@@ -58,9 +66,9 @@ export class PdfParser {
   /**
    * 提取章节内容
    */
-  private extractChapters(data: any): Omit<Chapter, "id" | "bookId" | "createdAt" | "updatedAt">[] {
+  private extractChapters(data: any): ParsedChapter[] {
     const text = data.text || "";
-    const chapters: Omit<Chapter, "id" | "bookId" | "createdAt" | "updatedAt">[] = [];
+    const chapters: ParsedChapter[] = [];
 
     // 尝试通过常见的章节标记分割文本
     const chapterPatterns = [
