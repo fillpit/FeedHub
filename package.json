@@ -1,6 +1,6 @@
 {
   "name": "feed-hub",
-  "version": "0.2.7",
+  "version": "0.2.4",
   "private": true,
   "workspaces": [
     "frontend",
