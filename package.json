@@ -1,6 +1,6 @@
 {
   "name": "feed-hub",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": true,
   "workspaces": [
     "frontend",
@@ -26,7 +26,8 @@
     "format:check": "prettier --check \"**/*.{js,ts,vue,json,css,scss}\"",
     "format:all": "npm run format && npm run lint:fix",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix"
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "release": "bash scripts/release.sh"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.1.0",
