@@ -58,6 +58,12 @@ export interface GlobalSettingAttributes {
   opdsServerUrl?: string;
   opdsUsername?: string;
   opdsPassword?: string;
+  // 翻译配置
+  translationTargetLanguage?: string;
+  translationPrompt?: string;
+  translationApiBase?: string;
+  translationApiKey?: string;
+  translationModel?: string;
 }
 
 // 通知设置

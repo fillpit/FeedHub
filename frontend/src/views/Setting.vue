@@ -54,6 +54,8 @@
               </div>
             </div>
 
+            
+
             <!-- 数据备份还原组 -->
             <div class="settings-group">
               <div class="group-header">
@@ -188,7 +190,84 @@
         </div>
       </el-tab-pane>
 
-      
+      <!-- 翻译设置标签页 -->
+      <el-tab-pane label="翻译配置" name="translation">
+        <template #label>
+          <div class="tab-label">
+            <el-icon><Setting /></el-icon>
+            <span>翻译配置</span>
+          </div>
+        </template>
+        <div class="tab-content">
+          <div class="settings-section">
+            <div class="settings-group">
+              <h3>模型接口设置</h3>
+              <div class="form-row">
+                <div class="form-item" style="width: 100%">
+                  <label for="template">配置模版</label>
+                  <el-select v-model="selectedTemplate" placeholder="请选择模版" @change="applyTemplate">
+                    <el-option label="OpenAI 官方" value="openai" />
+                    <el-option label="Azure OpenAI" value="azure" />
+                    <el-option label="火山方舟" value="volcengine" />
+                    <el-option label="Moonshot" value="moonshot" />
+                    <el-option label="DeepSeek" value="deepseek" />
+                    <el-option label="OpenRouter" value="openrouter" />
+                    <el-option label="自定义" value="custom" />
+                  </el-select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-item">
+                  <label for="apiBase">接口地址</label>
+                  <el-input id="apiBase" v-model="localGlobalSetting.translationApiBase" placeholder="例如：https://api.openai.com" />
+                </div>
+                <div class="form-item">
+                  <label for="model">模型名称</label>
+                  <el-input id="model" v-model="localGlobalSetting.translationModel" placeholder="例如：gpt-4o-mini" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-item" style="width: 100%">
+                  <label for="apiKey">接口密钥</label>
+                  <el-input id="apiKey" v-model="localGlobalSetting.translationApiKey" type="password" show-password placeholder="请输入密钥" />
+                </div>
+              </div>
+              
+            </div>
+
+            <div class="settings-group">
+              <h3>翻译行为设置</h3>
+              <div class="form-row">
+                <div class="form-item">
+                  <label for="targetLanguage">目标语言</label>
+                  <el-input id="targetLanguage" v-model="localGlobalSetting.translationTargetLanguage" placeholder="例如：en-US、ja-JP、zh-CN" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-item" style="width:100%">
+                  <label for="translationPrompt">翻译提示词</label>
+                  <el-input id="translationPrompt" v-model="localGlobalSetting.translationPrompt" type="textarea" :rows="3" placeholder="用于指导AI翻译风格的提示语" />
+                </div>
+              </div>
+              <div class="test-block">
+                <label>示例翻译</label>
+                <el-input v-model="sampleText" placeholder="输入示例文本，如：你好，世界" />
+                <div class="test-actions">
+                  <el-button type="success" @click="handleTestTranslation" :loading="testing">测试翻译</el-button>
+                </div>
+                <el-input v-model="testResult" type="textarea" :rows="5" placeholder="测试结果将在此显示" readonly />
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <el-button type="primary" @click="handleSave">
+              <el-icon><Check /></el-icon>
+              保存翻译配置
+            </el-button>
+          </div>
+        </div>
+      </el-tab-pane>
 
       <!-- 用户设置标签页 -->
       <el-tab-pane label="用户设置" name="user">
@@ -338,7 +417,7 @@ import {
 const settingStore = useUserSettingStore();
 
 // 当前激活的标签页
-const activeTab = ref("notification");
+const activeTab = ref("translation");
 
 // 本地状态
 const localGlobalSetting = ref({
@@ -352,7 +431,51 @@ const localGlobalSetting = ref({
   opdsServerUrl: "",
   opdsUsername: "",
   opdsPassword: "",
+  // 翻译配置默认值
+  translationTargetLanguage: "en-US",
+  translationPrompt:
+    "请将输入内容翻译为目标语言，并保留原文，输出格式为：原文\n\n译文",
+  translationApiBase: "",
+  translationApiKey: "",
+  translationModel: "gpt-4o-mini",
 } as GlobalSettingAttributes);
+
+// 引导与模版
+const selectedTemplate = ref<string>("");
+const sampleText = ref("你好，世界");
+const testing = ref(false);
+const testResult = ref("");
+
+// 常见服务商模版映射
+const templatePresets: Record<string, { base: string; model: string; help?: string }> = {
+  openai: { base: "https://api.openai.com", model: "gpt-4o-mini", help: "在OpenAI后台获取API Key" },
+  azure: { base: "https://{your-resource-name}.openai.azure.com", model: "gpt-4o-mini", help: "在Azure门户创建OpenAI资源并获取密钥" },
+  volcengine: { base: "https://api.volcengineapi.com", model: "ep-translate", help: "在火山引擎控制台开通并获取密钥" },
+  moonshot: { base: "https://api.moonshot.cn", model: "moonshot-v1-8k", help: "在Moonshot控制台获取API Key" },
+  deepseek: { base: "https://api.deepseek.com", model: "deepseek-chat", help: "在DeepSeek控制台获取API Key" },
+  openrouter: { base: "https://openrouter.ai/api", model: "openrouter/auto", help: "在OpenRouter获取API Key并选择模型" },
+  custom: { base: "", model: "", help: "自定义兼容OpenAI的接口地址与模型" },
+};
+
+const applyTemplate = (val: string) => {
+  const t = templatePresets[val];
+  if (!t) return;
+  localGlobalSetting.value.translationApiBase = t.base;
+  localGlobalSetting.value.translationModel = t.model;
+};
+
+const handleTestTranslation = async () => {
+  testing.value = true;
+  try {
+    const res = await settingApi.testTranslation(sampleText.value);
+    testResult.value = (res.data?.translatedText as string) || "";
+    ElMessage.success("测试成功");
+  } catch (error: any) {
+    ElMessage.error(error?.message || "测试失败");
+  } finally {
+    testing.value = false;
+  }
+};
 
 const localUserSettings = ref<UserSettingAttributes>({
   userId: "",

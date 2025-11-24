@@ -22,6 +22,7 @@ import { simpleGit } from "simple-git";
 
 import { ScriptFileService } from "./ScriptFileService";
 import { ScriptTemplateService } from "./ScriptTemplateService";
+import { TranslationService } from "./TranslationService";
 
 @injectable()
 export class DynamicRouteService {
@@ -39,7 +40,8 @@ export class DynamicRouteService {
     @inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService,
 
     @inject(TYPES.ScriptFileService) private scriptFileService: ScriptFileService,
-    @inject(TYPES.ScriptTemplateService) private scriptTemplateService: ScriptTemplateService
+    @inject(TYPES.ScriptTemplateService) private scriptTemplateService: ScriptTemplateService,
+    @inject(TYPES.TranslationService) private translationService: TranslationService
   ) {
     this.initializeCacheService();
   }
@@ -1093,6 +1095,20 @@ export class DynamicRouteService {
       responseContent = JSON.stringify(validatedResult, null, 2);
     } else {
       // 默认返回RSS格式
+      // 双语对照翻译：在生成RSS前处理items
+      if ((route as any).enableBilingualTranslate && validatedResult?.items?.length) {
+        const newItems: any[] = [];
+        for (const item of validatedResult.items) {
+          const title = item.title || "";
+          const content = item.content || item.contentSnippet || "";
+          const newTitle = title ? await this.translationService.translateBilingual(title) : title;
+          const newContent = content
+            ? await this.translationService.translateBilingual(content)
+            : content;
+          newItems.push({ ...item, title: newTitle, content: newContent });
+        }
+        validatedResult.items = newItems;
+      }
       responseContent = this.generateRssXml(route, validatedResult);
     }
 

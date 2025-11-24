@@ -20,4 +20,7 @@ export const settingApi = {
       successMessage: "设置更新成功！",
     });
   },
+  testTranslation: (text: string) => {
+    return request.post("/api/setting/translation/test", { text });
+  },
 };

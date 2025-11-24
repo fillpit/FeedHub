@@ -11,6 +11,12 @@ export interface GlobalSettingAttributes {
   opdsServerUrl?: string;
   opdsUsername?: string;
   opdsPassword?: string;
+  // 翻译配置
+  translationTargetLanguage?: string;
+  translationPrompt?: string;
+  translationApiBase?: string;
+  translationApiKey?: string;
+  translationModel?: string;
 }
 
 interface GlobalSettingCreationAttributes extends Optional<GlobalSettingAttributes, "id"> {}
@@ -28,6 +34,12 @@ class GlobalSetting
   public opdsServerUrl?: string;
   public opdsUsername?: string;
   public opdsPassword?: string;
+  // 翻译配置
+  public translationTargetLanguage?: string;
+  public translationPrompt?: string;
+  public translationApiBase?: string;
+  public translationApiKey?: string;
+  public translationModel?: string;
 }
 
 GlobalSetting.init(
@@ -72,6 +84,37 @@ GlobalSetting.init(
       type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "",
+    },
+    // 翻译配置
+    translationTargetLanguage: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "en-US",
+      comment: "翻译目标语言，如 en-US、ja-JP 等",
+    },
+    translationPrompt: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: "请将输入内容翻译为目标语言，并保留原文，输出格式为：原文\\n\\n译文",
+      comment: "翻译提示词，用于指导AI大模型翻译风格",
+    },
+    translationApiBase: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
+      comment: "OpenAI兼容模型接口Base URL",
+    },
+    translationApiKey: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
+      comment: "模型接口密钥",
+    },
+    translationModel: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "gpt-4o-mini",
+      comment: "模型名称",
     },
   },
   {

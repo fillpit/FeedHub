@@ -26,6 +26,7 @@ class DynamicRouteConfig
   public description!: string;
   public refreshInterval!: number;
   public authCredentialId?: number;
+  public enableBilingualTranslate?: boolean;
   public lastRunAt?: Date;
   public lastRunStatus?: "success" | "failure";
   public lastRunError?: string;
@@ -71,6 +72,12 @@ DynamicRouteConfig.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 60, // 默认60分钟
+    },
+    enableBilingualTranslate: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+      comment: "是否启用双语对照翻译",
     },
     authCredentialId: {
       type: DataTypes.INTEGER,

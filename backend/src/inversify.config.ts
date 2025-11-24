@@ -8,6 +8,7 @@ import { WebsiteRssService } from "./services/WebsiteRssService";
 import { AuthCredentialService } from "./services/AuthCredentialService";
 import { SettingService } from "./services/SettingService";
 import { NotificationService } from "./services/NotificationService";
+import { TranslationService } from "./services/TranslationService";
 
 import { DynamicRouteService } from "./services/DynamicRouteService";
 
@@ -41,6 +42,10 @@ container
   .inSingletonScope();
 
 container.bind<SettingService>(TYPES.SettingService).to(SettingService).inSingletonScope();
+container
+  .bind<TranslationService>(TYPES.TranslationService)
+  .to(TranslationService)
+  .inSingletonScope();
 container
   .bind<NotificationService>(TYPES.NotificationService)
   .to(NotificationService)

@@ -50,6 +50,7 @@ export interface WebsiteRssConfigBase {
   auth: WebsiteRssAuth; // 授权配置
   authCredentialId?: number; // 授权信息ID
   renderMode?: "static" | "rendered"; // 页面渲染模式：static-直接请求HTML，rendered-使用浏览器渲染
+  enableBilingualTranslate?: boolean; // 是否启用双语对照翻译
   lastContent?: string; // 上次抓取的内容
   lastFetchTime?: Date | string; // 上次抓取时间
   lastFetchStatus?: "success" | "failure"; // 上次抓取状态：成功或失败

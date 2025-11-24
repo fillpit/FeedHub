@@ -48,6 +48,11 @@ router.post(
   asyncHandler((req: Request, res: Response) => settingController.save(req, res))
 );
 
+router.post(
+  "/setting/translation/test",
+  asyncHandler((req: Request, res: Response) => settingController.testTranslation(req, res))
+);
+
 // 备份还原相关路由
 router.get(
   "/backup/export",

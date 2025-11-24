@@ -9,6 +9,7 @@ export const TYPES = {
   WebsiteRssService: Symbol.for("WebsiteRssService"),
   AuthCredentialService: Symbol.for("AuthCredentialService"),
   DynamicRouteService: Symbol.for("DynamicRouteService"),
+  TranslationService: Symbol.for("TranslationService"),
 
 
   ScriptFileService: Symbol.for("ScriptFileService"),

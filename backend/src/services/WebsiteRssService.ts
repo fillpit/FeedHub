@@ -24,6 +24,7 @@ import { TYPES } from "../core/types";
 import { NpmPackageService } from "./NpmPackageService";
 import { NotificationService } from "./NotificationService";
 import { PageRenderer } from "../utils/PageRenderer";
+import { TranslationService } from "./TranslationService";
 
 // 配置 dayjs
 dayjs.extend(relativeTime);
@@ -35,10 +36,12 @@ export class WebsiteRssService {
   private axiosInstance: AxiosInstance;
   private npmPackageService: NpmPackageService;
   private notificationService: NotificationService;
+  private translationService: TranslationService;
 
   constructor(
     @inject(TYPES.NpmPackageService) npmPackageService: NpmPackageService,
-    @inject(TYPES.NotificationService) notificationService: NotificationService
+    @inject(TYPES.NotificationService) notificationService: NotificationService,
+    @inject(TYPES.TranslationService) translationService: TranslationService
   ) {
     this.axiosInstance = axios.create({
       timeout: 30000,
@@ -49,6 +52,7 @@ export class WebsiteRssService {
     });
     this.npmPackageService = npmPackageService;
     this.notificationService = notificationService;
+    this.translationService = translationService;
   }
 
   /**
@@ -380,10 +384,25 @@ export class WebsiteRssService {
       }
 
       // 格式化日期
-      const formattedContent = extractedContent.map((item) => ({
+      let formattedContent = extractedContent.map((item) => ({
         ...item,
         pubDate: formatDate(item.pubDate, (config.selector as WebsiteRssSelector).dateFormat),
       }));
+
+      // 双语对照翻译处理
+      if ((config as any).enableBilingualTranslate) {
+        const translated: any[] = [];
+        for (const item of formattedContent) {
+          const title = item.title || "";
+          const content = item.content || item.contentSnippet || "";
+          const newTitle = title ? await this.translationService.translateBilingual(title) : title;
+          const newContent = content
+            ? await this.translationService.translateBilingual(content)
+            : content;
+          translated.push({ ...item, title: newTitle, content: newContent });
+        }
+        formattedContent = translated;
+      }
 
       return formattedContent;
     } catch (error: any) {

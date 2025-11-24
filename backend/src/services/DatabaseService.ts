@@ -17,6 +17,10 @@ const DEFAULT_GLOBAL_SETTINGS = {
   opdsServerUrl: "",
   opdsUsername: "",
   opdsPassword: "",
+  // 翻译配置默认值
+  translationTargetLanguage: "en-US",
+  translationPrompt:
+    "请将输入内容翻译为目标语言，并保留原文，输出格式为：原文\n\n译文",
 };
 
 export class DatabaseService {
@@ -37,6 +41,8 @@ export class DatabaseService {
       await this.fixWebsiteRssConfigTableIfNeeded();
       // 检查并添加DynamicRouteConfig表的缺失字段
       await this.fixDynamicRouteConfigTableIfNeeded();
+      // 检查并添加GlobalSetting表的缺失字段
+      await this.fixGlobalSettingsTableIfNeeded();
 
       // 使用force: false确保不会重新创建已存在的表
       await this.sequelize.sync({ force: false });
@@ -140,6 +146,9 @@ export class DatabaseService {
       if (!columns.includes("renderMode")) {
         missingColumns.push("renderMode");
       }
+      if (!columns.includes("enableBilingualTranslate")) {
+        missingColumns.push("enableBilingualTranslate");
+      }
       if (!columns.includes("lastFetchStatus")) {
         missingColumns.push("lastFetchStatus");
       }
@@ -165,6 +174,11 @@ export class DatabaseService {
               "ALTER TABLE website_rss_configs ADD COLUMN lastFetchError TEXT"
             );
             console.log("✅ 已添加lastFetchError字段到website_rss_configs表");
+          } else if (column === "enableBilingualTranslate") {
+            await this.sequelize.query(
+              "ALTER TABLE website_rss_configs ADD COLUMN enableBilingualTranslate BOOLEAN DEFAULT 0"
+            );
+            console.log("✅ 已添加enableBilingualTranslate字段到website_rss_configs表");
           }
         } catch (addColumnError) {
           console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);
@@ -198,6 +212,9 @@ export class DatabaseService {
       if (!columns.includes("lastRunError")) {
         missingColumns.push("lastRunError");
       }
+      if (!columns.includes("enableBilingualTranslate")) {
+        missingColumns.push("enableBilingualTranslate");
+      }
 
       for (const column of missingColumns) {
         try {
@@ -216,6 +233,11 @@ export class DatabaseService {
               "ALTER TABLE custom_route_configs ADD COLUMN lastRunError TEXT"
             );
             console.log("✅ 已添加lastRunError字段到custom_route_configs表");
+          } else if (column === "enableBilingualTranslate") {
+            await this.sequelize.query(
+              "ALTER TABLE custom_route_configs ADD COLUMN enableBilingualTranslate BOOLEAN DEFAULT 0"
+            );
+            console.log("✅ 已添加enableBilingualTranslate字段到custom_route_configs表");
           }
         } catch (addColumnError) {
           console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);
@@ -227,6 +249,72 @@ export class DatabaseService {
       }
     } catch (error) {
       console.warn("检查custom_route_configs表字段时出现警告:", (error as Error).message);
+    }
+  }
+  private async fixGlobalSettingsTableIfNeeded(): Promise<void> {
+    try {
+      const tableInfo = await this.sequelize.query<{ name: string }>(
+        "PRAGMA table_info(global_settings)",
+        { type: QueryTypes.SELECT }
+      );
+
+      const columns = tableInfo.map((col) => col.name);
+      const missingColumns: string[] = [];
+
+      if (!columns.includes("translationTargetLanguage")) {
+        missingColumns.push("translationTargetLanguage");
+      }
+      if (!columns.includes("translationPrompt")) {
+        missingColumns.push("translationPrompt");
+      }
+      if (!columns.includes("translationApiBase")) {
+        missingColumns.push("translationApiBase");
+      }
+      if (!columns.includes("translationApiKey")) {
+        missingColumns.push("translationApiKey");
+      }
+      if (!columns.includes("translationModel")) {
+        missingColumns.push("translationModel");
+      }
+
+      for (const column of missingColumns) {
+        try {
+          if (column === "translationTargetLanguage") {
+            await this.sequelize.query(
+              "ALTER TABLE global_settings ADD COLUMN translationTargetLanguage VARCHAR(32) DEFAULT 'en-US'"
+            );
+            console.log("✅ 已添加translationTargetLanguage字段到global_settings表");
+          } else if (column === "translationPrompt") {
+            await this.sequelize.query(
+              "ALTER TABLE global_settings ADD COLUMN translationPrompt TEXT"
+            );
+            console.log("✅ 已添加translationPrompt字段到global_settings表");
+          } else if (column === "translationApiBase") {
+            await this.sequelize.query(
+              "ALTER TABLE global_settings ADD COLUMN translationApiBase VARCHAR(255)"
+            );
+            console.log("✅ 已添加translationApiBase字段到global_settings表");
+          } else if (column === "translationApiKey") {
+            await this.sequelize.query(
+              "ALTER TABLE global_settings ADD COLUMN translationApiKey VARCHAR(255)"
+            );
+            console.log("✅ 已添加translationApiKey字段到global_settings表");
+          } else if (column === "translationModel") {
+            await this.sequelize.query(
+              "ALTER TABLE global_settings ADD COLUMN translationModel VARCHAR(64)"
+            );
+            console.log("✅ 已添加translationModel字段到global_settings表");
+          }
+        } catch (addColumnError) {
+          console.warn(`添加字段 ${column} 时出现警告:`, (addColumnError as Error).message);
+        }
+      }
+
+      if (missingColumns.length === 0) {
+        console.log("✅ global_settings表字段检查完成，无需添加新字段");
+      }
+    } catch (error) {
+      console.warn("检查global_settings表字段时出现警告:", (error as Error).message);
     }
   }
 

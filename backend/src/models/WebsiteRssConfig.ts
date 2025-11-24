@@ -35,6 +35,7 @@ class WebsiteRssConfig
   public auth!: WebsiteRssAuth;
   public authCredentialId?: number;
   public renderMode?: "static" | "rendered";
+  public enableBilingualTranslate?: boolean;
   public lastContent!: string;
   public lastFetchTime!: Date;
   public lastFetchStatus?: "success" | "failure";
@@ -86,6 +87,12 @@ WebsiteRssConfig.init(
       allowNull: true,
       defaultValue: "static",
       comment: "页面渲染模式：static-直接请求HTML，rendered-使用浏览器渲染",
+    },
+    enableBilingualTranslate: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+      comment: "是否启用双语对照翻译",
     },
 
     lastContent: {

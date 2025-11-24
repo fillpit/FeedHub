@@ -191,6 +191,10 @@
           <el-input v-model="form.description" type="textarea" placeholder="请输入路由描述" :rows="2" />
         </el-form-item>
 
+        <el-form-item label="双语对照翻译" prop="enableBilingualTranslate">
+          <el-switch v-model="form.enableBilingualTranslate" />
+        </el-form-item>
+
         <el-form-item label="刷新间隔(分钟)" prop="refreshInterval">
           <el-input-number v-model="form.refreshInterval" :min="1" :max="1440" />
           <div style="font-size: 12px; color: #909399; margin-top: 4px">
@@ -404,6 +408,7 @@ const form = reactive<DynamicRouteConfig>({
   description: "",
   refreshInterval: 60,
   authCredentialId: undefined,
+  enableBilingualTranslate: false,
   params: [],
   script: {
     sourceType: "inline",

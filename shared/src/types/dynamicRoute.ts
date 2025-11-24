@@ -45,6 +45,7 @@ export interface DynamicRouteConfig {
   description?: string; // 路由描述
   refreshInterval: number; // 刷新间隔（分钟）
   authCredentialId?: number; // 关联的授权信息ID
+  enableBilingualTranslate?: boolean; // 是否启用双语对照翻译
   lastRunAt?: Date; // 最近一次执行时间
   lastRunStatus?: "success" | "failure"; // 最近一次执行状态
   lastRunError?: string; // 最近一次执行失败的错误摘要
@@ -72,6 +73,7 @@ export interface DynamicRouteConfigAttributes {
   description?: string;
   refreshInterval: number;
   authCredentialId?: number;
+  enableBilingualTranslate?: boolean;
   lastRunAt?: Date;
   lastRunStatus?: "success" | "failure";
   lastRunError?: string;

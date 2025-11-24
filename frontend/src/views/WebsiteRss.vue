@@ -142,6 +142,9 @@
         <el-form-item label="启用代理" prop="useProxy">
           <el-switch v-model="form.useProxy" />
         </el-form-item>
+        <el-form-item label="双语对照翻译" prop="enableBilingualTranslate">
+          <el-switch v-model="form.enableBilingualTranslate" />
+        </el-form-item>
 
         <el-divider>抓取设置</el-divider>
 
@@ -770,6 +773,7 @@ const getInitialFormState = (): WebsiteRssConfig => ({
   maxFeeds: 50,
   useProxy: false,
   renderMode: "static",
+  enableBilingualTranslate: false,
   selector: {
     selectorType: "css",
     container: "",
