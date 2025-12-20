@@ -74,6 +74,8 @@
                 </el-link>
               </el-tooltip>
 
+              <CurlToFetchConverter v-if="selectedFile" />
+
               <el-tooltip content="上传脚本到Git仓库" effect="customized">
                 <el-link type="success" size="small" underline="never" @click="showGitUploadDialog"
                   :disabled="!selectedFile">
@@ -284,6 +286,7 @@ import {
 import CodeEditor from "@/components/CodeEditor.vue";
 import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
 import FileTreeNode from "@/components/FileTreeNode.vue";
+import CurlToFetchConverter from "@/components/CurlToFetchConverter.vue";
 import {
   getInlineScriptFiles,
   getInlineScriptFileContent,

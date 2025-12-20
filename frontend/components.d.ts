@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AsideMenu: typeof import('./src/components/AsideMenu.vue')['default']
     CodeEditor: typeof import('./src/components/CodeEditor.vue')['default']
+    CurlToFetchConverter: typeof import('./src/components/CurlToFetchConverter.vue')['default']
     DebugResultDialog: typeof import('./src/components/DebugResultDialog.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
