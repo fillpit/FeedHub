@@ -30,4 +30,10 @@ export const userApi = {
   getSponsors: () => {
     return request.get("/api/sponsors?timestamp=" + Date.now());
   },
+  changePassword: (data: { currentPassword: string; newPassword: string }) => {
+    return request.post("/api/user/change-password", data, {
+      showSuccessMessage: true,
+      successMessage: "密码修改成功",
+    });
+  },
 };

@@ -83,4 +83,28 @@ export class UserService {
       throw error;
     }
   }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    if (!this.isValidInput(newPassword)) {
+      throw new Error("新密码不能包含空格或汉字");
+    }
+
+    const user = await User.findOne({ where: { userId } });
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new Error("当前密码错误");
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    return {
+      message: "密码修改成功",
+    };
+  }
 }

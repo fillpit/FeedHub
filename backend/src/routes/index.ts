@@ -15,6 +15,7 @@ import authCredentialRoutes from "./authCredential";
 import uploadRoutes from "./upload";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
 import { asyncHandler } from "../middleware/errorHandler";
+import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
 
@@ -36,6 +37,16 @@ router.post(
   "/user/register",
   createValidationMiddleware([commonValidationRules.username, commonValidationRules.password]),
   asyncHandler((req: Request, res: Response) => userController.register(req, res))
+);
+
+router.post(
+  "/user/change-password",
+  createValidationMiddleware([
+    { field: "currentPassword", type: "string", required: true },
+    { field: "newPassword", type: "string", required: true },
+  ]),
+  authMiddleware,
+  asyncHandler((req: Request, res: Response) => userController.changePassword(req, res))
 );
 
 // 设置相关路由

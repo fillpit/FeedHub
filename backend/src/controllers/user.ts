@@ -23,4 +23,12 @@ export class UserController extends BaseController {
       return await this.userService.login(username, password);
     });
   }
+
+  async changePassword(req: Request, res: Response): Promise<void> {
+    await this.handleRequest(req, res, async () => {
+      const { currentPassword, newPassword } = req.body;
+      const userId = (req as any).user.userId;
+      return await this.userService.changePassword(userId, currentPassword, newPassword);
+    });
+  }
 }
