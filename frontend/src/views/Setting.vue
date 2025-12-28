@@ -397,6 +397,7 @@ import type {
 } from "@feedhub/shared";
 import NotificationSettingsComponent from "@/components/NotificationSettings.vue";
 import { backupApi, downloadBackupFile, readBackupFile } from "@/api/backup";
+import { userApi } from "@/api/user";
 import {
   Monitor,
   Position,
@@ -611,13 +612,12 @@ const handlePasswordChange = async () => {
 
   passwordChanging.value = true;
   try {
-    // TODO: 调用密码修改API
-    // await userApi.changePassword({
-    //   currentPassword: passwordForm.value.currentPassword,
-    //   newPassword: passwordForm.value.newPassword
-    // });
+    // 调用密码修改API
+    await userApi.changePassword({
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+    });
 
-    ElMessage.success("密码修改成功");
     // 清空表单
     passwordForm.value = {
       currentPassword: "",
