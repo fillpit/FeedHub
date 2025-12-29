@@ -3,6 +3,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { ApiResponse } from "../utils/apiResponse";
+import { safeResolvePath } from "../utils/security/path";
 
 // 配置multer存储
 const storage = multer.diskStorage({
@@ -97,7 +98,15 @@ export class UploadController {
   static async deleteFile(req: Request, res: Response): Promise<void> {
     try {
       const { filename } = req.params;
-      const filePath = path.resolve(process.cwd(), "uploads", filename);
+      const uploadDir = path.resolve(process.cwd(), "uploads");
+
+      let filePath: string;
+      try {
+        filePath = safeResolvePath(uploadDir, filename);
+      } catch (pathError) {
+        res.status(403).json(ApiResponse.error("非法的路径请求"));
+        return;
+      }
 
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
@@ -117,11 +126,14 @@ export class UploadController {
   static async getFileInfo(req: Request, res: Response): Promise<void> {
     try {
       const { filename } = req.params;
-      const filePath = path.resolve(process.cwd(), "uploads", filename);
+      const uploadDir = path.resolve(process.cwd(), "uploads");
 
-      if (fs.existsSync(filePath)) {
-        const stats = fs.statSync(filePath);
-        const fileInfo = {
+      try {
+        const filePath = safeResolvePath(uploadDir, filename);
+
+        if (fs.existsSync(filePath)) {
+          const stats = fs.statSync(filePath);
+          const fileInfo = {
           filename,
           size: stats.size,
           created: stats.birthtime,
