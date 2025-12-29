@@ -73,8 +73,7 @@ function closeDropdown() {
 // 跳转到个人资料页面
 function goToProfile() {
   closeDropdown();
-  // TODO: 实现个人资料页面
-  ElMessage.info('个人资料功能开发中...');
+  router.push('/profile');
 }
 
 // 跳转到设置页面

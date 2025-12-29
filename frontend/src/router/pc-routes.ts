@@ -31,6 +31,11 @@ const routes: RouteRecordRaw[] = [
         name: "npm-package",
         component: () => import("@/views/PackageManagement.vue"),
       },
+      {
+        path: "/profile",
+        name: "profile",
+        component: () => import("@/views/Profile.vue"),
+      },
       
     ],
   },

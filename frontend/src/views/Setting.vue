@@ -398,6 +398,7 @@ import type {
 import NotificationSettingsComponent from "@/components/NotificationSettings.vue";
 import { backupApi, downloadBackupFile, readBackupFile } from "@/api/backup";
 import { userApi } from "@/api/user";
+import { settingApi } from "@/api/setting";
 import {
   Monitor,
   Position,
@@ -469,7 +470,8 @@ const handleTestTranslation = async () => {
   testing.value = true;
   try {
     const res = await settingApi.testTranslation(sampleText.value);
-    testResult.value = (res.data?.translatedText as string) || "";
+    const data = res.data as { translatedText?: string };
+    testResult.value = data?.translatedText || "";
     ElMessage.success("测试成功");
   } catch (error: any) {
     ElMessage.error(error?.message || "测试失败");
