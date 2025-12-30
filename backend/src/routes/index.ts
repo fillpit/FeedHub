@@ -16,8 +16,16 @@ import uploadRoutes from "./upload";
 import { createValidationMiddleware, commonValidationRules } from "../middleware/validation";
 import { asyncHandler } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
+
+// 严格的登录限流器：5分钟内最多5次尝试
+const loginRateLimiter = rateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: "登录尝试次数过多，请5分钟后再试",
+});
 
 // 获取控制器实例
 const settingController = container.get<SettingController>(TYPES.SettingController);
@@ -29,6 +37,7 @@ const backupController = container.get<BackupController>(TYPES.BackupController)
 // 用户相关路由
 router.post(
   "/user/login",
+  loginRateLimiter,
   createValidationMiddleware([commonValidationRules.username, commonValidationRules.password]),
   asyncHandler((req: Request, res: Response) => userController.login(req, res))
 );
