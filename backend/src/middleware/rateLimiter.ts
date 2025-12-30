@@ -6,35 +6,51 @@ interface RequestRecord {
   timestamp: number;
 }
 
-const requestCounts = new Map<string, RequestRecord>();
-const WINDOW_MS = 60 * 1000; // 1分钟窗口
-const MAX_REQUESTS = 100; // 每分钟最大请求数
-const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5分钟清理一次
+interface RateLimiterOptions {
+  windowMs?: number;
+  max?: number;
+  message?: string;
+  statusCode?: number;
+}
 
-// 定期清理过期记录
-setInterval(() => {
-  const now = Date.now();
-  let cleanedCount = 0;
+export const rateLimiter = (options: RateLimiterOptions = {}) => {
+  const windowMs = options.windowMs || 60 * 1000; // Default: 1 minute
+  const max = options.max || 100; // Default: 100 requests per window
+  const message = options.message || "请求过于频繁，请稍后再试";
+  const statusCode = options.statusCode || 429;
 
-  for (const [key, record] of requestCounts.entries()) {
-    if (now - record.timestamp > WINDOW_MS) {
-      requestCounts.delete(key);
-      cleanedCount++;
+  const requestCounts = new Map<string, RequestRecord>();
+  const CLEANUP_INTERVAL = Math.max(windowMs, 60 * 1000); // Clean up at least every minute or windowMs
+
+  // Periodically clean up expired records to prevent memory leaks
+  const intervalId = setInterval(() => {
+    const now = Date.now();
+    let cleanedCount = 0;
+
+    for (const [key, record] of requestCounts.entries()) {
+      if (now - record.timestamp > windowMs) {
+        requestCounts.delete(key);
+        cleanedCount++;
+      }
     }
+
+    if (cleanedCount > 0) {
+      logger.debug(`[RateLimiter] cleaned ${cleanedCount} expired records`);
+    }
+  }, CLEANUP_INTERVAL);
+
+  // Unref to ensure the interval doesn't prevent the process from exiting
+  if (intervalId.unref) {
+    intervalId.unref();
   }
 
-  if (cleanedCount > 0) {
-    logger.debug(`清理了 ${cleanedCount} 个过期的限流记录`);
-  }
-}, CLEANUP_INTERVAL);
-
-export const rateLimiter = () => {
   return (req: Request, res: Response, next: NextFunction) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     const now = Date.now();
     const record = requestCounts.get(ip) || { count: 0, timestamp: now };
 
-    if (now - record.timestamp > WINDOW_MS) {
+    // Reset count if window has passed
+    if (now - record.timestamp > windowMs) {
       record.count = 0;
       record.timestamp = now;
     }
@@ -42,12 +58,12 @@ export const rateLimiter = () => {
     record.count++;
     requestCounts.set(ip, record);
 
-    if (record.count > MAX_REQUESTS) {
-      logger.warn(`IP ${ip} 触发限流，当前请求数: ${record.count}`);
-      return res.status(429).json({
+    if (record.count > max) {
+      logger.warn(`IP ${ip} triggered rate limit. Count: ${record.count}, Max: ${max}`);
+      return res.status(statusCode).json({
         success: false,
-        message: "请求过于频繁，请稍后再试",
-        retryAfter: Math.ceil(WINDOW_MS / 1000),
+        message: message,
+        retryAfter: Math.ceil(windowMs / 1000),
       });
     }
 

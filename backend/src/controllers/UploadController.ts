@@ -128,12 +128,17 @@ export class UploadController {
       const { filename } = req.params;
       const uploadDir = path.resolve(process.cwd(), "uploads");
 
+      let filePath: string;
       try {
-        const filePath = safeResolvePath(uploadDir, filename);
+        filePath = safeResolvePath(uploadDir, filename);
+      } catch (pathError) {
+        res.status(403).json(ApiResponse.error("非法的路径请求"));
+        return;
+      }
 
-        if (fs.existsSync(filePath)) {
-          const stats = fs.statSync(filePath);
-          const fileInfo = {
+      if (fs.existsSync(filePath)) {
+        const stats = fs.statSync(filePath);
+        const fileInfo = {
           filename,
           size: stats.size,
           created: stats.birthtime,
