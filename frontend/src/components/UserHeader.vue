@@ -1,7 +1,12 @@
 <template>
-  <div class="user-header">
-    <!-- 用户头像和信息 -->
-    <div class="user-info" @click="toggleDropdown">
+  <el-dropdown
+    class="user-header"
+    trigger="click"
+    popper-class="user-dropdown-popper"
+    @command="handleCommand"
+    @visible-change="handleVisibleChange"
+  >
+    <div class="user-info">
       <el-avatar :size="36" :src="userAvatar" class="user-avatar">
         <template #default>
           <el-icon><User /></el-icon>
@@ -16,32 +21,27 @@
       </el-icon>
     </div>
 
-    <!-- 下拉菜单 -->
-    <transition name="dropdown">
-      <div v-if="dropdownVisible" class="dropdown-menu" @click.stop>
-        <div class="dropdown-item" @click="goToProfile">
+    <template #dropdown>
+      <el-dropdown-menu>
+        <el-dropdown-item command="profile">
           <el-icon><User /></el-icon>
           <span>个人资料</span>
-        </div>
-        <div class="dropdown-item" @click="goToSettings">
+        </el-dropdown-item>
+        <el-dropdown-item command="settings">
           <el-icon><Setting /></el-icon>
           <span>系统设置</span>
-        </div>
-        <div class="dropdown-divider"></div>
-        <div class="dropdown-item logout" @click="handleLogout">
+        </el-dropdown-item>
+        <el-dropdown-item divided command="logout" class="logout-item">
           <el-icon><SwitchButton /></el-icon>
           <span>退出登录</span>
-        </div>
-      </div>
-    </transition>
-
-    <!-- 点击遮罩关闭下拉菜单 -->
-    <div v-if="dropdownVisible" class="dropdown-overlay" @click="closeDropdown"></div>
-  </div>
+        </el-dropdown-item>
+      </el-dropdown-menu>
+    </template>
+  </el-dropdown>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { User, Setting, SwitchButton, ArrowDown } from '@element-plus/icons-vue';
@@ -62,30 +62,26 @@ const userRoleText = computed(() => {
 });
 
 // 方法
-function toggleDropdown() {
-  dropdownVisible.value = !dropdownVisible.value;
+function handleVisibleChange(visible: boolean) {
+  dropdownVisible.value = visible;
 }
 
-function closeDropdown() {
-  dropdownVisible.value = false;
-}
-
-// 跳转到个人资料页面
-function goToProfile() {
-  closeDropdown();
-  router.push('/profile');
-}
-
-// 跳转到设置页面
-function goToSettings() {
-  closeDropdown();
-  router.push('/setting');
+function handleCommand(command: string) {
+  switch (command) {
+    case 'profile':
+      router.push('/profile');
+      break;
+    case 'settings':
+      router.push('/setting');
+      break;
+    case 'logout':
+      handleLogout();
+      break;
+  }
 }
 
 // 处理登出
 async function handleLogout() {
-  closeDropdown();
-  
   try {
     await ElMessageBox.confirm(
       '确定要退出登录吗？',
@@ -104,37 +100,24 @@ async function handleLogout() {
   }
 }
 
-// 点击外部关闭下拉菜单
-function handleClickOutside(event: Event) {
-  const target = event.target as HTMLElement;
-  const userHeader = document.querySelector('.user-header');
-  
-  if (userHeader && !userHeader.contains(target)) {
-    closeDropdown();
-  }
-}
-
 // 生命周期
 onMounted(() => {
   // 初始化认证状态
   authStore.initAuth();
-  
-  // 添加全局点击事件监听
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  // 移除全局点击事件监听
-  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
 <style lang="scss" scoped>
 .user-header {
-  position: relative;
+  height: 100%;
   display: flex;
   align-items: center;
-  height: 100%;
+
+  :deep(.el-tooltip__trigger) {
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .user-info {
@@ -146,9 +129,16 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  outline: none; // Remove default focus outline as we'll rely on element's focus visible or custom styles if needed
 
   &:hover {
     background-color: var(--el-fill-color-light);
+  }
+
+  // Add focus styles for keyboard accessibility
+  &:focus-visible {
+    background-color: var(--el-fill-color-light);
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
   }
 
   .user-avatar {
@@ -195,88 +185,6 @@ onUnmounted(() => {
   }
 }
 
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 1000;
-  min-width: 160px;
-  background: var(--el-bg-color-overlay);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light);
-  backdrop-filter: blur(10px);
-  overflow: hidden;
-  margin-top: 4px;
-
-  .dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    font-size: 14px;
-    color: var(--el-text-color-primary);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: var(--el-fill-color-light);
-    }
-
-    &.logout {
-      color: var(--el-color-danger);
-
-      &:hover {
-        background-color: var(--el-color-danger-light-9);
-      }
-    }
-
-    .el-icon {
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-
-    span {
-      flex: 1;
-      white-space: nowrap;
-    }
-  }
-
-  .dropdown-divider {
-    height: 1px;
-    background-color: var(--el-border-color-lighter);
-    margin: 4px 0;
-  }
-}
-
-.dropdown-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-  background: transparent;
-}
-
-// 下拉菜单动画
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: all 0.2s ease;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(-8px) scale(0.95);
-}
-
-.dropdown-enter-to,
-.dropdown-leave-from {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
 // 响应式设计
 @media (max-width: 768px) {
   .user-info {
@@ -287,14 +195,32 @@ onUnmounted(() => {
       display: none; // 在小屏幕上隐藏用户详情
     }
   }
+}
+</style>
 
-  .dropdown-menu {
-    min-width: 140px;
-    right: -8px;
+<style lang="scss">
+// Global styles for the dropdown popper
+.user-dropdown-popper {
+  // Apply glass effect similar to original if desired, or stick to standard Element Plus
+  // standard Element Plus dropdown is usually white with shadow.
 
-    .dropdown-item {
-      padding: 10px 12px;
-      font-size: 13px;
+  .logout-item {
+    color: var(--el-color-danger);
+
+    &:hover {
+      background-color: var(--el-color-danger-light-9) !important;
+      color: var(--el-color-danger) !important;
+    }
+  }
+
+  .el-dropdown-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px; // Increase touch target
+
+    .el-icon {
+      margin-right: 0; // Reset default margin if any
     }
   }
 }
