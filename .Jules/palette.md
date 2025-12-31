@@ -1,3 +1,3 @@
-## 2025-12-30 - UserHeader Refactor
-**Learning:** Replacing custom interactive elements with standard library components (like `el-dropdown`) drastically reduces code complexity (removed manual event listeners) and improves accessibility (keyboard nav, ARIA) for free.
-**Action:** Always check if a design pattern exists in the component library (Element Plus) before building a custom solution, especially for menus and overlays.
+## 2024-05-22 - Empty State Delight
+**Learning:** Adding a custom empty state with a call-to-action is a high-impact, low-effort way to improve user onboarding. The standard 'No Data' message is discouraging.
+**Action:** Always check table/list components for empty states and provide a clear 'next step' for the user.

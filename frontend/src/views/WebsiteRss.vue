@@ -108,6 +108,16 @@
             </div>
           </template>
         </el-table-column>
+        <template #empty>
+          <div class="empty-state">
+            <el-empty description="暂无监控配置">
+              <el-button type="primary" @click="addConfig">
+                <el-icon class="el-icon--left"><Plus /></el-icon>
+                创建第一个配置
+              </el-button>
+            </el-empty>
+          </div>
+        </template>
       </el-table>
     </div>
 
@@ -738,6 +748,7 @@ import {
   QuestionFilled,
   ArrowDown,
   DataLine,
+  Plus,
 } from "@element-plus/icons-vue";
 import { authCredentialApi } from "@/api/authCredential";
 import type { AuthCredential } from "@/types";
