@@ -296,7 +296,7 @@ export function extractContentWithXPath(
       throw new Error(`HTML解析致命错误: ${msg}`);
     },
   };
-  console.log("html", html);
+  // Removed console.log("html", html) to prevent performance issues with large HTML strings
   const doc = new DOMParser({
     errorHandler: errorHandler,
   }).parseFromString(html);
