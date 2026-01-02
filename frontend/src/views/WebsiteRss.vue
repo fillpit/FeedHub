@@ -31,6 +31,11 @@
         @selection-change="handleSelectionChange"
         style="width: 100%"
       >
+        <template #empty>
+          <el-empty description="暂无订阅配置">
+            <el-button type="primary" @click="addConfig">立即添加</el-button>
+          </el-empty>
+        </template>
         <el-table-column type="selection" width="55" />
         <el-table-column label="图标" width="60" align="center">
           <template #default="{ row }">
@@ -91,17 +96,17 @@
           <template #default="{ row }">
             <div class="feed-actions">
               <el-tooltip content="刷新" placement="top">
-                <el-button type="primary" size="small" circle @click="refreshConfig(row.id)">
+                <el-button type="primary" size="small" circle @click="refreshConfig(row.id)" aria-label="刷新">
                   <el-icon><Refresh /></el-icon>
                 </el-button>
               </el-tooltip>
               <el-tooltip content="编辑" placement="top">
-                <el-button type="success" size="small" circle @click="editConfig(row)">
+                <el-button type="success" size="small" circle @click="editConfig(row)" aria-label="编辑">
                   <el-icon><Edit /></el-icon>
                 </el-button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top">
-                <el-button type="danger" size="small" circle @click="deleteConfig(row.id)">
+                <el-button type="danger" size="small" circle @click="deleteConfig(row.id)" aria-label="删除">
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </el-tooltip>
