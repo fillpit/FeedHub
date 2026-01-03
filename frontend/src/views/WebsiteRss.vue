@@ -75,15 +75,23 @@
         </el-table-column>
         <el-table-column label="最后抓取时间" width="160" show-overflow-tooltip>
           <template #default="{ row }">
-            <span>{{ row.lastFetchTime ? new Date(row.lastFetchTime as any).toLocaleString() : '—' }}</span>
+            <span>{{
+              row.lastFetchTime ? new Date(row.lastFetchTime as any).toLocaleString() : "—"
+            }}</span>
           </template>
         </el-table-column>
         <el-table-column label="最后抓取状态" width="120">
           <template #default="{ row }">
-            <el-tooltip v-if="row.lastFetchStatus === 'failure' && row.lastFetchError" :content="row.lastFetchError" placement="top">
+            <el-tooltip
+              v-if="row.lastFetchStatus === 'failure' && row.lastFetchError"
+              :content="row.lastFetchError"
+              placement="top"
+            >
               <el-tag type="danger" size="small">失败</el-tag>
             </el-tooltip>
-            <el-tag v-else-if="row.lastFetchStatus === 'success'" type="success" size="small">成功</el-tag>
+            <el-tag v-else-if="row.lastFetchStatus === 'success'" type="success" size="small"
+              >成功</el-tag
+            >
             <el-tag v-else type="info" size="small">未知</el-tag>
           </template>
         </el-table-column>
@@ -91,23 +99,46 @@
           <template #default="{ row }">
             <div class="feed-actions">
               <el-tooltip content="刷新" placement="top">
-                <el-button type="primary" size="small" circle @click="refreshConfig(row.id)">
+                <el-button
+                  type="primary"
+                  size="small"
+                  circle
+                  @click="refreshConfig(row.id)"
+                  aria-label="刷新配置"
+                >
                   <el-icon><Refresh /></el-icon>
                 </el-button>
               </el-tooltip>
               <el-tooltip content="编辑" placement="top">
-                <el-button type="success" size="small" circle @click="editConfig(row)">
+                <el-button
+                  type="success"
+                  size="small"
+                  circle
+                  @click="editConfig(row)"
+                  aria-label="编辑配置"
+                >
                   <el-icon><Edit /></el-icon>
                 </el-button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top">
-                <el-button type="danger" size="small" circle @click="deleteConfig(row.id)">
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  @click="deleteConfig(row.id)"
+                  aria-label="删除配置"
+                >
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </el-tooltip>
             </div>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty description="暂无配置">
+            <el-button type="primary" @click="addConfig">添加配置</el-button>
+          </el-empty>
+        </template>
       </el-table>
     </div>
 
