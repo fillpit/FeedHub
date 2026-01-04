@@ -91,17 +91,35 @@
           <template #default="{ row }">
             <div class="feed-actions">
               <el-tooltip content="刷新" placement="top">
-                <el-button type="primary" size="small" circle @click="refreshConfig(row.id)">
+                <el-button
+                  type="primary"
+                  size="small"
+                  circle
+                  aria-label="刷新配置"
+                  @click="refreshConfig(row.id)"
+                >
                   <el-icon><Refresh /></el-icon>
                 </el-button>
               </el-tooltip>
               <el-tooltip content="编辑" placement="top">
-                <el-button type="success" size="small" circle @click="editConfig(row)">
+                <el-button
+                  type="success"
+                  size="small"
+                  circle
+                  aria-label="编辑配置"
+                  @click="editConfig(row)"
+                >
                   <el-icon><Edit /></el-icon>
                 </el-button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top">
-                <el-button type="danger" size="small" circle @click="deleteConfig(row.id)">
+                <el-button
+                  type="danger"
+                  size="small"
+                  circle
+                  aria-label="删除配置"
+                  @click="deleteConfig(row.id)"
+                >
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </el-tooltip>
