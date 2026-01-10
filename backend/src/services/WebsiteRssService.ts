@@ -59,8 +59,10 @@ export class WebsiteRssService {
    * 获取所有配置
    */
   async getAllConfigs(): Promise<ApiResponseData<WebsiteRssConfigAttributes[]>> {
-    // 直接数据库查询
-    const configs = await WebsiteRssConfig.findAll();
+    // 直接数据库查询，排除内容大字段以提升性能
+    const configs = await WebsiteRssConfig.findAll({
+      attributes: { exclude: ["lastContent"] },
+    });
     return { success: true, data: configs, message: "获取配置列表成功" };
   }
 
