@@ -5,3 +5,8 @@
 ## 2025-05-20 - Empty States
 **Learning:** Adding a clear call-to-action (CTA) in empty states (like `<el-empty>`) transforms a dead end into an onboarding opportunity. It guides users immediately to the next logical step without making them search for the "Add" button.
 **Action:** Always include a primary action button in empty state components when the list is empty.
+
+## 2025-05-23 - Icon-Only Buttons Accessibility
+**Learning:** Icon-only buttons are a common pattern for "clean" UI, but they are invisible to screen readers without explicit `aria-label` or `aria-labelledby`. Tooltips (`el-tooltip`) are great for mouse users but do not always bridge the gap for assistive technology.
+**Action:** Always verify icon-only buttons have an `aria-label` describing the action, not just the icon name.
+
