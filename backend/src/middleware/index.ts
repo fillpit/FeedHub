@@ -41,7 +41,7 @@ export const setupMiddlewares = (app: Application) => {
   app.use(rateLimiter());
 
   // XSS防护
-  // app.use(xssProtection);
+  app.use(xssProtection);
 
   // 认证中间件
   app.use(authMiddleware);
