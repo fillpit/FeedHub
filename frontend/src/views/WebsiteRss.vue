@@ -31,6 +31,11 @@
         @selection-change="handleSelectionChange"
         style="width: 100%"
       >
+        <template #empty>
+          <el-empty description="暂无订阅配置">
+            <el-button type="primary" @click="addConfig">立即添加</el-button>
+          </el-empty>
+        </template>
         <el-table-column type="selection" width="55" />
         <el-table-column label="图标" width="60" align="center">
           <template #default="{ row }">
