@@ -1,6 +1,7 @@
 import { injectable } from "inversify";
 import * as fs from "fs";
 import * as path from "path";
+import { safeResolvePath } from "../utils/security/path";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../utils/logger";
 
@@ -403,7 +404,14 @@ async function main(context) {
    */
   async readScriptFile(scriptDirName: string, fileName: string = "main.js"): Promise<string> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    const filePath = path.join(scriptDir, fileName);
+
+    // 安全解析路径，防止目录遍历
+    let filePath: string;
+    try {
+      filePath = safeResolvePath(scriptDir, fileName);
+    } catch (error) {
+      throw new Error(`非法的文件访问: ${fileName}`);
+    }
 
     if (!fs.existsSync(filePath)) {
       throw new Error(`脚本文件不存在: ${fileName}`);
@@ -470,7 +478,13 @@ async function main(context) {
       throw new Error(`脚本目录不存在: ${scriptDirName}`);
     }
 
-    const filePath = path.join(scriptDir, fileName);
+    // 安全解析路径，防止目录遍历
+    let filePath: string;
+    try {
+      filePath = safeResolvePath(scriptDir, fileName);
+    } catch (error) {
+      throw new Error(`非法的文件访问: ${fileName}`);
+    }
 
     // 确保文件所在的目录存在
     const fileDir = path.dirname(filePath);
@@ -628,7 +642,13 @@ async function main(context) {
       throw new Error(`脚本目录不存在: ${scriptDirName}`);
     }
 
-    const filePath = path.join(scriptDir, fileName);
+    // 安全解析路径，防止目录遍历
+    let filePath: string;
+    try {
+      filePath = safeResolvePath(scriptDir, fileName);
+    } catch (error) {
+      throw new Error(`非法的文件访问: ${fileName}`);
+    }
 
     if (!fs.existsSync(filePath)) {
       throw new Error(`文件不存在: ${fileName}`);
@@ -756,7 +776,15 @@ async function main(context) {
    */
   async ensureDirectoryExists(scriptDirName: string, relativePath: string): Promise<void> {
     const scriptDir = this.getScriptDirectoryPath(scriptDirName);
-    const targetDir = path.join(scriptDir, relativePath);
+
+    // 安全解析路径，防止目录遍历
+    let targetDir: string;
+    try {
+      targetDir = safeResolvePath(scriptDir, relativePath);
+    } catch (error) {
+      logger.error(`尝试创建非法目录: ${relativePath}`);
+      throw new Error(`非法的目录访问: ${relativePath}`);
+    }
 
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
