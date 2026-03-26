@@ -30,7 +30,7 @@
         </el-form-item>
 
         <div class="form-options">
-          <el-checkbox v-model="rememberPassword">记住密码</el-checkbox>
+          <el-checkbox v-model="rememberUsername">记住账号</el-checkbox>
         </div>
 
         <el-button type="primary" class="submit-btn" :loading="loading" @click="handleLogin">
@@ -52,7 +52,7 @@ import { useAuthStore } from "@/stores/auth";
 
 // 状态
 const loading = ref(false);
-const rememberPassword = ref(false);
+const rememberUsername = ref(false);
 
 const loginForm = ref({
   username: "",
@@ -75,15 +75,16 @@ const router = useRouter();
 const loginFormRef = ref();
 const authStore = useAuthStore();
 
-// 记住密码相关
+// 记住账号相关
 onMounted(() => {
   const savedUsername = localStorage.getItem(STORAGE_KEYS.USERNAME);
-  const savedPassword = localStorage.getItem(STORAGE_KEYS.PASSWORD);
-  if (savedUsername && savedPassword) {
+  if (savedUsername) {
     loginForm.value.username = savedUsername;
-    loginForm.value.password = savedPassword;
-    rememberPassword.value = true;
+    rememberUsername.value = true;
   }
+
+  // 清除旧版本的密码存储（如果存在）
+  localStorage.removeItem("saved_password");
 });
 
 // 登录处理
@@ -96,13 +97,11 @@ const handleLogin = async () => {
       try {
         const res = await userApi.login(loginForm.value);
         if (res.code === 0) {
-          // 记住密码
-          if (rememberPassword.value) {
+          // 记住账号
+          if (rememberUsername.value) {
             localStorage.setItem(STORAGE_KEYS.USERNAME, loginForm.value.username);
-            localStorage.setItem(STORAGE_KEYS.PASSWORD, loginForm.value.password);
           } else {
             localStorage.removeItem(STORAGE_KEYS.USERNAME);
-            localStorage.removeItem(STORAGE_KEYS.PASSWORD);
           }
 
           const token = res.data?.token || "";

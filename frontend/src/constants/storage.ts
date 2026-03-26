@@ -2,7 +2,6 @@
 export const STORAGE_KEYS = {
   // 认证相关
   USERNAME: "saved_username",
-  PASSWORD: "saved_password",
   TOKEN: "token",
   REFRESH_TOKEN: "refresh_token",
   USER_INFO: "user_info",
