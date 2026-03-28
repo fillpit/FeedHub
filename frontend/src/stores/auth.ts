@@ -35,12 +35,20 @@ export const useAuthStore = defineStore("auth", () => {
   function generateDefaultAvatar(username: string): string {
     const firstChar = username.charAt(0).toUpperCase();
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-      '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FFEAA7",
+      "#DDA0DD",
+      "#98D8C8",
+      "#F7DC6F",
+      "#BB8FCE",
+      "#85C1E9",
     ];
     const colorIndex = username.charCodeAt(0) % colors.length;
     const bgColor = colors[colorIndex];
-    
+
     // 返回SVG格式的头像
     return `data:image/svg+xml;base64,${btoa(`
       <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
@@ -56,7 +64,7 @@ export const useAuthStore = defineStore("auth", () => {
   function setAuth(authToken: string, userInfo: UserInfo) {
     token.value = authToken;
     user.value = userInfo;
-    
+
     // 保存到本地存储
     typedLocalStorage.setToken(authToken);
     typedLocalStorage.setUserInfo(userInfo);
@@ -66,7 +74,7 @@ export const useAuthStore = defineStore("auth", () => {
   function clearAuth() {
     token.value = null;
     user.value = null;
-    
+
     // 清除本地存储
     typedLocalStorage.clearToken();
     typedLocalStorage.clearUserInfo();
@@ -76,18 +84,18 @@ export const useAuthStore = defineStore("auth", () => {
   function parseTokenUser(authToken: string): UserInfo | null {
     try {
       // 注意：这里只是解析token中的基本信息，实际项目中应该调用API获取完整用户信息
-      const decoded: any = JSON.parse(atob(authToken.split('.')[1]));
+      const decoded: any = JSON.parse(atob(authToken.split(".")[1]));
       if (decoded && decoded.userId) {
         return {
           id: 0, // 临时ID，应该从API获取
           userId: decoded.userId,
-          username: decoded.username || 'User', // 如果token中没有用户名，使用默认值
+          username: decoded.username || "User", // 如果token中没有用户名，使用默认值
           role: decoded.role || 0,
         };
       }
       return null;
     } catch (error) {
-      console.error('解析token失败:', error);
+      console.error("解析token失败:", error);
       return null;
     }
   }
@@ -96,7 +104,7 @@ export const useAuthStore = defineStore("auth", () => {
   function initAuth() {
     const savedToken = typedLocalStorage.getToken();
     const savedUser = typedLocalStorage.getUserInfo();
-    
+
     if (savedToken && savedUser) {
       token.value = savedToken;
       user.value = savedUser as UserInfo;
@@ -125,19 +133,19 @@ export const useAuthStore = defineStore("auth", () => {
   function logout() {
     clearAuth();
     // 跳转到登录页
-    window.location.href = '/login';
+    window.location.href = "/login";
   }
 
   return {
     // 状态
     token,
     user,
-    
+
     // 计算属性
     isLoggedIn,
     isAdmin,
     userAvatar,
-    
+
     // 方法
     setAuth,
     clearAuth,

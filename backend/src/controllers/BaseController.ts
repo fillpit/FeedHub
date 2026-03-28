@@ -8,11 +8,10 @@ export abstract class BaseController {
     res: Response,
     action: () => Promise<ApiResponseData<T> | any | void>
   ): Promise<void> {
-
     // 设置防缓存头
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
 
     try {
       const result = await action();
@@ -29,10 +28,13 @@ export abstract class BaseController {
         path: req.path,
         method: req.method,
         body: req.body,
-        error: error instanceof Error ? {
-          message: error.message,
-          stack: error.stack
-        } : error
+        error:
+          error instanceof Error
+            ? {
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
       });
       res.status(500).json(ApiResponse.error(errorMessage));
     }
