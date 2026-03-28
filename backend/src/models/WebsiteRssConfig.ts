@@ -20,8 +20,10 @@ export {
 };
 
 // Sequelize 模型创建属性接口
-interface ModelCreationAttributes
-  extends Optional<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime"> {}
+interface ModelCreationAttributes extends Optional<
+  WebsiteRssConfigAttributes,
+  "id" | "lastContent" | "lastFetchTime"
+> {}
 
 class WebsiteRssConfig
   extends Model<WebsiteRssConfigAttributes, ModelCreationAttributes>
@@ -46,7 +48,7 @@ class WebsiteRssConfig
 }
 
 WebsiteRssConfig.init(
-  ({
+  {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -126,7 +128,7 @@ WebsiteRssConfig.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-  } as any),
+  } as any,
   {
     sequelize,
     modelName: "WebsiteRssConfig",

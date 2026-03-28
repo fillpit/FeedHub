@@ -19,8 +19,7 @@ const DEFAULT_GLOBAL_SETTINGS = {
   opdsPassword: "",
   // 翻译配置默认值
   translationTargetLanguage: "en-US",
-  translationPrompt:
-    "请将输入内容翻译为目标语言，并保留原文，输出格式为：原文\n\n译文",
+  translationPrompt: "请将输入内容翻译为目标语言，并保留原文，输出格式为：原文\n\n译文",
 };
 
 export class DatabaseService {

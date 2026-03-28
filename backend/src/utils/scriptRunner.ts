@@ -364,10 +364,10 @@ export async function executeScriptPackage(
             // 尝试通过Node.js模块解析机制查找包
             const Module = require("module");
             const originalResolveFilename = Module._resolveFilename;
-            
+
             // 临时修改模块解析路径，添加自定义包目录
             const resolvedPath = Module._resolveFilename(modulePath, {
-              paths: [nodeModulesPath, ...module.paths]
+              paths: [nodeModulesPath, ...module.paths],
             });
 
             // 确保解析的路径在允许的目录内
@@ -377,8 +377,8 @@ export async function executeScriptPackage(
 
             throw new Error(`包未安装或不在允许的目录内: ${modulePath}`);
           } catch (error: any) {
-             throw new Error(`无法加载第三方包 "${modulePath}": ${error.message}`);
-           }
+            throw new Error(`无法加载第三方包 "${modulePath}": ${error.message}`);
+          }
         }
 
         // 其他情况不允许访问
