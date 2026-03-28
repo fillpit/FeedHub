@@ -11,7 +11,6 @@ export const TYPES = {
   DynamicRouteService: Symbol.for("DynamicRouteService"),
   TranslationService: Symbol.for("TranslationService"),
 
-
   ScriptFileService: Symbol.for("ScriptFileService"),
   NpmPackageService: Symbol.for("NpmPackageService"),
   ScriptTemplateService: Symbol.for("ScriptTemplateService"),
@@ -26,5 +25,4 @@ export const TYPES = {
   NpmPackageController: Symbol.for("NpmPackageController"),
   NotificationController: Symbol.for("NotificationController"),
   BackupController: Symbol.for("BackupController"),
-
 };
