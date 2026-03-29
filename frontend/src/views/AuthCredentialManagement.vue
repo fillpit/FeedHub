@@ -6,6 +6,11 @@
         <el-button type="primary" @click="openDialog">新增授权</el-button>
       </div>
       <el-table :data="list" border style="width: 100%" v-loading="loading">
+        <template #empty>
+          <el-empty description="暂无授权信息">
+            <el-button type="primary" @click="openDialog">新增授权</el-button>
+          </el-empty>
+        </template>
         <el-table-column prop="name" label="名称" width="120" />
         <el-table-column prop="authType" label="类型" width="100" />
         <el-table-column prop="cookie" label="Cookie" width="180" show-overflow-tooltip />

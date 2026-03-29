@@ -80,6 +80,14 @@
       </template>
 
       <el-table :data="filteredPackages" v-loading="loading" stripe style="width: 100%">
+        <template #empty>
+          <el-empty v-if="searchKeyword" description="没有找到匹配的NPM包">
+            <el-button type="primary" @click="searchKeyword = ''">清除搜索</el-button>
+          </el-empty>
+          <el-empty v-else description="暂无安装包">
+            <el-button type="primary" @click="showInstallDialog = true">安装新包</el-button>
+          </el-empty>
+        </template>
         <el-table-column prop="name" label="包名" min-width="200">
           <template #default="{ row }">
             <div class="package-name">
