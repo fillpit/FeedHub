@@ -35,7 +35,7 @@ class DynamicRouteConfig
 }
 
 DynamicRouteConfig.init(
-  ({
+  {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -112,7 +112,7 @@ DynamicRouteConfig.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-  } as any),
+  } as any,
   {
     sequelize,
     tableName: "custom_route_configs",
