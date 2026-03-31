@@ -5,6 +5,7 @@ import axios from "axios";
 import * as nodemailer from "nodemailer";
 import * as crypto from "crypto";
 import { ApiResponse } from "../core/ApiResponse";
+import { isSafeUrl } from "../utils/security/url";
 
 @injectable()
 export class NotificationController extends BaseController {
@@ -60,6 +61,11 @@ export class NotificationController extends BaseController {
       }
 
       const url = `${serverUrl}/${deviceKey}`;
+
+      if (!isSafeUrl(url)) {
+        return { success: false, message: "非法的 URL 地址 (可能存在安全风险)" };
+      }
+
       const data: any = {
         title: "FeedHub 测试通知",
         body: "这是一条来自 FeedHub 的测试通知",
@@ -135,6 +141,11 @@ export class NotificationController extends BaseController {
       }
 
       const url = `${serverUrl}/message`;
+
+      if (!isSafeUrl(url)) {
+        return { success: false, message: "非法的 URL 地址 (可能存在安全风险)" };
+      }
+
       const data = {
         title: "FeedHub 测试通知",
         message: "这是一条来自 FeedHub 的测试通知",
@@ -170,6 +181,10 @@ export class NotificationController extends BaseController {
         return { success: false, message: "请填写 Webhook 地址" };
       }
 
+      if (!isSafeUrl(webhookUrl)) {
+        return { success: false, message: "非法的 Webhook 地址 (可能存在安全风险)" };
+      }
+
       const data = {
         msgtype: "text",
         text: {
@@ -203,6 +218,10 @@ export class NotificationController extends BaseController {
 
       if (!webhookUrl) {
         return { success: false, message: "请填写 Webhook 地址" };
+      }
+
+      if (!isSafeUrl(webhookUrl)) {
+        return { success: false, message: "非法的 Webhook 地址 (可能存在安全风险)" };
       }
 
       let url = webhookUrl;
@@ -251,6 +270,10 @@ export class NotificationController extends BaseController {
 
       if (!webhookUrl) {
         return { success: false, message: "请填写 Webhook 地址" };
+      }
+
+      if (!isSafeUrl(webhookUrl)) {
+        return { success: false, message: "非法的 Webhook 地址 (可能存在安全风险)" };
       }
 
       let url = webhookUrl;
@@ -370,6 +393,11 @@ export class NotificationController extends BaseController {
     }
 
     const url = `${serverUrl}/${deviceKey}`;
+
+    if (!isSafeUrl(url)) {
+      return { success: false, message: "非法的 URL 地址 (可能存在安全风险)" };
+    }
+
     const data: any = {
       title,
       body: content,
@@ -445,6 +473,11 @@ export class NotificationController extends BaseController {
     }
 
     const url = `${serverUrl}/message`;
+
+    if (!isSafeUrl(url)) {
+      return { success: false, message: "非法的 URL 地址 (可能存在安全风险)" };
+    }
+
     const data = {
       title,
       message: content,
@@ -480,6 +513,10 @@ export class NotificationController extends BaseController {
       return { success: false, message: "请填写 Webhook 地址" };
     }
 
+    if (!isSafeUrl(webhookUrl)) {
+      return { success: false, message: "非法的 Webhook 地址 (可能存在安全风险)" };
+    }
+
     const data = {
       msgtype: "text",
       text: {
@@ -513,6 +550,10 @@ export class NotificationController extends BaseController {
 
     if (!webhookUrl) {
       return { success: false, message: "请填写 Webhook 地址" };
+    }
+
+    if (!isSafeUrl(webhookUrl)) {
+      return { success: false, message: "非法的 Webhook 地址 (可能存在安全风险)" };
     }
 
     let url = webhookUrl;
@@ -561,6 +602,10 @@ export class NotificationController extends BaseController {
 
     if (!webhookUrl) {
       return { success: false, message: "请填写 Webhook 地址" };
+    }
+
+    if (!isSafeUrl(webhookUrl)) {
+      return { success: false, message: "非法的 Webhook 地址 (可能存在安全风险)" };
     }
 
     let url = webhookUrl;
