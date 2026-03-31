@@ -13,7 +13,7 @@
         </template>
       </el-avatar>
       <div class="user-details">
-        <div class="username">{{ user?.username || '未登录' }}</div>
+        <div class="username">{{ user?.username || "未登录" }}</div>
         <div class="user-role">{{ userRoleText }}</div>
       </div>
       <el-icon class="dropdown-icon" :class="{ 'is-open': dropdownVisible }">
@@ -41,11 +41,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { User, Setting, SwitchButton, ArrowDown } from '@element-plus/icons-vue';
-import { useAuthStore } from '@/stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { User, Setting, SwitchButton, ArrowDown } from "@element-plus/icons-vue";
+import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -57,8 +57,8 @@ const dropdownVisible = ref(false);
 const user = computed(() => authStore.user);
 const userAvatar = computed(() => authStore.userAvatar);
 const userRoleText = computed(() => {
-  if (!user.value) return '游客';
-  return user.value.role === 1 ? '管理员' : '普通用户';
+  if (!user.value) return "游客";
+  return user.value.role === 1 ? "管理员" : "普通用户";
 });
 
 // 方法
@@ -68,13 +68,13 @@ function handleVisibleChange(visible: boolean) {
 
 function handleCommand(command: string) {
   switch (command) {
-    case 'profile':
-      router.push('/profile');
+    case "profile":
+      router.push("/profile");
       break;
-    case 'settings':
-      router.push('/setting');
+    case "settings":
+      router.push("/setting");
       break;
-    case 'logout':
+    case "logout":
       handleLogout();
       break;
   }
@@ -83,18 +83,14 @@ function handleCommand(command: string) {
 // 处理登出
 async function handleLogout() {
   try {
-    await ElMessageBox.confirm(
-      '确定要退出登录吗？',
-      '退出确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    );
-    
+    await ElMessageBox.confirm("确定要退出登录吗？", "退出确认", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+
     authStore.logout();
-    ElMessage.success('已退出登录');
+    ElMessage.success("已退出登录");
   } catch {
     // 用户取消操作
   }

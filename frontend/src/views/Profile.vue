@@ -19,7 +19,7 @@
           <div class="info-wrapper">
             <h2 class="username">{{ authStore.user?.username }}</h2>
             <el-tag :type="authStore.isAdmin ? 'danger' : 'info'" class="role-tag">
-              {{ authStore.isAdmin ? '管理员' : '普通用户' }}
+              {{ authStore.isAdmin ? "管理员" : "普通用户" }}
             </el-tag>
             <p class="user-id">ID: {{ authStore.user?.userId }}</p>
           </div>
@@ -61,7 +61,11 @@
               />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" :loading="loading" @click="submitPasswordChange(passwordFormRef)">
+              <el-button
+                type="primary"
+                :loading="loading"
+                @click="submitPasswordChange(passwordFormRef)"
+              >
                 修改密码
               </el-button>
             </el-form-item>
@@ -73,27 +77,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { User } from '@element-plus/icons-vue';
-import { type FormInstance, type FormRules } from 'element-plus';
-import { userApi } from '@/api/user';
+import { ref, reactive } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { User } from "@element-plus/icons-vue";
+import { type FormInstance, type FormRules } from "element-plus";
+import { userApi } from "@/api/user";
 
 const authStore = useAuthStore();
 const loading = ref(false);
 const passwordFormRef = ref<FormInstance>();
 
 const passwordForm = reactive({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: '',
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
 });
 
 const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
-  if (value === '') {
-    callback(new Error('请再次输入密码'));
+  if (value === "") {
+    callback(new Error("请再次输入密码"));
   } else if (value !== passwordForm.newPassword) {
-    callback(new Error('两次输入密码不一致!'));
+    callback(new Error("两次输入密码不一致!"));
   } else {
     callback();
   }
@@ -101,16 +105,14 @@ const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
 
 const passwordRules = reactive<FormRules>({
   currentPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' },
+    { required: true, message: "请输入当前密码", trigger: "blur" },
+    { min: 6, message: "密码长度不能小于6位", trigger: "blur" },
   ],
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' },
+    { required: true, message: "请输入新密码", trigger: "blur" },
+    { min: 6, message: "密码长度不能小于6位", trigger: "blur" },
   ],
-  confirmPassword: [
-    { required: true, validator: validateConfirmPassword, trigger: 'blur' },
-  ],
+  confirmPassword: [{ required: true, validator: validateConfirmPassword, trigger: "blur" }],
 });
 
 const submitPasswordChange = async (formEl: FormInstance | undefined) => {
@@ -128,7 +130,7 @@ const submitPasswordChange = async (formEl: FormInstance | undefined) => {
         // 重置表单
         formEl.resetFields();
       } catch (error) {
-        console.error('修改密码失败', error);
+        console.error("修改密码失败", error);
       } finally {
         loading.value = false;
       }

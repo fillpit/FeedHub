@@ -10,8 +10,10 @@ export {
   ScriptSourceType,
 } from "@feedhub/shared";
 
-interface DynamicRouteConfigCreationAttributes
-  extends Optional<DynamicRouteConfigAttributes, "id" | "createdAt" | "updatedAt"> {}
+interface DynamicRouteConfigCreationAttributes extends Optional<
+  DynamicRouteConfigAttributes,
+  "id" | "createdAt" | "updatedAt"
+> {}
 
 class DynamicRouteConfig
   extends Model<DynamicRouteConfigAttributes, DynamicRouteConfigCreationAttributes>
