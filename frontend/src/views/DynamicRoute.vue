@@ -44,17 +44,17 @@
         </div>
       </template>
 
-      <!-- 空状态 -->
-      <el-empty v-if="filteredRoutes.length === 0" description="暂无动态路由配置" />
-
       <!-- 路由列表 -->
-      <el-table
-        v-else
-        :data="filteredRoutes"
-        border
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
+      <el-table :data="filteredRoutes" border style="width: 100%" @selection-change="handleSelectionChange">
+        <!-- 空状态 -->
+        <template #empty>
+          <el-empty v-if="searchKeyword" description="没有找到匹配的动态路由">
+            <el-button type="primary" @click="searchKeyword = ''">清除搜索</el-button>
+          </el-empty>
+          <el-empty v-else description="暂无动态路由配置">
+            <el-button type="primary" @click="openAddDrawer">添加路由</el-button>
+          </el-empty>
+        </template>
         <el-table-column type="selection" width="55" />
         <el-table-column prop="name" label="名称" min-width="110">
           <template #default="{ row }">
