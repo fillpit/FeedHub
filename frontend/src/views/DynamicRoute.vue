@@ -7,8 +7,20 @@
         <el-button @click="refreshRoutes">刷新</el-button>
         <el-button @click="exportRoutesWithScriptsHandler">导出</el-button>
         <el-button @click="triggerZipImport">导入</el-button>
-        <input ref="fileInputRef" type="file" accept=".json" style="display: none" @change="handleFileImport" />
-        <input ref="zipFileInputRef" type="file" accept=".zip" style="display: none" @change="handleZipFileImport" />
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".json"
+          style="display: none"
+          @change="handleFileImport"
+        />
+        <input
+          ref="zipFileInputRef"
+          type="file"
+          accept=".zip"
+          style="display: none"
+          @change="handleZipFileImport"
+        />
       </div>
     </div>
 
@@ -17,7 +29,12 @@
       <template #header>
         <div class="card-header">
           <span>动态路由列表</span>
-          <el-input v-model="searchKeyword" placeholder="搜索路由名称或路径" clearable class="search-input">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索路由名称或路径"
+            clearable
+            class="search-input"
+          >
             <template #prefix>
               <el-icon>
                 <Search />
@@ -51,7 +68,11 @@
 
         <el-table-column prop="script.folder" label="存放目录" min-width="70" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link v-if="row.id && row.script.folder" type="success" @click="openInlineScriptEditor(row.id)">
+            <el-link
+              v-if="row.id && row.script.folder"
+              type="success"
+              @click="openInlineScriptEditor(row.id)"
+            >
               {{ row.script.folder }}
             </el-link>
           </template>
@@ -59,7 +80,11 @@
         <el-table-column prop="path" label="订阅链接" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="subscription-link">
-              <el-dropdown placement="top-end" trigger="hover" @command="(command: string) => copyDynamicLink(row, command as 'rss' | 'json')">
+              <el-dropdown
+                placement="top-end"
+                trigger="hover"
+                @command="(command: string) => copyDynamicLink(row, command as 'rss' | 'json')"
+              >
                 <span class="subscription-link-text">
                   /dynamic/sub{{ row.path }}
                   <el-icon class="el-icon--right"><ArrowDown /></el-icon>
@@ -83,15 +108,21 @@
 
         <el-table-column label="最近执行时间" width="160" show-overflow-tooltip>
           <template #default="{ row }">
-            <span>{{ row.lastRunAt ? new Date(row.lastRunAt as any).toLocaleString() : '—' }}</span>
+            <span>{{ row.lastRunAt ? new Date(row.lastRunAt as any).toLocaleString() : "—" }}</span>
           </template>
         </el-table-column>
         <el-table-column label="最近执行状态" width="120">
           <template #default="{ row }">
-            <el-tooltip v-if="row.lastRunStatus === 'failure' && row.lastRunError" :content="row.lastRunError" placement="top">
+            <el-tooltip
+              v-if="row.lastRunStatus === 'failure' && row.lastRunError"
+              :content="row.lastRunError"
+              placement="top"
+            >
               <el-tag type="danger" size="small">失败</el-tag>
             </el-tooltip>
-            <el-tag v-else-if="row.lastRunStatus === 'success'" type="success" size="small">成功</el-tag>
+            <el-tag v-else-if="row.lastRunStatus === 'success'" type="success" size="small"
+              >成功</el-tag
+            >
             <el-tag v-else type="info" size="small">未知</el-tag>
           </template>
         </el-table-column>
@@ -104,8 +135,12 @@
                 <div v-for="param in row.params" :key="param.name" class="param-item">
                   <div class="param-header">
                     <span class="param-name">{{ param.name }}</span>
-                    <el-tag size="small" :type="param.required ? 'danger' : 'info'" class="param-required-tag">
-                      {{ param.required ? '必需' : '可选' }}
+                    <el-tag
+                      size="small"
+                      :type="param.required ? 'danger' : 'info'"
+                      class="param-required-tag"
+                    >
+                      {{ param.required ? "必需" : "可选" }}
                     </el-tag>
                   </div>
                   <div v-if="param.description" class="param-description">
@@ -135,13 +170,18 @@
               </div>
               <div class="git-details">
                 <el-tag size="small" type="info">{{ row.script.gitConfig.gitBranch }}</el-tag>
-                <span v-if="row.script.gitConfig.gitSubPath" class="git-subpath">{{ row.script.gitConfig.gitSubPath
-                  }}</span>
+                <span v-if="row.script.gitConfig.gitSubPath" class="git-subpath">{{
+                  row.script.gitConfig.gitSubPath
+                }}</span>
               </div>
               <div v-if="row.script.gitConfig.lastSyncAt" class="git-sync-time">
                 <span class="sync-time">{{ formatSyncTime(row.script.gitConfig.lastSyncAt) }}</span>
-                <el-link class="sync-button" type="success" @click="syncGitRepo(row)"
-                  :loading="syncingRoutes.includes(row.id)">
+                <el-link
+                  class="sync-button"
+                  type="success"
+                  @click="syncGitRepo(row)"
+                  :loading="syncingRoutes.includes(row.id)"
+                >
                   同步Git
                 </el-link>
               </div>
@@ -154,10 +194,19 @@
           <template #default="{ row }">
             <div class="route-actions">
               <el-link type="primary" @click="openDebugDrawer(row)">调试</el-link>
-              <el-link type="success" @click="openReadmeDialog(row)" v-if="row.script.sourceType === 'inline'">说明</el-link>
+              <el-link
+                type="success"
+                @click="openReadmeDialog(row)"
+                v-if="row.script.sourceType === 'inline'"
+                >说明</el-link
+              >
               <el-link type="primary" @click="openEditDrawer(row)">编辑</el-link>
-              <el-popconfirm title="确定要删除此路由配置吗？" @confirm="deleteRoute(row.id)" confirm-button-text="确定"
-                cancel-button-text="取消">
+              <el-popconfirm
+                title="确定要删除此路由配置吗？"
+                @confirm="deleteRoute(row.id)"
+                confirm-button-text="确定"
+                cancel-button-text="取消"
+              >
                 <template #reference>
                   <el-link type="danger" link>删除</el-link>
                 </template>
@@ -169,15 +218,23 @@
     </el-card>
 
     <!-- 添加/编辑抽屉 -->
-    <el-drawer v-model="drawerVisible" :title="isEdit ? '编辑动态路由' : '添加动态路由'" direction="rtl" size="50%"
-      :before-close="closeDrawer">
+    <el-drawer
+      v-model="drawerVisible"
+      :title="isEdit ? '编辑动态路由' : '添加动态路由'"
+      direction="rtl"
+      size="50%"
+      :before-close="closeDrawer"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" class="route-form">
         <el-form-item label="路由名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入路由名称" />
         </el-form-item>
 
         <el-form-item label="路由路径" prop="path">
-          <el-input v-model="form.path" placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid">
+          <el-input
+            v-model="form.path"
+            placeholder="请输入路由路径，例如: /my-route 或 /bilibili/:uid"
+          >
             <template #prepend>/dynamic</template>
           </el-input>
           <div style="font-size: 12px; color: #909399; margin-top: 4px">
@@ -194,7 +251,12 @@
         </el-form-item>
 
         <el-form-item label="描述" prop="description">
-          <el-input v-model="form.description" type="textarea" placeholder="请输入路由描述" :rows="2" />
+          <el-input
+            v-model="form.description"
+            type="textarea"
+            placeholder="请输入路由描述"
+            :rows="2"
+          />
         </el-form-item>
 
         <el-form-item label="双语对照翻译" prop="enableBilingualTranslate">
@@ -211,8 +273,12 @@
         <el-form-item label="授权信息" prop="authCredentialId">
           <el-select v-model="form.authCredentialId" placeholder="请选择授权信息（可选）" clearable>
             <el-option label="无授权" :value="undefined" />
-            <el-option v-for="auth in authCredentials" :key="auth.id" :label="`${auth.name} (${auth.authType})`"
-              :value="auth.id" />
+            <el-option
+              v-for="auth in authCredentials"
+              :key="auth.id"
+              :label="`${auth.name} (${auth.authType})`"
+              :value="auth.id"
+            />
           </el-select>
           <div style="font-size: 12px; color: #909399; margin-top: 4px">
             选择授权信息后，脚本中可以通过 utils.getAuthInfo() 获取授权信息，utils.fetchApi()
@@ -276,38 +342,63 @@
         <el-form-item label="脚本目录">
           <!-- 内联脚本 -->
           <div>
-            <el-input v-model="form.script.folder" placeholder="脚本目录标识符（系统自动生成）" readonly />
+            <el-input
+              v-model="form.script.folder"
+              placeholder="脚本目录标识符（系统自动生成）"
+              readonly
+            />
             <div class="script-help">
-              <el-button v-if="form.id && form.script.folder" type="success" link
-                @click="openInlineScriptEditor(form.id)">
+              <el-button
+                v-if="form.id && form.script.folder"
+                type="success"
+                link
+                @click="openInlineScriptEditor(form.id)"
+              >
                 <el-icon>
                   <Edit />
                 </el-icon>
                 在线编辑
               </el-button>
-              <el-button v-if="form.id && (!form.script.folder || form.script.folder.trim() === '')" type="warning" link
-                @click="showInitScriptDialog" style="margin-left: 12px;">
+              <el-button
+                v-if="form.id && (!form.script.folder || form.script.folder.trim() === '')"
+                type="warning"
+                link
+                @click="showInitScriptDialog"
+                style="margin-left: 12px"
+              >
                 <el-icon>
                   <Setting />
                 </el-icon>
                 初始化脚本
               </el-button>
-
             </div>
 
             <div
-              style="margin-top: 16px; padding: 12px; background-color: #f5f7fa; border-radius: 4px; font-size: 12px; color: #606266;">
-              <el-icon style="margin-right: 4px;">
+              style="
+                margin-top: 16px;
+                padding: 12px;
+                background-color: #f5f7fa;
+                border-radius: 4px;
+                font-size: 12px;
+                color: #606266;
+              "
+            >
+              <el-icon style="margin-right: 4px">
                 <InfoFilled />
               </el-icon>
               先保存再初始化脚本，入口文件从 package.json 的 main 字段读取
             </div>
           </div>
-
         </el-form-item>
 
         <el-form-item label="超时时间" prop="script.timeout">
-          <el-input-number v-model="form.script.timeout" :min="1000" :max="60000" :step="1000" :step-strictly="true" />
+          <el-input-number
+            v-model="form.script.timeout"
+            :min="1000"
+            :max="60000"
+            :step="1000"
+            :step-strictly="true"
+          />
           <span class="timeout-unit">毫秒</span>
         </el-form-item>
 
@@ -322,8 +413,12 @@
     <RouteDebugger v-model="debugDrawerVisible" :route="debugRoute" />
 
     <!-- 脚本初始化组件 -->
-    <ScriptInitializer v-model="scriptInitVisible" :route-id="currentEditingRouteId" @success="onScriptInitSuccess"
-      @skip="onScriptInitSkip" />
+    <ScriptInitializer
+      v-model="scriptInitVisible"
+      :route-id="currentEditingRouteId"
+      @success="onScriptInitSuccess"
+      @skip="onScriptInitSkip"
+    />
 
     <!-- 内联脚本在线编辑器组件 -->
     <InlineScriptEditor v-model="inlineScriptEditorVisible" :route-id="currentEditingRouteId" />
@@ -335,8 +430,20 @@
       width="60%"
       @close="closeReadmeDialog"
     >
-      <div v-loading="readmeLoading" style="min-height: 200px;">
-        <div v-if="!readmeLoading" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.6; background: #f8f9fa; padding: 16px; border-radius: 4px; border: 1px solid #e9ecef;">
+      <div v-loading="readmeLoading" style="min-height: 200px">
+        <div
+          v-if="!readmeLoading"
+          style="
+            white-space: pre-wrap;
+            font-family: &quot;Courier New&quot;, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+          "
+        >
           {{ readmeContent }}
         </div>
       </div>
@@ -350,7 +457,15 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
-import { Search, InfoFilled, Setting, Link, Document, ArrowDown, DataLine } from "@element-plus/icons-vue";
+import {
+  Search,
+  InfoFilled,
+  Setting,
+  Link,
+  Document,
+  ArrowDown,
+  DataLine,
+} from "@element-plus/icons-vue";
 import {
   getAllDynamicRoutes,
   addDynamicRoute,
@@ -522,7 +637,7 @@ const openReadmeDialog = async (row: DynamicRouteConfig) => {
   currentReadmeRoute.value = row;
   readmeDialogVisible.value = true;
   readmeLoading.value = true;
-  
+
   try {
     const res = await getRouteReadme(row.id!);
     if (res.code === 0) {
@@ -625,7 +740,7 @@ const submitForm = async () => {
           fetchRoutes();
 
           // 如果是新建路由且脚本目录为空，提示用户初始化脚本
-          if (!isEdit.value && (!form.script.folder || form.script.folder.trim() === '')) {
+          if (!isEdit.value && (!form.script.folder || form.script.folder.trim() === "")) {
             currentEditingRouteId.value = (res.data as any)?.id;
             scriptInitVisible.value = true;
           }
@@ -657,24 +772,26 @@ const deleteRoute = async (id: number) => {
 };
 
 // 复制动态路由链接
-const copyDynamicLink = (row: DynamicRouteConfig, type: 'rss' | 'json') => {
+const copyDynamicLink = (row: DynamicRouteConfig, type: "rss" | "json") => {
   let link = `${baseUrl}/api/dynamic/sub${row.path}?type=${type}`;
-  
+
   // 检查是否有必填参数
-  const requiredParams = row.params?.filter(param => param.required) || [];
-  
+  const requiredParams = row.params?.filter((param) => param.required) || [];
+
   if (requiredParams.length > 0) {
     // 替换路径中的参数占位符
-    requiredParams.forEach(param => {
+    requiredParams.forEach((param) => {
       link = link.replace(`:${param.name}`, `{${param.name}}`);
     });
-    
+
     // 复制链接
     copyToClipboard(link)
       .then((success) => {
         if (success) {
-          const paramNames = requiredParams.map(p => p.name).join('、');
-          ElMessage.success(`${type.toUpperCase()}链接已复制到剪贴板，请将 {${paramNames}} 替换为实际参数值`);
+          const paramNames = requiredParams.map((p) => p.name).join("、");
+          ElMessage.success(
+            `${type.toUpperCase()}链接已复制到剪贴板，请将 {${paramNames}} 替换为实际参数值`
+          );
         } else {
           ElMessage.warning(`无法复制${type.toUpperCase()}链接，请手动复制`);
         }
@@ -701,7 +818,7 @@ const copyDynamicLink = (row: DynamicRouteConfig, type: 'rss' | 'json') => {
 // 打开内联脚本编辑器
 const openInlineScriptEditor = async (id: number) => {
   if (!id) {
-    ElMessage.warning('请先保存路由配置');
+    ElMessage.warning("请先保存路由配置");
     return;
   }
 
@@ -710,7 +827,6 @@ const openInlineScriptEditor = async (id: number) => {
 };
 
 // 关闭内联脚本编辑器
-
 
 // 脚本初始化成功回调
 const onScriptInitSuccess = () => {
@@ -732,7 +848,7 @@ const showInitScriptDialog = () => {
     currentEditingRouteId.value = form.id;
     scriptInitVisible.value = true;
   } else {
-    ElMessage.warning('请先保存路由配置后再初始化脚本');
+    ElMessage.warning("请先保存路由配置后再初始化脚本");
   }
 };
 
@@ -741,11 +857,11 @@ const getRepoName = (gitUrl: string) => {
   try {
     const url = new URL(gitUrl);
     const pathname = url.pathname;
-    const parts = pathname.split('/');
-    const repoName = parts[parts.length - 1].replace('.git', '');
-    return repoName || 'Unknown';
+    const parts = pathname.split("/");
+    const repoName = parts[parts.length - 1].replace(".git", "");
+    return repoName || "Unknown";
   } catch {
-    return 'Unknown';
+    return "Unknown";
   }
 };
 
@@ -757,7 +873,7 @@ const formatSyncTime = (timestamp: string) => {
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (minutes < 1) return '刚刚';
+  if (minutes < 1) return "刚刚";
   if (minutes < 60) return `${minutes}分钟前`;
   if (hours < 24) return `${hours}小时前`;
   if (days < 7) return `${days}天前`;
@@ -770,11 +886,11 @@ const syncGitRepo = async (route: DynamicRouteConfig) => {
   try {
     syncingRoutes.value.push(route.id);
     await syncGitRepository(route.id);
-    ElMessage.success('Git仓库同步成功');
+    ElMessage.success("Git仓库同步成功");
     await fetchRoutes(); // 刷新列表
   } catch (error) {
-    console.error('Git同步失败:', error);
-    ElMessage.error('Git仓库同步失败');
+    console.error("Git同步失败:", error);
+    ElMessage.error("Git仓库同步失败");
   } finally {
     const index = syncingRoutes.value.indexOf(route.id);
     if (index > -1) {
@@ -783,12 +899,10 @@ const syncGitRepo = async (route: DynamicRouteConfig) => {
   }
 };
 
-
 // 处理表格选择变化
 const handleSelectionChange = (selection: DynamicRouteConfig[]) => {
   selectedRoutes.value = selection;
 };
-
 
 // 处理文件导入
 const handleFileImport = async (event: Event) => {
@@ -860,15 +974,17 @@ const exportRoutesWithScriptsHandler = async () => {
       return;
     }
 
-    const routeIds = selectedRoutes.value.map(route => route.id!).filter(id => id !== undefined);
+    const routeIds = selectedRoutes.value
+      .map((route) => route.id!)
+      .filter((id) => id !== undefined);
     const response = await exportRoutesWithScripts(routeIds);
 
     // 创建下载链接
     const blob = response.data as Blob;
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `dynamic-routes-with-scripts-${new Date().toISOString().split('T')[0]}.zip`;
+    link.download = `dynamic-routes-with-scripts-${new Date().toISOString().split("T")[0]}.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -897,7 +1013,11 @@ const handleZipFileImport = async (event: Event) => {
     const result = await importRoutesWithScripts(file);
 
     if (result.code === 0) {
-      const { successCount, failCount, errors } = result.data as { successCount: number; failCount: number; errors: string[] };
+      const { successCount, failCount, errors } = result.data as {
+        successCount: number;
+        failCount: number;
+        errors: string[];
+      };
 
       // 刷新路由列表
       await fetchRoutes();
@@ -913,10 +1033,10 @@ const handleZipFileImport = async (event: Event) => {
 
       // 如果有错误，显示详细信息
       if (errors && errors.length > 0) {
-        console.warn('导入过程中的错误:', errors);
+        console.warn("导入过程中的错误:", errors);
       }
     } else {
-      ElMessage.error(result.message || '导入失败');
+      ElMessage.error(result.message || "导入失败");
     }
   } catch (error) {
     console.error("导入ZIP文件失败:", error);
@@ -1084,8 +1204,6 @@ onMounted(() => {
     }
   }
 
-
-
   .script-help-content {
     h3 {
       margin-top: 0;
@@ -1131,10 +1249,6 @@ onMounted(() => {
       }
     }
   }
-
-
-
-
 
   // 内联脚本编辑器样式
   .inline-script-editor {

@@ -48,30 +48,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Connection } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import { ref } from "vue";
+import { Connection } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 
 const visible = ref(false);
-const curlInput = ref('');
-const generatedCode = ref('');
+const curlInput = ref("");
+const generatedCode = ref("");
 
 const openDialog = () => {
   visible.value = true;
-  curlInput.value = '';
-  generatedCode.value = '';
+  curlInput.value = "";
+  generatedCode.value = "";
 };
 
 const handleConvert = () => {
   if (!curlInput.value.trim()) {
-    generatedCode.value = '';
+    generatedCode.value = "";
     return;
   }
   try {
     generatedCode.value = parseCurl(curlInput.value);
   } catch (error) {
-    console.error('Parse error:', error);
-    generatedCode.value = '// 解析 Curl 命令失败，请检查格式是否正确';
+    console.error("Parse error:", error);
+    generatedCode.value = "// 解析 Curl 命令失败，请检查格式是否正确";
   }
 };
 
@@ -79,10 +79,10 @@ const handleCopy = async () => {
   if (generatedCode.value) {
     try {
       await navigator.clipboard.writeText(generatedCode.value);
-      ElMessage.success('代码已复制到剪贴板');
+      ElMessage.success("代码已复制到剪贴板");
       visible.value = false;
     } catch (err) {
-      ElMessage.error('复制失败，请手动复制');
+      ElMessage.error("复制失败，请手动复制");
     }
   }
 };
@@ -92,35 +92,40 @@ const handleCopy = async () => {
  */
 function parseCurl(curl: string): string {
   const result: any = {
-    method: 'GET',
+    method: "GET",
     headers: {},
-    url: '',
-    data: null
+    url: "",
+    data: null,
   };
 
   // 预处理：合并续行符，处理引号
-  let processedCurl = curl.replace(/\\\n/g, ' ').trim();
-  
+  let processedCurl = curl.replace(/\\\n/g, " ").trim();
+
   // 使用更健壮的参数解析
   const parts = splitCurl(processedCurl);
-  
+
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
-    
-    if (part === '-X' || part === '--request') {
-      result.method = parts[++i]?.toUpperCase() || 'GET';
-    } else if (part === '-H' || part === '--header') {
-      const headerStr = parts[++i] || '';
-      const [key, ...valueParts] = headerStr.split(':');
+
+    if (part === "-X" || part === "--request") {
+      result.method = parts[++i]?.toUpperCase() || "GET";
+    } else if (part === "-H" || part === "--header") {
+      const headerStr = parts[++i] || "";
+      const [key, ...valueParts] = headerStr.split(":");
       if (key && valueParts.length > 0) {
-        result.headers[key.trim()] = valueParts.join(':').trim();
+        result.headers[key.trim()] = valueParts.join(":").trim();
       }
-    } else if (part === '-d' || part === '--data' || part === '--data-raw' || part === '--data-binary') {
-      result.method = result.method === 'GET' ? 'POST' : result.method;
-      result.data = parts[++i] || '';
-    } else if (!part.startsWith('-') && !result.url) {
+    } else if (
+      part === "-d" ||
+      part === "--data" ||
+      part === "--data-raw" ||
+      part === "--data-binary"
+    ) {
+      result.method = result.method === "GET" ? "POST" : result.method;
+      result.data = parts[++i] || "";
+    } else if (!part.startsWith("-") && !result.url) {
       // 尝试识别 URL
-      if (part.startsWith('http') || part.includes('://')) {
+      if (part.startsWith("http") || part.includes("://")) {
         result.url = part;
       }
     }
@@ -128,7 +133,9 @@ function parseCurl(curl: string): string {
 
   // 如果没找到 URL，尝试再次匹配
   if (!result.url) {
-    const urlMatch = processedCurl.match(/(?:['"])(https?:\/\/[^\s'"]+)(?:['"])|(https?:\/\/[^\s'"]+)/);
+    const urlMatch = processedCurl.match(
+      /(?:['"])(https?:\/\/[^\s'"]+)(?:['"])|(https?:\/\/[^\s'"]+)/
+    );
     if (urlMatch) {
       result.url = urlMatch[1] || urlMatch[2];
     }
@@ -137,7 +144,7 @@ function parseCurl(curl: string): string {
   // 分解 URL 和参数
   let baseUrl = result.url;
   let params: any = null;
-  if (result.url && result.url.includes('?')) {
+  if (result.url && result.url.includes("?")) {
     const urlObj = new URL(result.url);
     baseUrl = `${urlObj.origin}${urlObj.pathname}`;
     params = {};
@@ -147,8 +154,8 @@ function parseCurl(curl: string): string {
   }
 
   // 生成格式化代码
-  let output = '';
-  
+  let output = "";
+
   // URL 变量
   output += `const apiUrl = '${baseUrl}';\n`;
 
@@ -163,9 +170,9 @@ function parseCurl(curl: string): string {
   }
 
   // Data 变量
-  let dataVarName = '';
+  let dataVarName = "";
   if (result.data) {
-    dataVarName = 'payload';
+    dataVarName = "payload";
     let parsedData = result.data;
     try {
       parsedData = JSON.parse(result.data);
@@ -175,28 +182,28 @@ function parseCurl(curl: string): string {
     output += `const ${dataVarName} = ${JSON.stringify(parsedData, null, 2)};\n`;
   }
 
-  output += '\n';
-  output += 'const response = await utils.fetchApi(';
-  
+  output += "\n";
+  output += "const response = await utils.fetchApi(";
+
   // 处理带参数的 URL
   if (params && Object.keys(params).length > 0) {
-    output += '`${apiUrl}?${utils.queryParams(params)}`';
+    output += "`${apiUrl}?${utils.queryParams(params)}`";
   } else {
-    output += 'apiUrl';
+    output += "apiUrl";
   }
 
   const options: any = {};
-  if (result.method !== 'GET') options.method = result.method;
-  
+  if (result.method !== "GET") options.method = result.method;
+
   if (Object.keys(options).length > 0 || Object.keys(result.headers).length > 0 || dataVarName) {
-    output += ', {\n';
+    output += ", {\n";
     if (options.method) output += `  method: '${options.method}',\n`;
     if (Object.keys(result.headers).length > 0) output += `  headers,\n`;
     if (dataVarName) output += `  data: ${dataVarName},\n`;
-    output = output.replace(/,\n$/, '\n');
-    output += '});';
+    output = output.replace(/,\n$/, "\n");
+    output += "});";
   } else {
-    output += ');';
+    output += ");";
   }
 
   return output;
@@ -207,36 +214,36 @@ function parseCurl(curl: string): string {
  */
 function splitCurl(curl: string): string[] {
   const args: string[] = [];
-  let current = '';
+  let current = "";
   let inQuote = false;
-  let quoteChar = '';
+  let quoteChar = "";
 
   for (let i = 0; i < curl.length; i++) {
     const char = curl[i];
-    if ((char === '"' || char === "'") && (i === 0 || curl[i-1] !== '\\')) {
+    if ((char === '"' || char === "'") && (i === 0 || curl[i - 1] !== "\\")) {
       if (!inQuote) {
         inQuote = true;
         quoteChar = char;
       } else if (char === quoteChar) {
         inQuote = false;
-        quoteChar = '';
+        quoteChar = "";
       } else {
         current += char;
       }
-    } else if (char === ' ' && !inQuote) {
+    } else if (char === " " && !inQuote) {
       if (current) {
         args.push(current);
-        current = '';
+        current = "";
       }
     } else {
       current += char;
     }
   }
   if (current) args.push(current);
-  
+
   // 过滤掉 'curl' 开头的单词
-  if (args[0]?.toLowerCase() === 'curl') args.shift();
-  
+  if (args[0]?.toLowerCase() === "curl") args.shift();
+
   return args;
 }
 </script>
@@ -262,7 +269,7 @@ function splitCurl(curl: string): string[] {
   color: #d4d4d4;
   padding: 12px;
   border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 13px;
   overflow-x: auto;
   max-height: 200px;

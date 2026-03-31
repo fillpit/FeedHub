@@ -1,6 +1,6 @@
 import { rateLimiter } from "../../middleware/rateLimiter";
 import { Request, Response, NextFunction } from "express";
-import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach, afterEach } from "@jest/globals";
 
 describe("Rate Limiter Middleware", () => {
   let req: Partial<Request>;
@@ -45,10 +45,12 @@ describe("Rate Limiter Middleware", () => {
 
     expect(next).toHaveBeenCalledTimes(2);
     expect(res.status).toHaveBeenCalledWith(429);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      success: false,
-      message: "请求过于频繁，请稍后再试"
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message: "请求过于频繁，请稍后再试",
+      })
+    );
   });
 
   it("should reset count after window expires", () => {

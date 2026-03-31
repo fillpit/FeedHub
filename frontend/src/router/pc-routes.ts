@@ -36,7 +36,6 @@ const routes: RouteRecordRaw[] = [
         name: "profile",
         component: () => import("@/views/Profile.vue"),
       },
-      
     ],
   },
   {
