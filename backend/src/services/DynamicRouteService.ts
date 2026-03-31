@@ -1061,7 +1061,9 @@ export class DynamicRouteService {
     try {
       // 执行脚本
       const result = await executeScript(
-        { script: { enabled: true, script: scriptContent, timeout: route.script.timeout || 30000 } },
+        {
+          script: { enabled: true, script: scriptContent, timeout: route.script.timeout || 30000 },
+        },
         context,
         this.axiosInstance,
         undefined,
@@ -1073,19 +1075,17 @@ export class DynamicRouteService {
 
       // 持久化成功状态
       await DynamicRouteConfig.update(
-        ({ lastRunAt: new Date(), lastRunStatus: "success", lastRunError: null } as any),
+        { lastRunAt: new Date(), lastRunStatus: "success", lastRunError: null } as any,
         { where: { id: route.id } }
       );
     } catch (error: any) {
       // 持久化失败状态
       await DynamicRouteConfig.update(
-        (
-          {
-            lastRunAt: new Date(),
-            lastRunStatus: "failure",
-            lastRunError: error?.message || String(error),
-          } as any
-        ),
+        {
+          lastRunAt: new Date(),
+          lastRunStatus: "failure",
+          lastRunError: error?.message || String(error),
+        } as any,
         { where: { id: route.id } }
       );
       throw error;
@@ -1211,7 +1211,7 @@ export class DynamicRouteService {
       if (routeData.id) {
         try {
           await DynamicRouteConfig.update(
-            ({ lastRunAt: new Date(), lastRunStatus: "success", lastRunError: null } as any),
+            { lastRunAt: new Date(), lastRunStatus: "success", lastRunError: null } as any,
             { where: { id: routeData.id } }
           );
         } catch {}
@@ -1234,13 +1234,11 @@ export class DynamicRouteService {
       if ((routeData as any).id) {
         try {
           await DynamicRouteConfig.update(
-            (
-              {
-                lastRunAt: new Date(),
-                lastRunStatus: "failure",
-                lastRunError: (error as Error)?.message || String(error),
-              } as any
-            ),
+            {
+              lastRunAt: new Date(),
+              lastRunStatus: "failure",
+              lastRunError: (error as Error)?.message || String(error),
+            } as any,
             { where: { id: (routeData as any).id } }
           );
         } catch {}
@@ -1741,20 +1739,17 @@ export class DynamicRouteService {
       const gitUploadService = new GitUploadService(this.scriptFileService);
 
       // 执行上传
-       await gitUploadService.uploadToGit(
-         route.script.folder!,
-         {
-           gitUrl: gitConfig.gitUrl,
-           gitBranch: gitConfig.gitBranch || 'main',
-           gitSubPath: gitConfig.gitSubPath,
-           authType: gitConfig.authType || 'https',
-           username: gitConfig.username,
-           password: gitConfig.password,
-           token: gitConfig.token,
-           email: gitConfig.email,
-           defaultCommitMessage: commitMessage || `Update scripts for route: ${route.name}`,
-         }
-       );
+      await gitUploadService.uploadToGit(route.script.folder!, {
+        gitUrl: gitConfig.gitUrl,
+        gitBranch: gitConfig.gitBranch || "main",
+        gitSubPath: gitConfig.gitSubPath,
+        authType: gitConfig.authType || "https",
+        username: gitConfig.username,
+        password: gitConfig.password,
+        token: gitConfig.token,
+        email: gitConfig.email,
+        defaultCommitMessage: commitMessage || `Update scripts for route: ${route.name}`,
+      });
 
       logger.info(`[DynamicRouteService] 成功上传路由 ${route.name} 的脚本到Git仓库`);
 

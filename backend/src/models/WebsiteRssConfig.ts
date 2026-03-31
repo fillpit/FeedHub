@@ -46,7 +46,7 @@ class WebsiteRssConfig
 }
 
 WebsiteRssConfig.init(
-  ({
+  {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -126,7 +126,7 @@ WebsiteRssConfig.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-  } as any),
+  } as any,
   {
     sequelize,
     modelName: "WebsiteRssConfig",
