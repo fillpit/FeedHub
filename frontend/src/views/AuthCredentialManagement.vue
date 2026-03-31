@@ -8,7 +8,7 @@
       <el-table :data="list" border style="width: 100%" v-loading="loading">
         <template #empty>
           <el-empty description="暂无授权信息">
-            <el-button type="primary" @click="openDialog">新增授权</el-button>
+            <el-button type="primary" @click="openDialog">立即添加</el-button>
           </el-empty>
         </template>
         <el-table-column prop="name" label="名称" width="120" />
