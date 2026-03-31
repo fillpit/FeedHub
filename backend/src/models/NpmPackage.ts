@@ -18,8 +18,10 @@ export interface NpmPackageAttributes {
   updatedAt?: Date;
 }
 
-export interface NpmPackageCreationAttributes
-  extends Optional<NpmPackageAttributes, "id" | "createdAt" | "updatedAt"> {}
+export interface NpmPackageCreationAttributes extends Optional<
+  NpmPackageAttributes,
+  "id" | "createdAt" | "updatedAt"
+> {}
 
 class NpmPackage
   extends Model<NpmPackageAttributes, NpmPackageCreationAttributes>
