@@ -1,6 +1,6 @@
 import path from "path";
 import { safeResolvePath } from "../../utils/security/path";
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from "@jest/globals";
 
 describe("Security Path Utils", () => {
   const baseDir = path.resolve("/tmp/uploads");
@@ -22,8 +22,8 @@ describe("Security Path Utils", () => {
   });
 
   test("should allow safe subdirectory access if intended", () => {
-      const filename = "subdir/test.txt";
-      const result = safeResolvePath(baseDir, filename);
-      expect(result).toBe(path.join(baseDir, "subdir/test.txt"));
+    const filename = "subdir/test.txt";
+    const result = safeResolvePath(baseDir, filename);
+    expect(result).toBe(path.join(baseDir, "subdir/test.txt"));
   });
 });

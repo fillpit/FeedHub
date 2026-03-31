@@ -36,37 +36,41 @@ export class UserService {
 
   async login(username: string, password: string) {
     console.log(`[UserService] 开始登录流程，用户名: ${username}`);
-    
+
     try {
       // 查找用户
       console.log(`[UserService] 正在查找用户: ${username}`);
       const user = await User.findOne({ where: { username } });
-      
+
       if (!user) {
         console.log(`[UserService] 用户不存在: ${username}`);
         throw new Error("用户名或密码错误");
       }
-      
+
       console.log(`[UserService] 找到用户，ID: ${user.id}, 角色: ${user.role}`);
-      
+
       // 验证密码
       console.log(`[UserService] 正在验证密码`);
       const isPasswordValid = await bcrypt.compare(password, user.password);
-      
+
       if (!isPasswordValid) {
         console.log(`[UserService] 密码验证失败`);
         throw new Error("用户名或密码错误");
       }
-      
+
       console.log(`[UserService] 密码验证成功，正在生成token`);
-      
+
       // 生成token
-      const token = jwt.sign({ userId: user.userId, role: user.role, username: user.username }, config.jwtSecret, {
-        expiresIn: "6h",
-      });
-      
+      const token = jwt.sign(
+        { userId: user.userId, role: user.role, username: user.username },
+        config.jwtSecret,
+        {
+          expiresIn: "6h",
+        }
+      );
+
       console.log(`[UserService] Token生成成功，登录完成`);
-      
+
       return {
         data: {
           token,
