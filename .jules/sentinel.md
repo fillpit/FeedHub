@@ -12,3 +12,8 @@
 **Vulnerability:** The global authentication middleware used `req.originalUrl.includes("/book-rss/feed/")` to bypass authentication for RSS feeds. An attacker could access any protected endpoint by simply appending `?/book-rss/feed/` to the query string, as `originalUrl` includes the query parameters.
 **Learning:** Checking `originalUrl` for allowlisting routes is dangerous because it includes user-controlled query parameters. The allowlist should strictly rely on the normalized path component of the request.
 **Prevention:** Always use `req.path` instead of `req.originalUrl` when determining whether a route should bypass authentication or authorization checks.
+
+## $(date +%Y-%m-%d) - Command Injection Vulnerability
+**Vulnerability:** The \`NpmPackageService\` executed npm commands like \`npm install\` and \`npm uninstall\` using \`child_process.exec\` with concatenated strings for \`packageName\` and \`version\`. This allowed command injection if a malicious user provided a crafted package name.
+**Learning:** Using \`exec\` or \`execAsync\` with string concatenation to invoke system commands is dangerous because the shell evaluates metacharacters.
+**Prevention:** Always use \`child_process.execFile\` or \`child_process.spawn\` with an array of arguments to bypass the shell. Never use string concatenation to form shell commands that include user input.
