@@ -6,6 +6,11 @@
         <el-button type="primary" @click="openDialog">新增授权</el-button>
       </div>
       <el-table :data="list" border style="width: 100%" v-loading="loading">
+        <template #empty>
+          <el-empty description="暂无授权信息">
+            <el-button type="primary" @click="openDialog">新增授权</el-button>
+          </el-empty>
+        </template>
         <el-table-column prop="name" label="名称" width="120" />
         <el-table-column prop="authType" label="类型" width="100" />
         <el-table-column prop="cookie" label="Cookie" width="180" show-overflow-tooltip />
@@ -24,8 +29,19 @@
         <el-table-column prop="remark" label="备注" width="150" />
         <el-table-column label="操作" width="160">
           <template #default="scope">
-            <el-button size="small" @click="edit(scope.row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="remove(scope.row.id)">删除</el-button>
+            <el-button
+              size="small"
+              :aria-label="'编辑授权: ' + scope.row.name"
+              @click="edit(scope.row)"
+              >编辑</el-button
+            >
+            <el-button
+              size="small"
+              type="danger"
+              :aria-label="'删除授权: ' + scope.row.name"
+              @click="remove(scope.row.id)"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>

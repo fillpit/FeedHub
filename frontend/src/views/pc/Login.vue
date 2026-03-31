@@ -106,18 +106,18 @@ const handleLogin = async () => {
 
           const token = res.data?.token || "";
           const userInfo = res.data?.user;
-          
+
           // 验证用户信息是否完整
           if (token && userInfo) {
             // 设置认证信息到store
             authStore.setAuth(token, userInfo);
-            console.log('用户登录成功，信息已存储到状态管理:', userInfo);
+            console.log("用户登录成功，信息已存储到状态管理:", userInfo);
           } else {
-            console.error('登录响应数据不完整:', res.data);
+            console.error("登录响应数据不完整:", res.data);
             // 降级处理：仅保存token
             localStorage.setItem(STORAGE_KEYS.TOKEN, token);
           }
-          
+
           router.push("/");
         } else {
           ElMessage.error(res.message || "登录失败");

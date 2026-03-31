@@ -1,5 +1,11 @@
 <template>
-  <el-dialog v-model="visible" title="脚本编辑器" width="90%" :close-on-click-modal="false" @close="handleClose">
+  <el-dialog
+    v-model="visible"
+    title="脚本编辑器"
+    width="90%"
+    :close-on-click-modal="false"
+    @close="handleClose"
+  >
     <div v-loading="loading" class="inline-script-editor">
       <div class="editor-layout">
         <!-- 左侧文件树 -->
@@ -22,8 +28,15 @@
             </div>
           </div>
           <div class="custom-file-tree">
-            <FileTreeNode v-for="node in files" :key="node.path" :node="node" :selected-file="selectedFile" :level="0"
-              @file-click="handleFileClick" @delete-file="deleteFile" />
+            <FileTreeNode
+              v-for="node in files"
+              :key="node.path"
+              :node="node"
+              :selected-file="selectedFile"
+              :level="0"
+              @file-click="handleFileClick"
+              @delete-file="deleteFile"
+            />
           </div>
         </div>
 
@@ -51,23 +64,33 @@
               </div>
             </div>
             <div class="panel-actions">
-              <el-button v-if="selectedFile && syntaxErrors.length > 0" type="warning" size="small"
-                @click="toggleErrorPanel">
+              <el-button
+                v-if="selectedFile && syntaxErrors.length > 0"
+                type="warning"
+                size="small"
+                @click="toggleErrorPanel"
+              >
                 <el-icon>
                   <Warning />
                 </el-icon>
-                {{ showErrorPanel ? '隐藏' : '显示' }}错误
+                {{ showErrorPanel ? "隐藏" : "显示" }}错误
               </el-button>
 
               <el-tooltip content="脚本帮助指南" effect="customized">
                 <el-link type="warning" size="small" underline="never" @click="showScriptHelp">
                   <el-icon>
-                     <QuestionFilled />
+                    <QuestionFilled />
                   </el-icon>
                 </el-link>
               </el-tooltip>
               <el-tooltip content="保存" effect="customized">
-                <el-link type="primary" size="small" underline="never" @click="saveFile" :disabled="!selectedFile">
+                <el-link
+                  type="primary"
+                  size="small"
+                  underline="never"
+                  @click="saveFile"
+                  :disabled="!selectedFile"
+                >
                   <el-icon>
                     <DocumentCopy />
                   </el-icon>
@@ -77,8 +100,13 @@
               <CurlToFetchConverter v-if="selectedFile" />
 
               <el-tooltip content="上传脚本到Git仓库" effect="customized">
-                <el-link type="success" size="small" underline="never" @click="showGitUploadDialog"
-                  :disabled="!selectedFile">
+                <el-link
+                  type="success"
+                  size="small"
+                  underline="never"
+                  @click="showGitUploadDialog"
+                  :disabled="!selectedFile"
+                >
                   <el-icon>
                     <Upload />
                   </el-icon>
@@ -95,13 +123,21 @@
           </div>
           <div class="editor-container">
             <div v-if="selectedFile" class="editor-with-errors">
-              <CodeEditor ref="codeEditorRef" v-model="fileContent" :language="getLanguageFromFileName(selectedFile)"
-                theme="vs-dark" height="100%" :enable-syntax-check="true" :options="{
+              <CodeEditor
+                ref="codeEditorRef"
+                v-model="fileContent"
+                :language="getLanguageFromFileName(selectedFile)"
+                theme="vs-dark"
+                height="100%"
+                :enable-syntax-check="true"
+                :options="{
                   minimap: { enabled: false },
                   scrollBeyondLastLine: false,
                   wordWrap: 'on',
                   automaticLayout: true,
-                }" @syntax-errors="handleSyntaxErrors" />
+                }"
+                @syntax-errors="handleSyntaxErrors"
+              />
               <!-- 错误面板 -->
               <div v-if="showErrorPanel && syntaxErrors.length > 0" class="error-panel">
                 <div class="error-panel-header">
@@ -113,7 +149,12 @@
                   </el-button>
                 </div>
                 <div class="error-list">
-                  <div v-for="(error, index) in syntaxErrors" :key="index" class="error-item" @click="goToError(error)">
+                  <div
+                    v-for="(error, index) in syntaxErrors"
+                    :key="index"
+                    class="error-item"
+                    @click="goToError(error)"
+                  >
                     <div class="error-icon">
                       <el-icon v-if="error.severity === 8" class="error">
                         <CircleCloseFilled />
@@ -151,11 +192,19 @@
   <ScriptHelpGuide mode="dialog" v-model="scriptHelpVisible" />
 
   <!-- 新建文件对话框 -->
-  <el-dialog v-model="createFileDialogVisible" title="新建文件" width="500px" :close-on-click-modal="false">
+  <el-dialog
+    v-model="createFileDialogVisible"
+    title="新建文件"
+    width="500px"
+    :close-on-click-modal="false"
+  >
     <el-form :model="createFileForm" label-width="80px">
       <el-form-item label="文件名" required>
-        <el-input v-model="createFileForm.fileName" placeholder="请输入文件名（如：utils.js, config.json）"
-          @keyup.enter="createFile" />
+        <el-input
+          v-model="createFileForm.fileName"
+          placeholder="请输入文件名（如：utils.js, config.json）"
+          @keyup.enter="createFile"
+        />
       </el-form-item>
       <el-form-item label="模板">
         <el-radio-group v-model="createFileForm.template">
@@ -181,16 +230,27 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="createFileDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="createFile" :disabled="!createFileForm.fileName.trim()">创建</el-button>
+        <el-button type="primary" @click="createFile" :disabled="!createFileForm.fileName.trim()"
+          >创建</el-button
+        >
       </div>
     </template>
   </el-dialog>
 
   <!-- Git上传对话框 -->
-  <el-dialog v-model="gitUploadDialogVisible" title="上传到Git仓库" width="600px" :close-on-click-modal="false">
+  <el-dialog
+    v-model="gitUploadDialogVisible"
+    title="上传到Git仓库"
+    width="600px"
+    :close-on-click-modal="false"
+  >
     <el-form :model="gitUploadForm" label-width="120px" label-position="left">
       <el-form-item label="仓库地址" required>
-        <el-input v-model="gitUploadForm.gitUrl" placeholder="https://github.com/username/repo.git" clearable />
+        <el-input
+          v-model="gitUploadForm.gitUrl"
+          placeholder="https://github.com/username/repo.git"
+          clearable
+        />
       </el-form-item>
 
       <el-form-item label="分支">
@@ -198,25 +258,43 @@
       </el-form-item>
 
       <el-form-item label="子目录路径">
-        <el-input v-model="gitUploadForm.gitSubPath" placeholder="可选，如：scripts/feedhub" clearable />
+        <el-input
+          v-model="gitUploadForm.gitSubPath"
+          placeholder="可选，如：scripts/feedhub"
+          clearable
+        />
         <div class="form-tip">可选，指定上传到仓库中的子目录</div>
       </el-form-item>
 
       <el-form-item label="访问令牌" required>
-        <el-input v-model="gitUploadForm.token" type="password" placeholder="Personal Access Token" show-password
-          clearable />
+        <el-input
+          v-model="gitUploadForm.token"
+          type="password"
+          placeholder="Personal Access Token"
+          show-password
+          clearable
+        />
         <div class="form-tip">
-          <div style="margin-bottom: 8px;"><strong>如何获取 Personal Access Token：</strong></div>
-          <div style="margin-bottom: 4px;">1. 登录 GitHub，访问: <el-link type="primary"
-              href="https://github.com/settings/tokens" target="_blank">Personal access tokens</el-link></div>
-          <div style="margin-bottom: 4px;">2. 点击 "Generate new token" → "Generate new token (classic)"</div>
-          <div style="margin-bottom: 4px;">3. 设置 Token 名称和过期时间</div>
-          <div style="margin-bottom: 4px;">4. 选择权限范围（Scopes）：</div>
-          <div style="margin-left: 16px; margin-bottom: 4px;">• <strong>repo</strong> - 完整的仓库访问权限（必需）</div>
-          <div style="margin-left: 16px; margin-bottom: 4px;">• <strong>workflow</strong> - 更新 GitHub Actions 工作流（可选）
+          <div style="margin-bottom: 8px"><strong>如何获取 Personal Access Token：</strong></div>
+          <div style="margin-bottom: 4px">
+            1. 登录 GitHub，访问:
+            <el-link type="primary" href="https://github.com/settings/tokens" target="_blank"
+              >Personal access tokens</el-link
+            >
           </div>
-          <div style="margin-bottom: 4px;">5. 点击 "Generate token" 并复制生成的 Token</div>
-          <div style="color: #e6a23c; font-size: 12px;">⚠️ Token 只会显示一次，请妥善保存</div>
+          <div style="margin-bottom: 4px">
+            2. 点击 "Generate new token" → "Generate new token (classic)"
+          </div>
+          <div style="margin-bottom: 4px">3. 设置 Token 名称和过期时间</div>
+          <div style="margin-bottom: 4px">4. 选择权限范围（Scopes）：</div>
+          <div style="margin-left: 16px; margin-bottom: 4px">
+            • <strong>repo</strong> - 完整的仓库访问权限（必需）
+          </div>
+          <div style="margin-left: 16px; margin-bottom: 4px">
+            • <strong>workflow</strong> - 更新 GitHub Actions 工作流（可选）
+          </div>
+          <div style="margin-bottom: 4px">5. 点击 "Generate token" 并复制生成的 Token</div>
+          <div style="color: #e6a23c; font-size: 12px">⚠️ Token 只会显示一次，请妥善保存</div>
         </div>
       </el-form-item>
 
@@ -225,7 +303,12 @@
       </el-form-item>
 
       <el-form-item label="提交信息" required>
-        <el-input v-model="gitUploadForm.commitMessage" type="textarea" :rows="3" placeholder="描述本次提交的内容" />
+        <el-input
+          v-model="gitUploadForm.commitMessage"
+          type="textarea"
+          :rows="3"
+          placeholder="描述本次提交的内容"
+        />
       </el-form-item>
     </el-form>
 
@@ -235,25 +318,36 @@
           取消
         </el-button>
         <el-button type="primary" @click="handleGitUpload" :loading="gitUploadLoading">
-          {{ gitUploadLoading ? '上传中...' : '上传' }}
+          {{ gitUploadLoading ? "上传中..." : "上传" }}
         </el-button>
       </div>
     </template>
   </el-dialog>
 
   <!-- 自动保存设置对话框 -->
-  <el-dialog v-model="autoSaveSettingsVisible" title="编辑器设置" width="400px" :close-on-click-modal="false">
+  <el-dialog
+    v-model="autoSaveSettingsVisible"
+    title="编辑器设置"
+    width="400px"
+    :close-on-click-modal="false"
+  >
     <el-form label-width="120px">
       <el-form-item label="启用自动保存">
         <el-switch v-model="tempAutoSaveEnabled" active-text="开启" inactive-text="关闭" />
       </el-form-item>
       <el-form-item label="保存间隔" v-if="tempAutoSaveEnabled">
-        <el-input-number v-model="tempAutoSaveInterval" :min="5" :max="300" :step="5" controls-position="right" />
-        <span style="margin-left: 8px; color: #909399; font-size: 12px;">秒</span>
+        <el-input-number
+          v-model="tempAutoSaveInterval"
+          :min="5"
+          :max="300"
+          :step="5"
+          controls-position="right"
+        />
+        <span style="margin-left: 8px; color: #909399; font-size: 12px">秒</span>
       </el-form-item>
       <el-form-item v-if="tempAutoSaveEnabled">
-        <div style="font-size: 12px; color: #909399; line-height: 1.4;">
-          自动保存间隔范围：5-300秒<br>
+        <div style="font-size: 12px; color: #909399; line-height: 1.4">
+          自动保存间隔范围：5-300秒<br />
           建议设置：30-60秒
         </div>
       </el-form-item>
@@ -281,7 +375,7 @@ import {
   CircleCloseFilled,
   WarningFilled,
   Setting,
-  Upload
+  Upload,
 } from "@element-plus/icons-vue";
 import CodeEditor from "@/components/CodeEditor.vue";
 import ScriptHelpGuide from "@/components/ScriptHelpGuide.vue";
@@ -552,18 +646,18 @@ const selectFile = async (fileName: string) => {
     try {
       await ElMessageBox.confirm(
         `文件 "${selectedFile.value}" 有未保存的修改，是否要保存？`,
-        '未保存的修改',
+        "未保存的修改",
         {
-          confirmButtonText: '保存并切换',
-          cancelButtonText: '丢弃并切换',
+          confirmButtonText: "保存并切换",
+          cancelButtonText: "丢弃并切换",
           distinguishCancelAndClose: true,
-          type: 'warning',
+          type: "warning",
         }
       );
       // 用户选择保存
       await saveFile();
     } catch (action) {
-      if (action === 'cancel') {
+      if (action === "cancel") {
         // 用户选择丢弃修改，继续切换
       } else {
         // 用户点击了关闭按钮，取消切换
@@ -719,7 +813,7 @@ const goToError = (error: any) => {
     if (editor) {
       editor.setPosition({
         lineNumber: error.startLineNumber,
-        column: error.startColumn
+        column: error.startColumn,
       });
       editor.focus();
     }
@@ -748,7 +842,6 @@ const stopAutoSave = () => {
   }
 };
 
-
 // 显示自动保存设置对话框
 const showAutoSaveSettings = () => {
   tempAutoSaveInterval.value = autoSaveInterval.value;
@@ -774,9 +867,9 @@ const saveAutoSaveSettings = () => {
   } else {
     stopAutoSave();
     if (wasEnabled) {
-      ElMessage.info('自动保存已关闭');
+      ElMessage.info("自动保存已关闭");
     } else {
-      ElMessage.success('自动保存设置已保存');
+      ElMessage.success("自动保存设置已保存");
     }
   }
 };
@@ -784,7 +877,7 @@ const saveAutoSaveSettings = () => {
 // 键盘事件处理
 const handleKeyDown = (event: KeyboardEvent) => {
   // 检测 Ctrl+S (Windows/Linux) 或 Cmd+S (Mac)
-  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+  if ((event.ctrlKey || event.metaKey) && event.key === "s") {
     event.preventDefault(); // 阻止浏览器默认保存行为
     if (selectedFile.value) {
       saveFile();
@@ -794,12 +887,12 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 // 组件挂载时添加键盘事件监听
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener("keydown", handleKeyDown);
 });
 
 // 组件卸载时移除键盘事件监听和清理定时器
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener("keydown", handleKeyDown);
   stopAutoSave();
 });
 
@@ -838,7 +931,8 @@ const loadGitUploadConfig = async () => {
         gitSubPath: savedConfig?.gitSubPath || "",
         token: savedConfig?.token || "",
         email: savedConfig?.email || "",
-        commitMessage: savedConfig?.defaultCommitMessage || `Update scripts at ${new Date().toLocaleString()}`,
+        commitMessage:
+          savedConfig?.defaultCommitMessage || `Update scripts at ${new Date().toLocaleString()}`,
       };
     } else {
       // 使用默认值
@@ -929,18 +1023,18 @@ const handleClose = async () => {
     try {
       await ElMessageBox.confirm(
         `文件 "${selectedFile.value}" 有未保存的修改，是否要保存？`,
-        '未保存的修改',
+        "未保存的修改",
         {
-          confirmButtonText: '保存并关闭',
-          cancelButtonText: '丢弃并关闭',
+          confirmButtonText: "保存并关闭",
+          cancelButtonText: "丢弃并关闭",
           distinguishCancelAndClose: true,
-          type: 'warning',
+          type: "warning",
         }
       );
       // 用户选择保存
       await saveFile();
     } catch (action) {
-      if (action === 'cancel') {
+      if (action === "cancel") {
         // 用户选择丢弃修改，继续关闭
       } else {
         // 用户点击了关闭按钮，取消关闭
@@ -962,7 +1056,6 @@ const handleClose = async () => {
   stopAutoSave();
 };
 </script>
-
 
 <style>
 .el-popper.is-customized {
@@ -1228,7 +1321,6 @@ const handleClose = async () => {
 }
 
 @keyframes blink {
-
   0%,
   50% {
     opacity: 1;
