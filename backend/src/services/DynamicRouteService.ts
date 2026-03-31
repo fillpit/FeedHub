@@ -156,15 +156,13 @@ export class DynamicRouteService {
       return { route: exactMatch, pathParams: {} };
     }
 
-    // ⚡ Bolt: 只获取id和path字段进行模式匹配，避免在每次匹配不中的请求中将所有路由的大型TEXT和JSON字段加载到内存中
-    const allRoutes = await DynamicRouteConfig.findAll({
-      attributes: ["id", "path"]
-    });
+    // 获取所有路由配置进行模式匹配，仅获取id和path以优化性能，排除 script 等大字段
+    const allRoutes = await DynamicRouteConfig.findAll({ attributes: ["id", "path"] });
 
     for (const route of allRoutes) {
       const matchResult = this.matchRoutePattern(route.path, requestPath);
       if (matchResult) {
-        // 匹配成功后再查询完整的路由配置
+        // 匹配成功后，再懒加载获取完整的路由配置
         const fullRoute = await DynamicRouteConfig.findByPk(route.id);
         if (fullRoute) {
           return { route: fullRoute, pathParams: matchResult };
