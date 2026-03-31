@@ -155,7 +155,7 @@ const initEditor = async () => {
         const value = editor.getValue();
         emit("update:modelValue", value);
         emit("change", value);
-        
+
         // 延迟语法检查
         if (props.enableSyntaxCheck) {
           if (syntaxCheckTimer) {
@@ -173,11 +173,12 @@ const initEditor = async () => {
       monaco.editor.onDidChangeMarkers((uris) => {
         if (editor && isEditorReady) {
           const model = editor.getModel();
-          if (model && uris.some(uri => uri.toString() === model.uri.toString())) {
+          if (model && uris.some((uri) => uri.toString() === model.uri.toString())) {
             const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-            const errors = markers.filter(marker => 
-              marker.severity === monaco.MarkerSeverity.Error ||
-              marker.severity === monaco.MarkerSeverity.Warning
+            const errors = markers.filter(
+              (marker) =>
+                marker.severity === monaco.MarkerSeverity.Error ||
+                marker.severity === monaco.MarkerSeverity.Warning
             );
             emit("syntax-errors", errors);
           }
@@ -265,41 +266,46 @@ onMounted(async () => {
 // 语法检查函数
 const checkSyntaxErrors = () => {
   if (!editor || !isEditorReady || !props.enableSyntaxCheck) return;
-  
+
   const model = editor.getModel();
   if (!model) return;
-  
+
   // 获取当前模型的错误标记
   const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-  const errors = markers.filter(marker => 
-    marker.severity === monaco.MarkerSeverity.Error ||
-    marker.severity === monaco.MarkerSeverity.Warning
+  const errors = markers.filter(
+    (marker) =>
+      marker.severity === monaco.MarkerSeverity.Error ||
+      marker.severity === monaco.MarkerSeverity.Warning
   );
-  
+
   emit("syntax-errors", errors);
 };
 
 // 自定义验证动态路由脚本
 const validateDynamicRouteScript = (code: string): monaco.editor.IMarkerData[] => {
   const errors: monaco.editor.IMarkerData[] = [];
-  
+
   // 检查是否包含handler函数
-  if (!code.includes('function handler') && !code.includes('const handler') && !code.includes('export')) {
+  if (
+    !code.includes("function handler") &&
+    !code.includes("const handler") &&
+    !code.includes("export")
+  ) {
     errors.push({
       severity: monaco.MarkerSeverity.Warning,
-      message: '动态路由脚本应该包含一个handler函数或导出函数',
+      message: "动态路由脚本应该包含一个handler函数或导出函数",
       startLineNumber: 1,
       startColumn: 1,
       endLineNumber: 1,
       endColumn: 1,
     });
   }
-  
+
   // 检查是否使用了不安全的函数
-  const unsafeFunctions = ['eval', 'Function', 'setTimeout', 'setInterval'];
-  unsafeFunctions.forEach(func => {
+  const unsafeFunctions = ["eval", "Function", "setTimeout", "setInterval"];
+  unsafeFunctions.forEach((func) => {
     if (code.includes(func)) {
-      const lines = code.split('\n');
+      const lines = code.split("\n");
       lines.forEach((line, index) => {
         if (line.includes(func)) {
           errors.push({
@@ -314,7 +320,7 @@ const validateDynamicRouteScript = (code: string): monaco.editor.IMarkerData[] =
       });
     }
   });
-  
+
   return errors;
 };
 
@@ -358,9 +364,10 @@ defineExpose({
     const model = editor.getModel();
     if (!model) return [];
     const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-    return markers.filter(marker => 
-      marker.severity === monaco.MarkerSeverity.Error ||
-      marker.severity === monaco.MarkerSeverity.Warning
+    return markers.filter(
+      (marker) =>
+        marker.severity === monaco.MarkerSeverity.Error ||
+        marker.severity === monaco.MarkerSeverity.Warning
     );
   },
 });

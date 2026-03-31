@@ -8,7 +8,7 @@
 **Learning:** Storing passwords locally, even with encoding or obfuscation, introduces unnecessary risks. A better user experience and secure alternative is to only remember the username, reducing the impact of local storage compromise.
 **Prevention:** Never store passwords in `localStorage`, `sessionStorage`, or cookies. Use password managers or secure authentication flows (like OAuth or persistent, secure, HttpOnly sessions) to handle authentication persistence. If a "Remember Me" feature is required, limit it to non-sensitive identifiers like usernames or emails.
 
-## 2024-03-30 - [CRITICAL] Authentication Bypass via req.originalUrl
-**Vulnerability:** The `authMiddleware` used `req.originalUrl.includes("/book-rss/feed/")` to bypass authentication for RSS feeds. An attacker could append `?param=/book-rss/feed/` to any authenticated endpoint URL and successfully bypass authentication entirely.
-**Learning:** `req.originalUrl` contains the entire URL path and query string. Using `.includes()` on it allows arbitrary query string manipulation to trigger bypass conditions meant for specific routes.
-**Prevention:** For route-based authentication exclusions, always use `req.path` instead of `req.originalUrl` and use strict prefix matching like `.startsWith()` instead of `.includes()`.
+## 2024-05-24 - Authentication Bypass via Query String
+**Vulnerability:** The global authentication middleware used `req.originalUrl.includes("/book-rss/feed/")` to bypass authentication for RSS feeds. An attacker could access any protected endpoint by simply appending `?/book-rss/feed/` to the query string, as `originalUrl` includes the query parameters.
+**Learning:** Checking `originalUrl` for allowlisting routes is dangerous because it includes user-controlled query parameters. The allowlist should strictly rely on the normalized path component of the request.
+**Prevention:** Always use `req.path` instead of `req.originalUrl` when determining whether a route should bypass authentication or authorization checks.

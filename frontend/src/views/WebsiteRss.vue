@@ -80,15 +80,23 @@
         </el-table-column>
         <el-table-column label="最后抓取时间" width="160" show-overflow-tooltip>
           <template #default="{ row }">
-            <span>{{ row.lastFetchTime ? new Date(row.lastFetchTime as any).toLocaleString() : '—' }}</span>
+            <span>{{
+              row.lastFetchTime ? new Date(row.lastFetchTime as any).toLocaleString() : "—"
+            }}</span>
           </template>
         </el-table-column>
         <el-table-column label="最后抓取状态" width="120">
           <template #default="{ row }">
-            <el-tooltip v-if="row.lastFetchStatus === 'failure' && row.lastFetchError" :content="row.lastFetchError" placement="top">
+            <el-tooltip
+              v-if="row.lastFetchStatus === 'failure' && row.lastFetchError"
+              :content="row.lastFetchError"
+              placement="top"
+            >
               <el-tag type="danger" size="small">失败</el-tag>
             </el-tooltip>
-            <el-tag v-else-if="row.lastFetchStatus === 'success'" type="success" size="small">成功</el-tag>
+            <el-tag v-else-if="row.lastFetchStatus === 'success'" type="success" size="small"
+              >成功</el-tag
+            >
             <el-tag v-else type="info" size="small">未知</el-tag>
           </template>
         </el-table-column>
