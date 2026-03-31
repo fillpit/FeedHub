@@ -157,12 +157,17 @@ export class DynamicRouteService {
     }
 
     // 获取所有路由配置进行模式匹配
-    const allRoutes = await DynamicRouteConfig.findAll();
+    // Bolt: Use attributes to exclude large fields when querying list for pattern matching
+    const allRoutes = await DynamicRouteConfig.findAll({ attributes: ["id", "path"] });
 
     for (const route of allRoutes) {
       const matchResult = this.matchRoutePattern(route.path, requestPath);
       if (matchResult) {
-        return { route, pathParams: matchResult };
+        // Find the matching route config with all attributes
+        const fullRoute = await DynamicRouteConfig.findByPk(route.id);
+        if (fullRoute) {
+          return { route: fullRoute, pathParams: matchResult };
+        }
       }
     }
 
