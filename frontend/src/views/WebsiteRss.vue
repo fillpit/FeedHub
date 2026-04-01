@@ -5,15 +5,17 @@
       <div class="header">
         <h1>网页监控</h1>
         <div class="header-actions">
-          <el-button type="info" @click="refreshAllData" :loading="refreshingData">
+          <el-button type="info" :loading="refreshingData" @click="refreshAllData">
             <el-icon><Refresh /></el-icon>
             刷新数据
           </el-button>
-          <el-button type="primary" @click="addConfig">添加配置</el-button>
+          <el-button type="primary" @click="addConfig"
+            ><el-icon><Plus /></el-icon>添加配置</el-button
+          >
           <el-button
             type="success"
-            @click="exportSelectedConfigs"
             :disabled="selectedConfigs.length === 0"
+            @click="exportSelectedConfigs"
           >
             <el-icon><Download /></el-icon>
             导出选中配置 ({{ selectedConfigs.length }})
@@ -25,15 +27,17 @@
         </div>
       </div>
       <el-table
+        v-loading="configsLoading"
         :data="configs"
         border
-        v-loading="configsLoading"
-        @selection-change="handleSelectionChange"
         style="width: 100%"
+        @selection-change="handleSelectionChange"
       >
         <template #empty>
           <el-empty description="暂无订阅配置">
-            <el-button type="primary" @click="addConfig">立即添加</el-button>
+            <el-button type="primary" @click="addConfig"
+              ><el-icon><Plus /></el-icon>立即添加</el-button
+            >
           </el-empty>
         </template>
         <el-table-column type="selection" width="55" />
@@ -539,7 +543,7 @@
 
         <el-divider>调试工具</el-divider>
         <el-form-item>
-          <el-button type="warning" @click="handleDebugSelector" :loading="debugging">
+          <el-button type="warning" :loading="debugging" @click="handleDebugSelector">
             <el-icon><Tools /></el-icon>
             调试选择器
           </el-button>
@@ -553,7 +557,7 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="submitForm">确 定</el-button>
         </div>
       </template>
     </el-drawer>
@@ -615,9 +619,9 @@
           <el-button @click="closeImportDialog">取消</el-button>
           <el-button
             type="primary"
-            @click="importConfigs"
             :loading="importLoading"
             :disabled="importPreview.length === 0"
+            @click="importConfigs"
           >
             导入配置
           </el-button>
@@ -758,6 +762,7 @@ import {
 } from "@/api/websiteRss";
 import type { WebsiteRssConfig } from "@/types/websiteRss";
 import {
+  Plus,
   Document,
   Refresh,
   Edit,
