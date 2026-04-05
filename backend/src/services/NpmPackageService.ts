@@ -61,7 +61,10 @@ export class NpmPackageService {
 
   async getAllPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
+      // ⚡ Bolt Optimization: Exclude the heavy 'dependencies' JSON column from list queries
+      // to reduce database memory usage and improve response time.
       const packages = await NpmPackage.findAll({
+        attributes: { exclude: ["dependencies"] },
         order: [["createdAt", "DESC"]],
       });
       return {
@@ -81,7 +84,10 @@ export class NpmPackageService {
 
   async getInstalledPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
+      // ⚡ Bolt Optimization: Exclude the heavy 'dependencies' JSON column from list queries
+      // to reduce database memory usage and improve response time.
       const packages = await NpmPackage.findAll({
+        attributes: { exclude: ["dependencies"] },
         where: { status: "installed" },
         order: [["lastUsed", "DESC"]],
       });
