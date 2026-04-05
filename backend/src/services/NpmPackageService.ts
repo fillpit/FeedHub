@@ -4,10 +4,10 @@ import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import * as fs from "fs";
 import * as path from "path";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 @injectable()
 export class NpmPackageService {
@@ -57,6 +57,23 @@ export class NpmPackageService {
     } else {
       logger.info(`[NpmPackageService] 使用自定义包目录: ${this.packagesDir}`);
     }
+  }
+
+  private async executeNpmCommand(args: string[], options: any = {}) {
+    const isWindows = process.platform === "win32";
+    const cmd = isWindows ? "npm.cmd" : "npm";
+
+    // Ensure we receive string output
+    const opts = { ...options, encoding: "utf8" as const };
+
+    // execFileAsync returns { stdout: string | Buffer, stderr: string | Buffer }
+    // but by passing encoding: 'utf8', it will return string.
+    // To make typescript happy, we can cast the result.
+    const result = await execFileAsync(cmd, args, opts);
+    return {
+      stdout: String(result.stdout),
+      stderr: String(result.stderr),
+    };
   }
 
   async getAllPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
@@ -119,7 +136,7 @@ export class NpmPackageService {
       let actualVersion = version;
       if (!actualVersion) {
         try {
-          const { stdout } = await execAsync(`npm view ${packageName} version`, {
+          const { stdout } = await this.executeNpmCommand(["view", packageName, "version"], {
             timeout: 30000,
           });
           actualVersion = stdout.trim();
@@ -140,12 +157,12 @@ export class NpmPackageService {
 
       try {
         // 执行npm安装
-        const installCommand = version
-          ? `npm install ${packageName}@${version} --save`
-          : `npm install ${packageName} --save`;
+        const installArgs = version
+          ? ["install", `${packageName}@${version}`, "--save"]
+          : ["install", packageName, "--save"];
 
-        logger.info(`开始安装npm包: ${installCommand}`);
-        const { stdout, stderr } = await execAsync(installCommand, {
+        logger.info(`开始安装npm包: npm ${installArgs.join(" ")}`);
+        const { stdout, stderr } = await this.executeNpmCommand(installArgs, {
           cwd: this.packagesDir,
           timeout: 120000, // 2分钟超时
         });
@@ -220,7 +237,7 @@ export class NpmPackageService {
 
       try {
         // 执行npm卸载
-        await execAsync(`npm uninstall ${packageName}`, {
+        await this.executeNpmCommand(["uninstall", packageName], {
           cwd: this.packagesDir,
           timeout: 60000,
         });
@@ -274,7 +291,7 @@ export class NpmPackageService {
 
   private async uninstallPackageFiles(packageName: string): Promise<void> {
     try {
-      await execAsync(`npm uninstall ${packageName}`, {
+      await this.executeNpmCommand(["uninstall", packageName], {
         cwd: this.packagesDir,
         timeout: 60000,
       });
@@ -305,7 +322,7 @@ export class NpmPackageService {
 
   private async getDirectorySize(dirPath: string): Promise<number> {
     try {
-      const { stdout } = await execAsync(`du -sb "${dirPath}"`);
+      const { stdout } = await execFileAsync("du", ["-sb", dirPath]);
       return parseInt(stdout.split("\t")[0]);
     } catch (error) {
       logger.warn(`获取目录大小失败: ${dirPath}`, error);
