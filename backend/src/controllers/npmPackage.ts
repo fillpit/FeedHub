@@ -81,41 +81,7 @@ export class NpmPackageController extends BaseController {
    */
   async getPackageStats(req: Request, res: Response): Promise<void> {
     await this.handleRequest(req, res, async () => {
-      const allPackages = await this.npmPackageService.getAllPackages();
-      if (!allPackages.success) {
-        return allPackages;
-      }
-
-      const packages = allPackages.data || [];
-      const totalPackages = packages.length;
-      const installedPackages = packages.filter((pkg) => pkg.status === "installed").length;
-      const totalSize = packages
-        .filter((pkg) => pkg.status === "installed" && pkg.size)
-        .reduce((sum, pkg) => sum + (pkg.size || 0), 0);
-      const totalUsage = packages.reduce((sum, pkg) => sum + (pkg.usageCount || 0), 0);
-
-      const stats = {
-        totalPackages,
-        installedPackages,
-        totalSize,
-        totalUsage,
-        // 兼容保留原有字段，避免其它调用方受影响
-        total: totalPackages,
-        installed: installedPackages,
-        installing: packages.filter((pkg) => pkg.status === "installing").length,
-        failed: packages.filter((pkg) => pkg.status === "failed").length,
-        mostUsed: packages
-          .filter((pkg) => pkg.status === "installed")
-          .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
-          .slice(0, 5)
-          .map((pkg) => ({ name: pkg.name, usageCount: pkg.usageCount, lastUsed: pkg.lastUsed })),
-      };
-
-      return {
-        success: true,
-        data: stats,
-        message: "获取统计信息成功",
-      };
+      return await this.npmPackageService.getStats();
     });
   }
 }

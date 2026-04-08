@@ -115,6 +115,57 @@ export class NpmPackageService {
     }
   }
 
+  async getStats(): Promise<ApiResponseData<any>> {
+    try {
+      // ⚡ Bolt: Fetch only necessary columns to prevent memory bloat.
+      // This optimization skips heavy text/BLOB columns (like dependencies, description)
+      // during list processing, significantly reducing DB memory usage and transfer latency.
+      const packages = await NpmPackage.findAll({
+        attributes: ["status", "size", "usageCount", "name", "lastUsed"],
+      });
+
+      const totalPackages = packages.length;
+      const installedPackages = packages.filter((pkg) => pkg.status === "installed").length;
+      const totalSize = packages
+        .filter((pkg) => pkg.status === "installed" && pkg.size)
+        .reduce((sum, pkg) => sum + (pkg.size || 0), 0);
+      const totalUsage = packages.reduce((sum, pkg) => sum + (pkg.usageCount || 0), 0);
+
+      const stats = {
+        totalPackages,
+        installedPackages,
+        totalSize,
+        totalUsage,
+        total: totalPackages,
+        installed: installedPackages,
+        installing: packages.filter((pkg) => pkg.status === "installing").length,
+        failed: packages.filter((pkg) => pkg.status === "failed").length,
+        mostUsed: packages
+          .filter((pkg) => pkg.status === "installed")
+          .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+          .slice(0, 5)
+          .map((pkg) => ({
+            name: pkg.name,
+            usageCount: pkg.usageCount,
+            lastUsed: pkg.lastUsed,
+          })),
+      };
+
+      return {
+        success: true,
+        data: stats,
+        message: "获取统计信息成功",
+      };
+    } catch (error) {
+      logger.error("获取npm包统计信息失败:", error);
+      return {
+        success: false,
+        data: undefined,
+        message: "获取统计信息失败",
+      };
+    }
+  }
+
   async getInstalledPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
       // ⚡ Bolt Optimization: Exclude the heavy 'dependencies' JSON column from list queries
