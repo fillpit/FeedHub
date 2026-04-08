@@ -69,10 +69,8 @@ export interface WebsiteRssConfigAttributes extends WebsiteRssConfigBase {
 }
 
 // 前端使用的配置接口（字段可选且类型适配前端）
-export interface WebsiteRssConfig extends Omit<
-  WebsiteRssConfigBase,
-  "lastFetchTime" | "createdAt" | "updatedAt"
-> {
+export interface WebsiteRssConfig
+  extends Omit<WebsiteRssConfigBase, "lastFetchTime" | "createdAt" | "updatedAt"> {
   description?: string; // 前端别名
   feedUrl?: string; // 前端额外字段
   lastFetchedAt?: string; // 前端使用字符串格式
@@ -118,10 +116,8 @@ export interface WebsiteRssStore {
 }
 
 // 创建配置时的可选属性
-export interface WebsiteRssConfigCreationAttributes extends Omit<
-  WebsiteRssConfigAttributes,
-  "id" | "lastContent" | "lastFetchTime"
-> {
+export interface WebsiteRssConfigCreationAttributes
+  extends Omit<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime"> {
   lastContent?: string;
   lastFetchTime?: Date;
 }

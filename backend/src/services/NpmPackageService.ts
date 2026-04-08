@@ -9,6 +9,22 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
+// 用于安全执行命令的工具函数
+const safeExecAsync = (command: string, args: string[], options: any): Promise<{ stdout: string; stderr: string }> => {
+  return new Promise((resolve, reject) => {
+    // 在Windows上执行.cmd文件时必须开启shell
+    // 为了防止注入，参数需要由开发者确保通过严格验证或不含shell元字符
+    const isWin = process.platform === "win32";
+    execFile(command, args, { ...options, shell: isWin }, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve({ stdout: stdout as string, stderr: stderr as string });
+      }
+    });
+  });
+};
+
 @injectable()
 export class NpmPackageService {
   private readonly packagesDir: string;
@@ -59,9 +75,29 @@ export class NpmPackageService {
     }
   }
 
+  private async executeNpmCommand(args: string[], options: any = {}) {
+    const isWindows = process.platform === "win32";
+    const cmd = isWindows ? "npm.cmd" : "npm";
+
+    // Ensure we receive string output
+    const opts = { ...options, encoding: "utf8" as const };
+
+    // execFileAsync returns { stdout: string | Buffer, stderr: string | Buffer }
+    // but by passing encoding: 'utf8', it will return string.
+    // To make typescript happy, we can cast the result.
+    const result = await execFileAsync(cmd, args, opts);
+    return {
+      stdout: String(result.stdout),
+      stderr: String(result.stderr),
+    };
+  }
+
   async getAllPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
+      // ⚡ Bolt Optimization: Exclude the heavy 'dependencies' JSON column from list queries
+      // to reduce database memory usage and improve response time.
       const packages = await NpmPackage.findAll({
+        attributes: { exclude: ["dependencies"] },
         order: [["createdAt", "DESC"]],
       });
       return {
@@ -81,7 +117,10 @@ export class NpmPackageService {
 
   async getInstalledPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
+      // ⚡ Bolt Optimization: Exclude the heavy 'dependencies' JSON column from list queries
+      // to reduce database memory usage and improve response time.
       const packages = await NpmPackage.findAll({
+        attributes: { exclude: ["dependencies"] },
         where: { status: "installed" },
         order: [["lastUsed", "DESC"]],
       });
@@ -117,24 +156,13 @@ export class NpmPackageService {
 
       // 先获取包的版本信息
       let actualVersion = version;
+      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+
       if (!actualVersion) {
         try {
-          let stdout: string;
-          if (process.platform === "win32") {
-            const result = await execFileAsync(
-              "cmd.exe",
-              ["/c", "npm", "view", packageName, "version"],
-              {
-                timeout: 30000,
-              }
-            );
-            stdout = result.stdout;
-          } else {
-            const result = await execFileAsync("npm", ["view", packageName, "version"], {
-              timeout: 30000,
-            });
-            stdout = result.stdout;
-          }
+          const { stdout } = await safeExecAsync(npmCmd, ["view", packageName, "version"], {
+            timeout: 30000,
+          });
           actualVersion = stdout.trim();
         } catch (error) {
           logger.warn(`获取包版本失败: ${packageName}`, error);
@@ -153,30 +181,14 @@ export class NpmPackageService {
 
       try {
         // 执行npm安装
-        const installArgs = ["install"];
-        if (version) {
-          installArgs.push(`${packageName}@${version}`);
-        } else {
-          installArgs.push(packageName);
-        }
-        installArgs.push("--save");
+        const packageToInstall = version ? `${packageName}@${version}` : packageName;
+        const installArgs = ["install", packageToInstall, "--save"];
 
         logger.info(`开始安装npm包: npm ${installArgs.join(" ")}`);
-
-        let stderr: string;
-        if (process.platform === "win32") {
-          const result = await execFileAsync("cmd.exe", ["/c", "npm", ...installArgs], {
-            cwd: this.packagesDir,
-            timeout: 120000, // 2分钟超时
-          });
-          stderr = result.stderr;
-        } else {
-          const result = await execFileAsync("npm", installArgs, {
-            cwd: this.packagesDir,
-            timeout: 120000, // 2分钟超时
-          });
-          stderr = result.stderr;
-        }
+        const { stdout, stderr } = await safeExecAsync(npmCmd, installArgs, {
+          cwd: this.packagesDir,
+          timeout: 120000, // 2分钟超时
+        });
 
         if (stderr && !stderr.includes("WARN")) {
           throw new Error(stderr);
@@ -247,18 +259,12 @@ export class NpmPackageService {
       await packageRecord.update({ status: "uninstalling" });
 
       try {
+        const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
         // 执行npm卸载
-        if (process.platform === "win32") {
-          await execFileAsync("cmd.exe", ["/c", "npm", "uninstall", packageName], {
-            cwd: this.packagesDir,
-            timeout: 60000,
-          });
-        } else {
-          await execFileAsync("npm", ["uninstall", packageName], {
-            cwd: this.packagesDir,
-            timeout: 60000,
-          });
-        }
+        await safeExecAsync(npmCmd, ["uninstall", packageName], {
+          cwd: this.packagesDir,
+          timeout: 60000,
+        });
 
         // 删除数据库记录
         await packageRecord.destroy();
@@ -309,17 +315,11 @@ export class NpmPackageService {
 
   private async uninstallPackageFiles(packageName: string): Promise<void> {
     try {
-      if (process.platform === "win32") {
-        await execFileAsync("cmd.exe", ["/c", "npm", "uninstall", packageName], {
-          cwd: this.packagesDir,
-          timeout: 60000,
-        });
-      } else {
-        await execFileAsync("npm", ["uninstall", packageName], {
-          cwd: this.packagesDir,
-          timeout: 60000,
-        });
-      }
+      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+      await safeExecAsync(npmCmd, ["uninstall", packageName], {
+        cwd: this.packagesDir,
+        timeout: 60000,
+      });
     } catch (error) {
       logger.warn(`清理包文件失败: ${packageName}`, error);
     }
