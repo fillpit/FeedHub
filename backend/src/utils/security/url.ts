@@ -37,12 +37,12 @@ function isRestrictedIP(ip: string): boolean {
     // 192.168.x.x starts with c0a8
     // 169.254.x.x starts with a9fe
     if (
-        v4Part === "7f00:1" ||
-        v4Part === "7f00:0:1" ||
-        v4Part.startsWith("a:") ||
-        /^ac1[0-f]:/.test(v4Part) ||
-        v4Part.startsWith("c0a8:") ||
-        v4Part.startsWith("a9fe:")
+      v4Part === "7f00:1" ||
+      v4Part === "7f00:0:1" ||
+      v4Part.startsWith("a:") ||
+      /^ac1[0-f]:/.test(v4Part) ||
+      v4Part.startsWith("c0a8:") ||
+      v4Part.startsWith("a9fe:")
     ) {
       return true;
     }
@@ -84,9 +84,8 @@ export function isSafeUrl(urlString: string): boolean {
     }
 
     // Clean up hostname if it contains brackets for IPv6
-    const cleanHostname = hostname.startsWith('[') && hostname.endsWith(']')
-        ? hostname.slice(1, -1)
-        : hostname;
+    const cleanHostname =
+      hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
 
     // Check if hostname is an IP address using ipaddr.js for comprehensive support
     try {
@@ -95,16 +94,27 @@ export function isSafeUrl(urlString: string): boolean {
       const parsedIP = ipaddr.process(cleanHostname);
       // Determine if it is in a restricted range
       const range = parsedIP.range();
-      if (range === "loopback" || range === "private" || range === "uniqueLocal" || range === "linkLocal" || range === "unspecified") {
-          return false;
+      if (
+        range === "loopback" ||
+        range === "private" ||
+        range === "uniqueLocal" ||
+        range === "linkLocal" ||
+        range === "unspecified"
+      ) {
+        return false;
       }
 
       // If we parsed an IPv6 IPv4-mapped address, check its nested v4
-      if (parsedIP.kind() === 'ipv6' && parsedIP.isIPv4MappedAddress()) {
+      if (parsedIP.kind() === "ipv6" && parsedIP.isIPv4MappedAddress()) {
         const v4 = parsedIP.toIPv4Address();
         const v4range = v4.range();
-        if (v4range === "loopback" || v4range === "private" || v4range === "linkLocal" || v4range === "unspecified") {
-            return false;
+        if (
+          v4range === "loopback" ||
+          v4range === "private" ||
+          v4range === "linkLocal" ||
+          v4range === "unspecified"
+        ) {
+          return false;
         }
       }
     } catch (e) {

@@ -35,6 +35,7 @@ export class DynamicRouteService {
   });
 
   private cacheService: ICacheService | null = null;
+  private routePatternCache = new Map<string, { regex: RegExp; paramNames: string[] }>();
 
   constructor(
     @inject(TYPES.NpmPackageService) private npmPackageService: NpmPackageService,
@@ -177,15 +178,23 @@ export class DynamicRouteService {
    * 匹配路由模式并提取路径参数
    */
   private matchRoutePattern(pattern: string, path: string): Record<string, string> | null {
-    // 将路由模式转换为正则表达式
-    const paramNames: string[] = [];
-    const regexPattern = pattern.replace(/:([^/]+)/g, (match, paramName) => {
-      paramNames.push(paramName);
-      return "([^/]+)";
-    });
+    let cached = this.routePatternCache.get(pattern);
 
-    const regex = new RegExp(`^${regexPattern}$`);
-    const match = path.match(regex);
+    if (!cached) {
+      // 将路由模式转换为正则表达式
+      const paramNames: string[] = [];
+      const regexPattern = pattern.replace(/:([^/]+)/g, (match, paramName) => {
+        paramNames.push(paramName);
+        return "([^/]+)";
+      });
+      cached = {
+        regex: new RegExp(`^${regexPattern}$`),
+        paramNames,
+      };
+      this.routePatternCache.set(pattern, cached);
+    }
+
+    const match = path.match(cached.regex);
 
     if (!match) {
       return null;
@@ -193,8 +202,8 @@ export class DynamicRouteService {
 
     // 提取参数值
     const pathParams: Record<string, string> = {};
-    for (let i = 0; i < paramNames.length; i++) {
-      pathParams[paramNames[i]] = match[i + 1];
+    for (let i = 0; i < cached.paramNames.length; i++) {
+      pathParams[cached.paramNames[i]] = match[i + 1];
     }
 
     return pathParams;

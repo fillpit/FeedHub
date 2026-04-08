@@ -15,10 +15,8 @@ export interface AuthCredentialAttributes {
   updatedAt: Date;
 }
 
-interface AuthCredentialCreationAttributes extends Optional<
-  AuthCredentialAttributes,
-  "id" | "createdAt" | "updatedAt"
-> {}
+interface AuthCredentialCreationAttributes
+  extends Optional<AuthCredentialAttributes, "id" | "createdAt" | "updatedAt"> {}
 
 class AuthCredential
   extends Model<AuthCredentialAttributes, AuthCredentialCreationAttributes>
