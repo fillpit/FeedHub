@@ -35,13 +35,21 @@
               @click="edit(scope.row)"
               >编辑</el-button
             >
-            <el-button
-              size="small"
-              type="danger"
-              :aria-label="'删除授权: ' + scope.row.name"
-              @click="remove(scope.row.id)"
-              >删除</el-button
+            <el-popconfirm
+              title="确定要删除此授权信息吗？"
+              confirm-button-text="确定"
+              cancel-button-text="取消"
+              @confirm="remove(scope.row.id)"
             >
+              <template #reference>
+                <el-button
+                  size="small"
+                  type="danger"
+                  :aria-label="'删除授权: ' + scope.row.name"
+                  >删除</el-button
+                >
+              </template>
+            </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
