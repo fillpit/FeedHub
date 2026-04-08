@@ -120,7 +120,7 @@
                     <el-button
                       type="text"
                       size="small"
-                      aria-label="清除已选择的备份文件"
+                      aria-label="清除已选择的文件"
                       @click="clearSelectedFile"
                     >
                       <el-icon><Close /></el-icon>
