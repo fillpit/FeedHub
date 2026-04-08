@@ -13,3 +13,11 @@ When performing manual pattern matching across a list of database records on eve
 
 **Action:**
 Use `attributes: ['id', 'path']` to perform a lightweight `findAll()` query just for the pattern-matching phase. Lazy-load the full record using `findByPk(route.id)` only when a matching path is found. This drasticaly reduces database memory usage and latency.
+
+## 2024-05-23 - Caching Configuration for High-Frequency Loops
+
+**Learning:**
+When processing large lists (e.g., translating RSS items sequentially), fetching configuration using `findOne()` inside the loop creates an N+1 query problem, hitting the database repeatedly for static or rarely-changing configuration data. This causes severe bottlenecks on loop execution time and database connection pools.
+
+**Action:**
+Extract the configuration fetch outside the loop or implement an in-memory cache with a TTL (e.g., 60 seconds) within the service layer. This converts O(N) database queries into O(1), greatly reducing database load.

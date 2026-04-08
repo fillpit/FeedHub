@@ -3,13 +3,31 @@ import GlobalSetting from "../models/GlobalSetting";
 
 @injectable()
 export class TranslationService {
+  private cachedSettings: GlobalSetting | null = null;
+  private settingsCacheTime: number = 0;
+  private readonly CACHE_TTL = 60 * 1000; // 60 seconds
+
+  /**
+   * ⚡ Bolt Optimization:
+   * 获取全局设置并进行内存缓存，避免在批量翻译 RSS 条目时产生 N+1 查询问题
+   */
+  private async getSettings() {
+    const now = Date.now();
+    if (this.settingsCacheTime > 0 && now - this.settingsCacheTime < this.CACHE_TTL) {
+      return this.cachedSettings;
+    }
+    this.cachedSettings = await GlobalSetting.findOne();
+    this.settingsCacheTime = now;
+    return this.cachedSettings;
+  }
+
   /**
    * 执行翻译并返回双语对照文本
    * - 使用环境变量配置模型: TRANSLATION_API_BASE, TRANSLATION_API_KEY, TRANSLATION_MODEL
    * - 读取全局设置中的 targetLanguage 与 prompt
    */
   async translateBilingual(input: string): Promise<string> {
-    const settings = await GlobalSetting.findOne();
+    const settings = await this.getSettings();
     const targetLanguage = settings?.translationTargetLanguage || "en-US";
     const prompt = settings?.translationPrompt || "请将输入内容翻译为目标语言，并保留原文";
 
