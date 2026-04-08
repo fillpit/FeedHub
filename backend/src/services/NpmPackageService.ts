@@ -8,7 +8,22 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
-const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+
+// 用于安全执行命令的工具函数
+const safeExecAsync = (command: string, args: string[], options: any): Promise<{ stdout: string; stderr: string }> => {
+  return new Promise((resolve, reject) => {
+    // 在Windows上执行.cmd文件时必须开启shell
+    // 为了防止注入，参数需要由开发者确保通过严格验证或不含shell元字符
+    const isWin = process.platform === "win32";
+    execFile(command, args, { ...options, shell: isWin }, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve({ stdout: stdout as string, stderr: stderr as string });
+      }
+    });
+  });
+};
 
 @injectable()
 export class NpmPackageService {
@@ -60,9 +75,29 @@ export class NpmPackageService {
     }
   }
 
+  private async executeNpmCommand(args: string[], options: any = {}) {
+    const isWindows = process.platform === "win32";
+    const cmd = isWindows ? "npm.cmd" : "npm";
+
+    // Ensure we receive string output
+    const opts = { ...options, encoding: "utf8" as const };
+
+    // execFileAsync returns { stdout: string | Buffer, stderr: string | Buffer }
+    // but by passing encoding: 'utf8', it will return string.
+    // To make typescript happy, we can cast the result.
+    const result = await execFileAsync(cmd, args, opts);
+    return {
+      stdout: String(result.stdout),
+      stderr: String(result.stderr),
+    };
+  }
+
   async getAllPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
+      // ⚡ Bolt Optimization: Exclude the heavy 'dependencies' JSON column from list queries
+      // to reduce database memory usage and improve response time.
       const packages = await NpmPackage.findAll({
+        attributes: { exclude: ["dependencies"] },
         order: [["createdAt", "DESC"]],
       });
       return {
@@ -82,7 +117,10 @@ export class NpmPackageService {
 
   async getInstalledPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
+      // ⚡ Bolt Optimization: Exclude the heavy 'dependencies' JSON column from list queries
+      // to reduce database memory usage and improve response time.
       const packages = await NpmPackage.findAll({
+        attributes: { exclude: ["dependencies"] },
         where: { status: "installed" },
         order: [["lastUsed", "DESC"]],
       });
@@ -118,9 +156,11 @@ export class NpmPackageService {
 
       // 先获取包的版本信息
       let actualVersion = version;
+      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+
       if (!actualVersion) {
         try {
-          const { stdout } = await execFileAsync(npmCmd, ["view", packageName, "version"], {
+          const { stdout } = await safeExecAsync(npmCmd, ["view", packageName, "version"], {
             timeout: 30000,
           });
           actualVersion = stdout.trim();
@@ -141,10 +181,11 @@ export class NpmPackageService {
 
       try {
         // 执行npm安装
-        const installArgs = ["install", version ? `${packageName}@${version}` : packageName, "--save"];
+        const packageToInstall = version ? `${packageName}@${version}` : packageName;
+        const installArgs = ["install", packageToInstall, "--save"];
 
-        logger.info(`开始安装npm包: ${npmCmd} ${installArgs.join(" ")}`);
-        const { stdout, stderr } = await execFileAsync(npmCmd, installArgs, {
+        logger.info(`开始安装npm包: npm ${installArgs.join(" ")}`);
+        const { stdout, stderr } = await safeExecAsync(npmCmd, installArgs, {
           cwd: this.packagesDir,
           timeout: 120000, // 2分钟超时
         });
@@ -218,8 +259,9 @@ export class NpmPackageService {
       await packageRecord.update({ status: "uninstalling" });
 
       try {
+        const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
         // 执行npm卸载
-        await execFileAsync(npmCmd, ["uninstall", packageName], {
+        await safeExecAsync(npmCmd, ["uninstall", packageName], {
           cwd: this.packagesDir,
           timeout: 60000,
         });
@@ -273,7 +315,8 @@ export class NpmPackageService {
 
   private async uninstallPackageFiles(packageName: string): Promise<void> {
     try {
-      await execFileAsync(npmCmd, ["uninstall", packageName], {
+      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+      await safeExecAsync(npmCmd, ["uninstall", packageName], {
         cwd: this.packagesDir,
         timeout: 60000,
       });

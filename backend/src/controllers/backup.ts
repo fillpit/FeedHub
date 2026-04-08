@@ -198,10 +198,11 @@ export class BackupController {
     });
 
     // 获取网站RSS订阅
+    // ⚡ Bolt Optimization: Exclude 'lastContent' (large RSS cache blob) to significantly reduce memory footprint and backup JSON payload size.
     const websiteRss = await sequelize.models.WebsiteRss.findAll({
       where: { userId },
       attributes: {
-        exclude: ["id", "userId", "createdAt", "updatedAt"],
+        exclude: ["id", "userId", "createdAt", "updatedAt", "lastContent"],
       },
     });
 
@@ -238,10 +239,11 @@ export class BackupController {
     const sequelize = this.databaseService.getSequelize();
 
     // 获取网站RSS订阅（排除敏感字段）
+    // ⚡ Bolt Optimization: Exclude 'lastContent' (large RSS cache blob) to significantly reduce memory footprint and backup JSON payload size.
     const websiteRss = await sequelize.models.WebsiteRss.findAll({
       where: { userId },
       attributes: {
-        exclude: ["id", "userId", "authCredentialId", "createdAt", "updatedAt"],
+        exclude: ["id", "userId", "authCredentialId", "createdAt", "updatedAt", "lastContent"],
       },
     });
 

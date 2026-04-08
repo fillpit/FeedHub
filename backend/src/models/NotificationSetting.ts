@@ -56,10 +56,8 @@ export interface NotificationSettingAttributes {
   triggerSystemAlerts: boolean;
 }
 
-interface NotificationSettingCreationAttributes extends Optional<
-  NotificationSettingAttributes,
-  "id"
-> {}
+interface NotificationSettingCreationAttributes
+  extends Optional<NotificationSettingAttributes, "id"> {}
 
 class NotificationSetting
   extends Model<NotificationSettingAttributes, NotificationSettingCreationAttributes>
