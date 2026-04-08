@@ -9,6 +9,22 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
+// 用于安全执行命令的工具函数
+const safeExecAsync = (command: string, args: string[], options: any): Promise<{ stdout: string; stderr: string }> => {
+  return new Promise((resolve, reject) => {
+    // 在Windows上执行.cmd文件时必须开启shell
+    // 为了防止注入，参数需要由开发者确保通过严格验证或不含shell元字符
+    const isWin = process.platform === "win32";
+    execFile(command, args, { ...options, shell: isWin }, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve({ stdout: stdout as string, stderr: stderr as string });
+      }
+    });
+  });
+};
+
 @injectable()
 export class NpmPackageService {
   private readonly packagesDir: string;
@@ -134,9 +150,11 @@ export class NpmPackageService {
 
       // 先获取包的版本信息
       let actualVersion = version;
+      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+
       if (!actualVersion) {
         try {
-          const { stdout } = await this.executeNpmCommand(["view", packageName, "version"], {
+          const { stdout } = await safeExecAsync(npmCmd, ["view", packageName, "version"], {
             timeout: 30000,
           });
           actualVersion = stdout.trim();
@@ -157,12 +175,11 @@ export class NpmPackageService {
 
       try {
         // 执行npm安装
-        const installArgs = version
-          ? ["install", `${packageName}@${version}`, "--save"]
-          : ["install", packageName, "--save"];
+        const packageToInstall = version ? `${packageName}@${version}` : packageName;
+        const installArgs = ["install", packageToInstall, "--save"];
 
         logger.info(`开始安装npm包: npm ${installArgs.join(" ")}`);
-        const { stdout, stderr } = await this.executeNpmCommand(installArgs, {
+        const { stdout, stderr } = await safeExecAsync(npmCmd, installArgs, {
           cwd: this.packagesDir,
           timeout: 120000, // 2分钟超时
         });
@@ -236,8 +253,9 @@ export class NpmPackageService {
       await packageRecord.update({ status: "uninstalling" });
 
       try {
+        const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
         // 执行npm卸载
-        await this.executeNpmCommand(["uninstall", packageName], {
+        await safeExecAsync(npmCmd, ["uninstall", packageName], {
           cwd: this.packagesDir,
           timeout: 60000,
         });
@@ -291,7 +309,8 @@ export class NpmPackageService {
 
   private async uninstallPackageFiles(packageName: string): Promise<void> {
     try {
-      await this.executeNpmCommand(["uninstall", packageName], {
+      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+      await safeExecAsync(npmCmd, ["uninstall", packageName], {
         cwd: this.packagesDir,
         timeout: 60000,
       });
