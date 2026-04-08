@@ -197,11 +197,11 @@ export class BackupController {
       },
     });
 
-    // 获取网站RSS订阅
+    // 获取网站RSS订阅（排除大型字段 lastContent 以减少内存和备份文件大小）
     const websiteRss = await sequelize.models.WebsiteRss.findAll({
       where: { userId },
       attributes: {
-        exclude: ["id", "userId", "createdAt", "updatedAt"],
+        exclude: ["id", "userId", "createdAt", "updatedAt", "lastContent"],
       },
     });
 
@@ -237,11 +237,11 @@ export class BackupController {
   private async getShareableData(userId: string): Promise<any> {
     const sequelize = this.databaseService.getSequelize();
 
-    // 获取网站RSS订阅（排除敏感字段）
+    // 获取网站RSS订阅（排除敏感字段，同时排除大型字段 lastContent 以优化性能）
     const websiteRss = await sequelize.models.WebsiteRss.findAll({
       where: { userId },
       attributes: {
-        exclude: ["id", "userId", "authCredentialId", "createdAt", "updatedAt"],
+        exclude: ["id", "userId", "authCredentialId", "createdAt", "updatedAt", "lastContent"],
       },
     });
 
