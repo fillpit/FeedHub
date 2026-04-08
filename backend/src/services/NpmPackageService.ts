@@ -4,10 +4,11 @@ import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import * as fs from "fs";
 import * as path from "path";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
 
 @injectable()
 export class NpmPackageService {
@@ -119,7 +120,7 @@ export class NpmPackageService {
       let actualVersion = version;
       if (!actualVersion) {
         try {
-          const { stdout } = await execAsync(`npm view ${packageName} version`, {
+          const { stdout } = await execFileAsync(npmCmd, ["view", packageName, "version"], {
             timeout: 30000,
           });
           actualVersion = stdout.trim();
@@ -140,12 +141,11 @@ export class NpmPackageService {
 
       try {
         // 执行npm安装
-        const installCommand = version
-          ? `npm install ${packageName}@${version} --save`
-          : `npm install ${packageName} --save`;
+        const packageArg = version ? `${packageName}@${version}` : packageName;
+        const installArgs = ["install", packageArg, "--save"];
 
-        logger.info(`开始安装npm包: ${installCommand}`);
-        const { stdout, stderr } = await execAsync(installCommand, {
+        logger.info(`开始安装npm包: npm ${installArgs.join(" ")}`);
+        const { stdout, stderr } = await execFileAsync(npmCmd, installArgs, {
           cwd: this.packagesDir,
           timeout: 120000, // 2分钟超时
         });
@@ -220,7 +220,7 @@ export class NpmPackageService {
 
       try {
         // 执行npm卸载
-        await execAsync(`npm uninstall ${packageName}`, {
+        await execFileAsync(npmCmd, ["uninstall", packageName], {
           cwd: this.packagesDir,
           timeout: 60000,
         });
@@ -274,7 +274,7 @@ export class NpmPackageService {
 
   private async uninstallPackageFiles(packageName: string): Promise<void> {
     try {
-      await execAsync(`npm uninstall ${packageName}`, {
+      await execFileAsync(npmCmd, ["uninstall", packageName], {
         cwd: this.packagesDir,
         timeout: 60000,
       });
@@ -305,7 +305,7 @@ export class NpmPackageService {
 
   private async getDirectorySize(dirPath: string): Promise<number> {
     try {
-      const { stdout } = await execAsync(`du -sb "${dirPath}"`);
+      const { stdout } = await execFileAsync("du", ["-sb", dirPath]);
       return parseInt(stdout.split("\t")[0]);
     } catch (error) {
       logger.warn(`获取目录大小失败: ${dirPath}`, error);
