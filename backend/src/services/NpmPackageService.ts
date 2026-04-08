@@ -75,6 +75,23 @@ export class NpmPackageService {
     }
   }
 
+  private async executeNpmCommand(args: string[], options: any = {}) {
+    const isWindows = process.platform === "win32";
+    const cmd = isWindows ? "npm.cmd" : "npm";
+
+    // Ensure we receive string output
+    const opts = { ...options, encoding: "utf8" as const };
+
+    // execFileAsync returns { stdout: string | Buffer, stderr: string | Buffer }
+    // but by passing encoding: 'utf8', it will return string.
+    // To make typescript happy, we can cast the result.
+    const result = await execFileAsync(cmd, args, opts);
+    return {
+      stdout: String(result.stdout),
+      stderr: String(result.stderr),
+    };
+  }
+
   async getAllPackages(): Promise<ApiResponseData<NpmPackageAttributes[]>> {
     try {
       const packages = await NpmPackage.findAll({

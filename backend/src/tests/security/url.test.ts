@@ -1,5 +1,5 @@
 import { isSafeUrl } from "../../utils/security/url";
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from "@jest/globals";
 
 describe("URL Security Utilities", () => {
   describe("isSafeUrl", () => {
