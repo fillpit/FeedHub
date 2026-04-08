@@ -10,3 +10,7 @@
 **Learning:** Icon-only buttons are a common pattern for "clean" UI, but they are invisible to screen readers without explicit `aria-label` or `aria-labelledby`. Tooltips (`el-tooltip`) are great for mouse users but do not always bridge the gap for assistive technology.
 **Action:** Always verify icon-only buttons have an `aria-label` describing the action, not just the icon name.
 
+
+## 2026-04-08 - Destructive Action Confirmation
+**Learning:** Destructive actions without confirmation dialogues (like deleting an auth credential) can lead to accidental data loss. Using `el-popconfirm` provides a lightweight, inline confirmation without the heavy interruption of a modal dialog, offering a better user experience for table actions.
+**Action:** Always wrap delete actions in list/table views with an `el-popconfirm` or similar confirmation mechanism to prevent accidental deletions.
