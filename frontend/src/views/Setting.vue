@@ -66,7 +66,7 @@
                   <p class="section-description">
                     导出所有配置数据，包括订阅源、用户设置、通知配置等
                   </p>
-                  <el-button type="primary" @click="handleBackupData" :loading="backupLoading">
+                  <el-button type="primary" :loading="backupLoading" @click="handleBackupData">
                     <el-icon><Download /></el-icon>
                     导出备份文件
                   </el-button>
@@ -79,8 +79,8 @@
                   </p>
                   <el-button
                     type="success"
-                    @click="handleShareConfigExport"
                     :loading="shareExportLoading"
+                    @click="handleShareConfigExport"
                   >
                     <el-icon><Download /></el-icon>
                     导出分享配置
@@ -106,9 +106,9 @@
 
                     <el-button
                       type="warning"
-                      @click="handleRestoreData"
                       :loading="restoreLoading"
                       :disabled="!selectedFile"
+                      @click="handleRestoreData"
                     >
                       <el-icon><RefreshRight /></el-icon>
                       开始还原
@@ -117,7 +117,12 @@
 
                   <div v-if="selectedFile" class="selected-file">
                     <span>已选择文件：{{ selectedFile.name }}</span>
-                    <el-button type="text" @click="clearSelectedFile" size="small">
+                    <el-button
+                      type="text"
+                      size="small"
+                      aria-label="清除已选择的备份文件"
+                      @click="clearSelectedFile"
+                    >
                       <el-icon><Close /></el-icon>
                     </el-button>
                   </div>
@@ -142,9 +147,9 @@
 
                     <el-button
                       type="success"
-                      @click="handleShareConfigImport"
                       :loading="shareImportLoading"
                       :disabled="!selectedShareFile"
+                      @click="handleShareConfigImport"
                     >
                       <el-icon><RefreshRight /></el-icon>
                       导入分享配置
@@ -153,7 +158,12 @@
 
                   <div v-if="selectedShareFile" class="selected-file">
                     <span>已选择文件：{{ selectedShareFile.name }}</span>
-                    <el-button type="text" @click="clearSelectedShareFile" size="small">
+                    <el-button
+                      type="text"
+                      size="small"
+                      aria-label="清除已选择的分享配置文件"
+                      @click="clearSelectedShareFile"
+                    >
                       <el-icon><Close /></el-icon>
                     </el-button>
                   </div>
@@ -278,7 +288,7 @@
                 <label>示例翻译</label>
                 <el-input v-model="sampleText" placeholder="输入示例文本，如：你好，世界" />
                 <div class="test-actions">
-                  <el-button type="success" @click="handleTestTranslation" :loading="testing"
+                  <el-button type="success" :loading="testing" @click="handleTestTranslation"
                     >测试翻译</el-button
                   >
                 </div>
@@ -398,7 +408,7 @@
                 </div>
               </div>
               <div class="password-actions">
-                <el-button type="primary" @click="handlePasswordChange" :loading="passwordChanging">
+                <el-button type="primary" :loading="passwordChanging" @click="handlePasswordChange">
                   <el-icon><Key /></el-icon>
                   修改密码
                 </el-button>
@@ -408,7 +418,7 @@
 
           <!-- 用户设置保存按钮 -->
           <div class="settings-actions">
-            <el-button type="primary" @click="handleUserSave" :loading="userSaving">
+            <el-button type="primary" :loading="userSaving" @click="handleUserSave">
               <el-icon><Check /></el-icon>
               保存用户设置
             </el-button>
