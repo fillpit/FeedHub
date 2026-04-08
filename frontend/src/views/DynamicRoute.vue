@@ -3,10 +3,18 @@
     <div class="page-header">
       <h1 class="page-title">动态路由管理</h1>
       <div class="page-actions">
-        <el-button type="primary" @click="openAddDrawer">添加路由</el-button>
-        <el-button @click="refreshRoutes">刷新</el-button>
-        <el-button @click="exportRoutesWithScriptsHandler">导出</el-button>
-        <el-button @click="triggerZipImport">导入</el-button>
+        <el-button type="primary" @click="openAddDrawer"
+          ><el-icon><Plus /></el-icon>添加路由</el-button
+        >
+        <el-button @click="refreshRoutes"
+          ><el-icon><Refresh /></el-icon>刷新</el-button
+        >
+        <el-button @click="exportRoutesWithScriptsHandler"
+          ><el-icon><Download /></el-icon>导出</el-button
+        >
+        <el-button @click="triggerZipImport"
+          ><el-icon><Upload /></el-icon>导入</el-button
+        >
         <input
           ref="fileInputRef"
           type="file"
@@ -25,7 +33,7 @@
     </div>
 
     <!-- 路由列表 -->
-    <el-card class="route-list-card" v-loading="loading">
+    <el-card v-loading="loading" class="route-list-card">
       <template #header>
         <div class="card-header">
           <span>动态路由列表</span>
@@ -45,14 +53,21 @@
       </template>
 
       <!-- 路由列表 -->
-      <el-table :data="filteredRoutes" border style="width: 100%" @selection-change="handleSelectionChange">
+      <el-table
+        :data="filteredRoutes"
+        border
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+      >
         <!-- 空状态 -->
         <template #empty>
           <el-empty v-if="searchKeyword" description="没有找到匹配的动态路由">
             <el-button type="primary" @click="searchKeyword = ''">清除搜索</el-button>
           </el-empty>
           <el-empty v-else description="暂无动态路由配置">
-            <el-button type="primary" @click="openAddDrawer">添加路由</el-button>
+            <el-button type="primary" @click="openAddDrawer"
+              ><el-icon><Plus /></el-icon>添加路由</el-button
+            >
           </el-empty>
         </template>
         <el-table-column type="selection" width="55" />
@@ -60,8 +75,8 @@
           <template #default="{ row }">
             <div class="route-name">
               <span>{{ row.name }}</span>
-              <el-tag size="small" type="success" v-if="row.method === 'GET'">GET</el-tag>
-              <el-tag size="small" type="warning" v-else>{{ row.method }}</el-tag>
+              <el-tag v-if="row.method === 'GET'" size="small" type="success">GET</el-tag>
+              <el-tag v-else size="small" type="warning">{{ row.method }}</el-tag>
             </div>
           </template>
         </el-table-column>
@@ -179,8 +194,8 @@
                 <el-link
                   class="sync-button"
                   type="success"
-                  @click="syncGitRepo(row)"
                   :loading="syncingRoutes.includes(row.id)"
+                  @click="syncGitRepo(row)"
                 >
                   同步Git
                 </el-link>
@@ -195,17 +210,17 @@
             <div class="route-actions">
               <el-link type="primary" @click="openDebugDrawer(row)">调试</el-link>
               <el-link
+                v-if="row.script.sourceType === 'inline'"
                 type="success"
                 @click="openReadmeDialog(row)"
-                v-if="row.script.sourceType === 'inline'"
                 >说明</el-link
               >
               <el-link type="primary" @click="openEditDrawer(row)">编辑</el-link>
               <el-popconfirm
                 title="确定要删除此路由配置吗？"
-                @confirm="deleteRoute(row.id)"
                 confirm-button-text="确定"
                 cancel-button-text="取消"
+                @confirm="deleteRoute(row.id)"
               >
                 <template #reference>
                   <el-link type="danger" link>删除</el-link>
@@ -363,8 +378,8 @@
                 v-if="form.id && (!form.script.folder || form.script.folder.trim() === '')"
                 type="warning"
                 link
-                @click="showInitScriptDialog"
                 style="margin-left: 12px"
+                @click="showInitScriptDialog"
               >
                 <el-icon>
                   <Setting />
@@ -458,6 +473,10 @@
 import { ref, computed, reactive, onMounted } from "vue";
 import { ElMessage, FormInstance } from "element-plus";
 import {
+  Plus,
+  Refresh,
+  Download,
+  Upload,
   Search,
   InfoFilled,
   Setting,
