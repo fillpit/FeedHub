@@ -20,10 +20,8 @@ export {
 };
 
 // Sequelize 模型创建属性接口
-interface ModelCreationAttributes extends Optional<
-  WebsiteRssConfigAttributes,
-  "id" | "lastContent" | "lastFetchTime"
-> {}
+interface ModelCreationAttributes
+  extends Optional<WebsiteRssConfigAttributes, "id" | "lastContent" | "lastFetchTime"> {}
 
 class WebsiteRssConfig
   extends Model<WebsiteRssConfigAttributes, ModelCreationAttributes>

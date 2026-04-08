@@ -47,7 +47,10 @@ export class NpmPackageController extends BaseController {
       }
 
       // 验证版本格式（如果提供）
-      if (version && typeof version === "string") {
+      if (version !== undefined) {
+        if (typeof version !== "string") {
+          throw new Error("版本号必须是字符串");
+        }
         const versionRegex = /^\d+\.\d+\.\d+(-[a-zA-Z0-9-]+)?(\+[a-zA-Z0-9-]+)?$/;
         if (version !== "latest" && !versionRegex.test(version)) {
           throw new Error("版本号格式不正确");
