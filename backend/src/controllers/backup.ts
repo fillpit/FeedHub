@@ -198,7 +198,9 @@ export class BackupController {
     });
 
     // 获取网站RSS订阅
-    // ⚡ Bolt Optimization: Exclude 'lastContent' (large RSS cache blob) to significantly reduce memory footprint and backup JSON payload size.
+    // ⚡ Bolt: 优化性能，排除 lastContent 字段。
+    // 该字段包含了RSS抓取的完整缓存内容，数据量可能非常大（数MB甚至数十MB）。
+    // 在导出备份时排除该字段可以显著减少内存占用，加快序列化速度，并大幅减小备份文件体积。
     const websiteRss = await sequelize.models.WebsiteRss.findAll({
       where: { userId },
       attributes: {
@@ -239,7 +241,9 @@ export class BackupController {
     const sequelize = this.databaseService.getSequelize();
 
     // 获取网站RSS订阅（排除敏感字段）
-    // ⚡ Bolt Optimization: Exclude 'lastContent' (large RSS cache blob) to significantly reduce memory footprint and backup JSON payload size.
+    // ⚡ Bolt: 优化性能，排除 lastContent 字段。
+    // 分享配置时不需要包含RSS缓存数据。排除它可以避免生成过大的分享文件，
+    // 降低内存消耗，提高响应速度。
     const websiteRss = await sequelize.models.WebsiteRss.findAll({
       where: { userId },
       attributes: {
