@@ -6,20 +6,45 @@ import * as fs from "fs";
 import * as path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import spawn from "cross-spawn";
 
 const execFileAsync = promisify(execFile);
 
 // 用于安全执行命令的工具函数
-const safeExecAsync = (command: string, args: string[], options: any): Promise<{ stdout: string; stderr: string }> => {
+const safeExecAsync = (
+  command: string,
+  args: string[],
+  options: any
+): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
-    // 在Windows上执行.cmd文件时必须开启shell
-    // 为了防止注入，参数需要由开发者确保通过严格验证或不含shell元字符
-    const isWin = process.platform === "win32";
-    execFile(command, args, { ...options, shell: isWin }, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
+    // SECURITY FIX: Use cross-spawn instead of execFile or { shell: true } to safely execute commands, especially on Windows
+    // cross-spawn safely escapes arguments without relying on cmd.exe shell which causes command injection vulnerabilities
+    const child = spawn(command, args, { ...options });
+
+    let stdout = "";
+    let stderr = "";
+
+    if (child.stdout) {
+      child.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+    }
+
+    if (child.stderr) {
+      child.stderr.on("data", (data) => {
+        stderr += data.toString();
+      });
+    }
+
+    child.on("error", (error) => {
+      reject(error);
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`Command failed with exit code ${code}\n${stderr}`));
       } else {
-        resolve({ stdout: stdout as string, stderr: stderr as string });
+        resolve({ stdout, stderr });
       }
     });
   });
