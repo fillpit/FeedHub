@@ -12,8 +12,7 @@
 **Vulnerability:** The global authentication middleware used `req.originalUrl.includes("/book-rss/feed/")` to bypass authentication for RSS feeds. An attacker could access any protected endpoint by simply appending `?/book-rss/feed/` to the query string, as `originalUrl` includes the query parameters.
 **Learning:** Checking `originalUrl` for allowlisting routes is dangerous because it includes user-controlled query parameters. The allowlist should strictly rely on the normalized path component of the request.
 **Prevention:** Always use `req.path` instead of `req.originalUrl` when determining whether a route should bypass authentication or authorization checks.
-
-## 2024-05-24 - Command Injection via `child_process.exec`
-**Vulnerability:** In `NpmPackageService.ts`, system commands like `npm install`, `npm uninstall`, and `du -sb` were being constructed using string interpolation with unsanitized user inputs (`packageName`, `version`) and executed using `child_process.exec()`. This could allow an attacker to inject arbitrary shell commands.
-**Learning:** Passing concatenated strings to `exec()` invokes a subshell, exposing the application to command injection vulnerabilities if user input is not strictly validated and sanitized. The Node.js documentation warns against this practice for untrusted input.
-**Prevention:** Always use `child_process.execFile()` instead of `exec()` when executing external commands. Pass arguments as a distinct array rather than appending them to a command string. This avoids invoking a shell and ensures arguments are safely passed to the executable.
+## 2026-04-06 - Command Injection in execAsync
+**Vulnerability:** The `NpmPackageService.ts` used `child_process.exec` with string interpolation (e.g. `exec(\"npm install \${packageName} \")`) which allowed potential command injection if package names were unsanitized, permitting attackers to execute arbitrary system commands by appending shell characters.
+**Learning:** Never use `child_process.exec` with user-supplied arguments because it wraps the execution in a shell, making it susceptible to injection. When replacing with `child_process.execFile` on Windows, ensure that `{shell: true}` is combined with explicit un-interpolated arguments (via array) or utilize safe alternatives.
+**Prevention:** Always spawn system processes using `execFile` or `spawn` with parameters isolated in argument arrays, avoiding direct string composition.
