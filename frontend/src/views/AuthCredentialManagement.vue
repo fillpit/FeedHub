@@ -5,7 +5,7 @@
         <span>授权信息管理</span>
         <el-button type="primary" @click="openDialog">新增授权</el-button>
       </div>
-      <el-table :data="list" border style="width: 100%" v-loading="loading">
+      <el-table v-loading="loading" :data="list" border style="width: 100%">
         <template #empty>
           <el-empty description="暂无授权信息">
             <el-button type="primary" @click="openDialog">立即添加</el-button>
@@ -35,19 +35,25 @@
               @click="edit(scope.row)"
               >编辑</el-button
             >
-            <el-button
-              size="small"
-              type="danger"
-              :aria-label="'删除授权: ' + scope.row.name"
-              @click="remove(scope.row.id)"
-              >删除</el-button
+            <el-popconfirm
+              title="确定要删除此授权信息吗？"
+              confirm-button-text="确定"
+              cancel-button-text="取消"
+              width="200"
+              @confirm="remove(scope.row.id)"
             >
+              <template #reference>
+                <el-button size="small" type="danger" :aria-label="'删除授权: ' + scope.row.name"
+                  >删除</el-button
+                >
+              </template>
+            </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑授权' : '新增授权'">
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入名称" />
         </el-form-item>
@@ -125,7 +131,7 @@ const rules = {
   authType: [{ required: true, message: "请选择类型", trigger: "change" }],
 };
 
-function formatHeaders(headers: any) {
+function formatHeaders(headers: Record<string, string> | null | undefined) {
   if (!headers) return "";
   try {
     return JSON.stringify(headers);
