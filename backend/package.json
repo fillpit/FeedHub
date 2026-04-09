@@ -27,6 +27,7 @@
     "helmet": "^7.1.0",
     "inversify": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "lru-cache": "^11.3.3",
     "markdown-it": "^14.1.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
