@@ -49,6 +49,14 @@ export function getNodeText(node: any): string {
   return "";
 }
 
+// ⚡ Bolt Optimization:
+// To optimize backend performance on hot paths, cache dynamically compiled RegExp objects
+// with a strict size limit to avoid unbounded memory leaks while preventing repeated compilation.
+import { LRUCache } from "lru-cache";
+
+// Max 1000 items (each item is small: pattern string and RegExp object)
+const regexCache = new LRUCache<string, RegExp>({ max: 1000 });
+
 // 辅助方法：应用正则表达式处理
 function applyRegexProcessing(text: string, field: SelectorField, logs?: string[]): string {
   if (!field.regexPattern || !text) {
@@ -57,7 +65,17 @@ function applyRegexProcessing(text: string, field: SelectorField, logs?: string[
 
   try {
     const flags = field.regexFlags || "";
-    const regex = new RegExp(field.regexPattern, flags);
+    const cacheKey = `${field.regexPattern}|${flags}`;
+
+    let regex = regexCache.get(cacheKey);
+    if (!regex) {
+      regex = new RegExp(field.regexPattern, flags);
+      regexCache.set(cacheKey, regex);
+    }
+
+    // Ensure lastIndex is reset to avoid issues with global ('g') flag reuse
+    regex.lastIndex = 0;
+
     const match = text.match(regex);
 
     if (match) {

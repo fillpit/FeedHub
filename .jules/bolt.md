@@ -21,3 +21,11 @@ When processing large lists (e.g., translating RSS items sequentially), fetching
 
 **Action:**
 Extract the configuration fetch outside the loop or implement an in-memory cache with a TTL (e.g., 60 seconds) within the service layer. This converts O(N) database queries into O(1), greatly reducing database load.
+
+## 2026-04-09 - Caching dynamically compiled RegExp Objects safely
+
+**Learning:**
+When performing frequent regex parsing (e.g., dynamically matching HTML/XML blocks or scraping tools like XPath/CSS selectors), creating a `new RegExp(pattern)` object inside a hot loop (like `applyRegexProcessing`) continuously blocks the event loop with compilation overhead. V8 has some internal caching, but re-instantiating the object manually across hundreds of iterations causes measurable GC and CPU pauses. However, storing compiled RegExp globally in an unbounded `Map` introduces a severe memory leak if patterns are dynamically generated from user inputs.
+
+**Action:**
+To optimize regex compilation securely, use an LRU Cache (like `lru-cache` with a strict `max` size) to store the compiled RegExp keyed by pattern and flags. Additionally, always reset `regex.lastIndex = 0` before using a cached RegExp to avoid stateful bugs caused by global (`g`) flags.

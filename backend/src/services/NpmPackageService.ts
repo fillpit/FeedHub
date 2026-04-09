@@ -19,7 +19,7 @@ const safeExecAsync = (command: string, args: string[], options: any): Promise<{
       if (error) {
         reject(error);
       } else {
-        resolve({ stdout: stdout as string, stderr: stderr as string });
+        resolve({ stdout: String(stdout), stderr: String(stderr) });
       }
     });
   });
