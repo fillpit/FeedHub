@@ -4,22 +4,45 @@ import { ApiResponseData } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 import * as fs from "fs";
 import * as path from "path";
-import { execFile } from "child_process";
-import { promisify } from "util";
-
-const execFileAsync = promisify(execFile);
+import spawn from "cross-spawn";
 
 // 用于安全执行命令的工具函数
-const safeExecAsync = (command: string, args: string[], options: any): Promise<{ stdout: string; stderr: string }> => {
+const safeExecAsync = (
+  command: string,
+  args: string[],
+  options: any
+): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
-    // 在Windows上执行.cmd文件时必须开启shell
-    // 为了防止注入，参数需要由开发者确保通过严格验证或不含shell元字符
-    const isWin = process.platform === "win32";
-    execFile(command, args, { ...options, shell: isWin }, (error, stdout, stderr) => {
-      if (error) {
+    const child = spawn(command, args, options);
+
+    let stdout = "";
+    let stderr = "";
+
+    if (child.stdout) {
+      child.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+    }
+
+    if (child.stderr) {
+      child.stderr.on("data", (data) => {
+        stderr += data.toString();
+      });
+    }
+
+    child.on("error", (error) => {
+      reject(error);
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        const error = new Error(`Command failed with exit code ${code}`) as any;
+        error.code = code;
+        error.stdout = stdout;
+        error.stderr = stderr;
         reject(error);
       } else {
-        resolve({ stdout: stdout as string, stderr: stderr as string });
+        resolve({ stdout, stderr });
       }
     });
   });
@@ -82,10 +105,7 @@ export class NpmPackageService {
     // Ensure we receive string output
     const opts = { ...options, encoding: "utf8" as const };
 
-    // execFileAsync returns { stdout: string | Buffer, stderr: string | Buffer }
-    // but by passing encoding: 'utf8', it will return string.
-    // To make typescript happy, we can cast the result.
-    const result = await execFileAsync(cmd, args, opts);
+    const result = await safeExecAsync(cmd, args, opts);
     return {
       stdout: String(result.stdout),
       stderr: String(result.stderr),
@@ -398,7 +418,7 @@ export class NpmPackageService {
 
   private async getDirectorySize(dirPath: string): Promise<number> {
     try {
-      const { stdout } = await execFileAsync("du", ["-sb", dirPath]);
+      const { stdout } = await safeExecAsync("du", ["-sb", dirPath], {});
       return parseInt(stdout.split("\t")[0]);
     } catch (error) {
       logger.warn(`获取目录大小失败: ${dirPath}`, error);
