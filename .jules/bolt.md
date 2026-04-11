@@ -21,3 +21,7 @@ When processing large lists (e.g., translating RSS items sequentially), fetching
 
 **Action:**
 Extract the configuration fetch outside the loop or implement an in-memory cache with a TTL (e.g., 60 seconds) within the service layer. This converts O(N) database queries into O(1), greatly reducing database load.
+
+## 2026-04-11 - Cache dynamically compiled Regex objects safely
+**Learning:** Compiling `RegExp` objects iteratively in loops (like HTML extraction) can cause performance bottlenecks. When caching `RegExp` objects, remember that JavaScript regexes with sticky (`y`) or global (`g`) flags are stateful. Reusing them without resetting `lastIndex` will cause unpredictable match failures. Additionally, stick to native `Map` with basic bounds checking to avoid adding unnecessary dependencies for simple caching.
+**Action:** Use a bounded native `Map` for caching `RegExp`. Always set `regex.lastIndex = 0` before matching to ensure the state is clean when the regex is reused across different strings.
