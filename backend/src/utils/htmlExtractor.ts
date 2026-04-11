@@ -6,6 +6,10 @@ import { WebsiteRssSelector, SelectorField } from "@feedhub/shared";
 import { logger } from "./logger";
 import { formatDate } from "../utils/dateUtils";
 
+// 简单的有界缓存，用于缓存动态编译的正则表达式，防止在大量提取时重复编译造成性能和内存开销
+const MAX_CACHE_SIZE = 500;
+const regexCache = new Map<string, RegExp>();
+
 // 判断是否为元素节点
 export function isElementNode(node: any): node is {
   nodeType: number;
@@ -57,7 +61,21 @@ function applyRegexProcessing(text: string, field: SelectorField, logs?: string[
 
   try {
     const flags = field.regexFlags || "";
-    const regex = new RegExp(field.regexPattern, flags);
+    const cacheKey = `${field.regexPattern}:::${flags}`;
+    let regex = regexCache.get(cacheKey);
+
+    if (!regex) {
+      if (regexCache.size >= MAX_CACHE_SIZE) {
+        // Simple eviction: clear the cache if it gets too big
+        regexCache.clear();
+      }
+      regex = new RegExp(field.regexPattern, flags);
+      regexCache.set(cacheKey, regex);
+    }
+
+    // Always reset lastIndex for global/sticky regexes before matching
+    regex.lastIndex = 0;
+
     const match = text.match(regex);
 
     if (match) {
