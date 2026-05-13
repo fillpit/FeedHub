@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { WebsiteRssSelector, SelectorField, ScrapeResult, AuthCredential, FeedItem } from "@/types/feed";
 import { websiteRssApi, authCredentialApi } from "@/lib/feed-api";
 import { cn } from "@/lib/utils";
+import DiagnosticReport from "./DiagnosticReport";
 
 interface Props {
   initialUrl: string;
@@ -31,6 +32,7 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<"preview" | "diagnostics">("preview");
 
   // 加载凭证列表
   useEffect(() => {
@@ -76,9 +78,15 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
       setResult(res);
       if (res.error) {
         setError(res.error);
+        setActiveTab("diagnostics");
+      } else if (!res.items || res.items.length === 0) {
+        setActiveTab("diagnostics");
+      } else {
+        setActiveTab("preview");
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "抓取调试失败");
+      setActiveTab("diagnostics");
     } finally {
       setIsRunning(false);
     }
@@ -238,7 +246,41 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
       {/* Preview Side */}
       <div className="flex-1 flex flex-col h-full bg-app-bg">
         <div className="p-4 border-b border-app-border bg-app-surface/30 flex items-center justify-between shrink-0">
-          <span className="text-xs font-semibold text-tx-secondary">抓取结果实时预览</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setActiveTab("preview")}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
+                activeTab === "preview"
+                  ? "bg-accent-primary/10 text-accent-primary"
+                  : "text-tx-secondary hover:text-tx-primary hover:bg-app-hover/30"
+              )}
+            >
+              实时预览
+            </button>
+            <button
+              onClick={() => setActiveTab("diagnostics")}
+              className={cn(
+                "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5",
+                activeTab === "diagnostics"
+                  ? "bg-accent-primary/10 text-accent-primary"
+                  : "text-tx-secondary hover:text-tx-primary hover:bg-app-hover/30"
+              )}
+            >
+              诊断报告
+              {result?.debug && (
+                <span className={cn(
+                  "px-1.5 py-0.5 text-[9px] rounded-full font-bold font-mono",
+                  result.items.length > 0 
+                    ? "bg-green-500/15 text-green-500" 
+                    : "bg-red-500/15 text-red-500"
+                )}>
+                  {result.items.length}/{result.debug.containerCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           {result && (
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
@@ -267,7 +309,27 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
             </div>
           )}
 
-          {result?.success && result.items && result.items.length > 0 ? (
+          {isRunning ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <RefreshCw size={24} className="text-accent-primary animate-spin mb-3" />
+              <p className="text-sm font-medium text-tx-primary">正在抓取及渲染网页中...</p>
+              <p className="text-xs text-tx-tertiary mt-1">这通常取决于目标网页的响应速度 and 网络连通性。</p>
+            </div>
+          ) : !result ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <div className="w-12 h-12 rounded-2xl bg-accent-primary/10 flex items-center justify-center mb-3">
+                <Play size={20} className="text-accent-primary" />
+              </div>
+              <p className="text-sm font-semibold text-tx-primary">等待开始抓取</p>
+              <p className="text-xs text-tx-tertiary max-w-[280px] mt-1">在左侧填入您想要调试的目标网页 URL 及其对应的 CSS 提取规则进行抓取性能测试。</p>
+            </div>
+          ) : activeTab === "diagnostics" && result.debug ? (
+            <DiagnosticReport
+              debugData={result.debug}
+              parsedCount={result.items?.length ?? 0}
+              executionTime={result.executionTime}
+            />
+          ) : activeTab === "preview" && result.items && result.items.length > 0 ? (
             <div className="space-y-3">
               {result.items.map((item, idx) => (
                 <PreviewItemCard
@@ -279,25 +341,19 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
                 />
               ))}
             </div>
-          ) : !isRunning && !result ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-20">
-              <div className="w-12 h-12 rounded-2xl bg-accent-primary/10 flex items-center justify-center mb-3">
-                <Play size={20} className="text-accent-primary" />
-              </div>
-              <p className="text-sm font-semibold text-tx-primary">等待开始抓取</p>
-              <p className="text-xs text-tx-tertiary max-w-[280px] mt-1">在左侧填入您想要调试的目标网页 URL 及其对应的 CSS 提取规则进行抓取性能测试。</p>
+          ) : (
+            <div className="p-6 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-500 text-xs text-center flex flex-col items-center justify-center gap-3">
+              <p>网页请求成功，但未能解析出任何条目。请检查“列表容器选择器”和“内部提取选择器”是否正确。</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab("diagnostics")}
+                className="text-amber-500 hover:text-amber-600 border-amber-500/20 hover:bg-amber-500/10 text-xs"
+              >
+                查看深度诊断报告
+              </Button>
             </div>
-          ) : isRunning ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-20">
-              <RefreshCw size={24} className="text-accent-primary animate-spin mb-3" />
-              <p className="text-sm font-medium text-tx-primary">正在抓取及渲染网页中...</p>
-              <p className="text-xs text-tx-tertiary mt-1">这通常取决于目标网页的响应速度和网络连通性。</p>
-            </div>
-          ) : result?.success && (!result.items || result.items.length === 0) ? (
-            <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-500 text-xs text-center">
-              网页请求成功，但未能解析出任何条目。请检查“列表容器选择器”和“内部提取选择器”是否正确。
-            </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

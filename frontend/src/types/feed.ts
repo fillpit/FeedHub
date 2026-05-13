@@ -115,11 +115,38 @@ export interface ScriptResult {
   executionTime: number;
 }
 
+export interface ScrapeFieldDebug {
+  name: string;
+  selector: string;
+  extractType: string;
+  matched: boolean;
+  rawValue: string;
+  finalValue: string;
+  error?: string;
+}
+
+export interface ScrapeItemDebug {
+  index: number;
+  containerHtmlSnippet: string;
+  fields: ScrapeFieldDebug[];
+  passed: boolean;
+  reason?: string;
+}
+
+export interface ScrapeDebugInfo {
+  htmlLength: number;
+  containerCount: number;
+  selectorType: "css" | "xpath";
+  items: ScrapeItemDebug[];
+  logs: string[];
+}
+
 export interface ScrapeResult {
   success?: boolean;
   items: FeedItem[];
   error?: string;
   executionTime: number;
+  debug?: ScrapeDebugInfo;
 }
 
 // ─── 脚本文件 ────────────────────────────────────────────────────────────────

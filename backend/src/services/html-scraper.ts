@@ -1,65 +1,97 @@
-import { FeedItem, WebsiteRssSelector, SelectorField } from "../types/feed";
+import * as cheerio from "cheerio";
+import { FeedItem, WebsiteRssSelector, SelectorField, ScrapeResult, ScrapeDebugInfo, ScrapeItemDebug, ScrapeFieldDebug } from "../types/feed";
 
 /**
- * 网页抓取服务
- * - 优先使用 cheerio（需要网络安装）
- * - 无 cheerio 时返回错误提示
+ * 网页抓取服务 - 带诊断和调试支持
  */
 
 interface ScrapeOptions {
   url: string;
   selector: WebsiteRssSelector;
   authHeaders?: Record<string, string>;
+  debug?: boolean;
 }
 
-export async function scrapeWebsite({ url, selector, authHeaders = {} }: ScrapeOptions): Promise<{
-  items: FeedItem[];
-  error?: string;
-  executionTime: number;
-}> {
+interface ExtractFieldResult {
+  value: string;
+  debug: ScrapeFieldDebug;
+}
+
+interface XPathModule {
+  select: (selector: string, doc: unknown) => unknown[];
+}
+
+interface XmlDomModule {
+  DOMParser: new () => {
+    parseFromString: (xml: string, mimeType: string) => unknown;
+  };
+}
+
+const addLog = (logs: string[], msg: string) => {
+  logs.push(`[${new Date().toISOString().slice(11, 19)}] ${msg}`);
+};
+
+export async function scrapeWebsite({ url, selector, authHeaders = {}, debug = false }: ScrapeOptions): Promise<ScrapeResult> {
   const startTime = Date.now();
+  const logs: string[] = [];
+  addLog(logs, `开始抓取网站: ${url}`);
+  addLog(logs, `解析模式: ${selector.selectorType}`);
+
   let html: string;
   try {
     html = await fetchHtml(url, authHeaders);
+    addLog(logs, `获取 HTML 成功, 长度: ${html.length} 字符`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    addLog(logs, `网络请求失败: ${message}`);
     return { items: [], error: `网络请求失败: ${message}`, executionTime: Date.now() - startTime };
   }
 
-  if (selector.selectorType === "xpath") {
-    return runXPathScraping(html, selector, startTime);
-  }
-  return runCheerioScraping(html, selector, startTime);
+  const result = selector.selectorType === "xpath"
+    ? await runXPathScraping(html, selector, startTime, debug, logs)
+    : await runCheerioScraping(html, selector, startTime, debug, logs);
+
+  return result;
 }
 
-async function runCheerioScraping(html: string, selector: WebsiteRssSelector, startTime: number): Promise<{ items: FeedItem[]; error?: string; executionTime: number }> {
-  const cheerio = await tryLoadCheerio();
-  if (!cheerio) {
-    return { items: [], error: "cheerio 模块不可用，请安装后重试", executionTime: Date.now() - startTime };
-  }
+async function runCheerioScraping(
+  html: string,
+  selector: WebsiteRssSelector,
+  startTime: number,
+  debug: boolean,
+  logs: string[]
+): Promise<ScrapeResult> {
   try {
-    const items = parseWithCheerio(html, selector, cheerio);
-    return { items, executionTime: Date.now() - startTime };
+    addLog(logs, "加载 cheerio 模块成功，开始解析 HTML...");
+    return parseWithCheerio(html, selector, startTime, debug, logs);
   } catch (error) {
     console.error("Scraping parse error:", error);
     const message = error instanceof Error ? error.message : String(error);
+    addLog(logs, `解析失败: ${message}`);
     return { items: [], error: `解析失败: ${message}`, executionTime: Date.now() - startTime };
   }
 }
 
-async function runXPathScraping(html: string, selector: WebsiteRssSelector, startTime: number): Promise<{ items: FeedItem[]; error?: string; executionTime: number }> {
-  const cheerio = await tryLoadCheerio();
+async function runXPathScraping(
+  html: string,
+  selector: WebsiteRssSelector,
+  startTime: number,
+  debug: boolean,
+  logs: string[]
+): Promise<ScrapeResult> {
   const xpathModule = await tryLoadXpath();
   const xmldomModule = await tryLoadXmldom();
-  if (!cheerio || !xpathModule || !xmldomModule) {
-    return { items: [], error: "解析模块 (cheerio/xpath/xmldom) 不可用，请重试", executionTime: Date.now() - startTime };
+  if (!xpathModule || !xmldomModule) {
+    addLog(logs, "未找到 xpath 或 xmldom 依赖包");
+    return { items: [], error: "解析模块 (xpath/xmldom) 不可用，请重试", executionTime: Date.now() - startTime };
   }
   try {
-    const items = parseWithXPath(html, selector, cheerio, xpathModule, xmldomModule);
-    return { items, executionTime: Date.now() - startTime };
+    addLog(logs, "加载 XPath 解析依赖包成功，开始解析 XML/HTML...");
+    return parseWithXPath(html, selector, xpathModule, xmldomModule, startTime, debug, logs);
   } catch (error) {
     console.error("Scraping parse XPath error:", error);
     const message = error instanceof Error ? error.message : String(error);
+    addLog(logs, `XPath 解析失败: ${message}`);
     return { items: [], error: `解析失败 (XPath): ${message}`, executionTime: Date.now() - startTime };
   }
 }
@@ -73,83 +105,172 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
   return response.text();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function tryLoadCheerio(): Promise<any | null> {
+async function tryLoadXpath(): Promise<XPathModule | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("cheerio");
+    return require("xpath") as XPathModule;
   } catch {
     return null;
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function tryLoadXpath(): Promise<any | null> {
+async function tryLoadXmldom(): Promise<XmlDomModule | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("xpath");
+    return require("xmldom") as XmlDomModule;
   } catch {
     return null;
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function tryLoadXmldom(): Promise<any | null> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("xmldom");
-  } catch {
-    return null;
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseWithCheerio(html: string, selector: WebsiteRssSelector, cheerioModule: any): FeedItem[] {
-  const $ = cheerioModule.load(html);
+function parseWithCheerio(
+  html: string,
+  selector: WebsiteRssSelector,
+  startTime: number,
+  debug: boolean,
+  logs: string[]
+): ScrapeResult {
+  const $ = cheerio.load(html);
   const items: FeedItem[] = [];
+  const debugItems: ScrapeItemDebug[] = [];
 
-  if (!selector.container || !selector.container.trim()) {
-    return items;
+  const containerSelector = selector.container?.trim() || "";
+  if (!containerSelector) {
+    addLog(logs, "错误：列表容器选择器为空！");
+    return { items: [], executionTime: Date.now() - startTime };
   }
 
-  $(selector.container).each((_: unknown, el: unknown) => {
-    const container = $(el);
-    const title = extractField(container, selector.title, $);
-    if (!title) return;
+  const containerNodes = $(containerSelector);
+  addLog(logs, `使用列表容器选择器 "${containerSelector}" 匹配到 ${containerNodes.length} 个节点`);
 
-    const link = selector.link ? extractField(container, selector.link, $) : "";
-    const content = extractField(container, selector.content, $);
-    const author = selector.author ? extractField(container, selector.author, $) : undefined;
-    const pubDate = selector.date ? extractField(container, selector.date, $) : undefined;
+  const debugInfo: ScrapeDebugInfo = {
+    htmlLength: html.length,
+    containerCount: containerNodes.length,
+    selectorType: "css",
+    items: debugItems,
+    logs,
+  };
 
-    items.push({ title, link: link ?? "", content: content || undefined, author, pubDate });
-  });
+  processCheerioNodes($, containerNodes, selector, items, debugItems, debug, logs);
 
-  return items;
+  return {
+    items,
+    executionTime: Date.now() - startTime,
+    debug: debug ? debugInfo : undefined,
+  };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractField(container: any, field: SelectorField, _$: any): string {
-  if (!field || !field.selector || !field.selector.trim()) {
-    return "";
+function processCheerioNodes(
+  $: cheerio.CheerioAPI,
+  containerNodes: cheerio.Cheerio<cheerio.AnyNode>,
+  selector: WebsiteRssSelector,
+  items: FeedItem[],
+  debugItems: ScrapeItemDebug[],
+  debug: boolean,
+  logs: string[]
+): void {
+  const maxDebugCount = 10;
+  containerNodes.each((idx: number, el: cheerio.AnyNode) => {
+    const container = $(el);
+    const { item, itemDebug } = processSingleCheerioNode(container, selector, idx);
+
+    if (item) {
+      items.push(item);
+    }
+    
+    if (debug && idx < maxDebugCount) {
+      debugItems.push(itemDebug);
+      addLog(logs, `容器 #${idx + 1}: ${itemDebug.passed ? "成功解析" : `跳过 (${itemDebug.reason})`}`);
+    }
+  });
+}
+
+function processSingleCheerioNode(
+  container: cheerio.Cheerio<cheerio.AnyNode>,
+  selector: WebsiteRssSelector,
+  index: number
+): { item: FeedItem | null; itemDebug: ScrapeItemDebug } {
+  const fieldsDebug: ScrapeFieldDebug[] = [];
+  const { value: title, debug: titleDebug } = extractFieldDebug(container, selector.title, "title");
+  fieldsDebug.push(titleDebug);
+
+  const { value: link, debug: linkDebug } = extractFieldDebug(container, selector.link, "link");
+  fieldsDebug.push(linkDebug);
+
+  const { value: content, debug: contentDebug } = extractFieldDebug(container, selector.content, "content");
+  fieldsDebug.push(contentDebug);
+
+  const { value: author, debug: authorDebug } = extractFieldDebug(container, selector.author, "author");
+  fieldsDebug.push(authorDebug);
+
+  const { value: date, debug: dateDebug } = extractFieldDebug(container, selector.date, "date");
+  fieldsDebug.push(dateDebug);
+
+  const containerHtmlSnippet = getContainerHtmlSnippet(container);
+  const passed = !!title;
+  const reason = passed ? undefined : "标题 (Title) 提取结果为空";
+
+  const item: FeedItem | null = passed
+    ? { title, link: link || "", content: content || undefined, author: author || undefined, pubDate: date || undefined }
+    : null;
+
+  return {
+    item,
+    itemDebug: { index, containerHtmlSnippet, fields: fieldsDebug, passed, reason },
+  };
+}
+
+function getContainerHtmlSnippet(container: cheerio.Cheerio<cheerio.AnyNode>): string {
+  try {
+    const outerHtml = container.toString() || "";
+    return outerHtml.length > 300 ? outerHtml.slice(0, 300) + "..." : outerHtml;
+  } catch {
+    return "[无法获取 HTML 片段]";
+  }
+}
+
+function extractFieldDebug(
+  container: cheerio.Cheerio<cheerio.AnyNode>,
+  field: SelectorField | undefined,
+  fieldName: string
+): ExtractFieldResult {
+  const selector = field?.selector ?? "";
+  const extractType = field?.extractType ?? "text";
+  const debug: ScrapeFieldDebug = {
+    name: fieldName,
+    selector,
+    extractType,
+    matched: false,
+    rawValue: "",
+    finalValue: "",
+  };
+
+  if (!field || !selector.trim()) {
+    return { value: "", debug };
   }
 
-  const el = container.find(field.selector).first();
-  if (!el.length) return "";
-
-  let value: string;
-  switch (field.extractType) {
-    case "attr":
-      value = el.attr(field.attrName ?? "") ?? "";
-      break;
-    case "html":
-      value = el.html() ?? "";
-      break;
-    default:
-      value = el.text().trim();
+  const el = container.find(selector).first();
+  if (!el.length) {
+    debug.error = `未找到匹配选择器 "${selector}" 的子元素`;
+    return { value: "", debug };
   }
 
-  return applyRegex(value, field);
+  debug.matched = true;
+  const rawValue = getElementRawValue(el, field);
+  debug.rawValue = rawValue;
+
+  const finalValue = applyRegex(rawValue, field);
+  debug.finalValue = finalValue;
+
+  return { value: finalValue, debug };
+}
+
+function getElementRawValue(el: cheerio.Cheerio<cheerio.AnyNode>, field: SelectorField): string {
+  if (field.extractType === "attr") {
+    return el.attr(field.attrName ?? "") ?? "";
+  }
+  if (field.extractType === "html") {
+    return el.html() ?? "";
+  }
+  return el.text().trim();
 }
 
 function applyRegex(value: string, field: SelectorField): string {
@@ -180,77 +301,169 @@ export function buildAuthHeaders(credential: Record<string, string>, authType: s
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseWithXPath(html: string, selector: WebsiteRssSelector, cheerioModule: any, xpathModule: any, xmldomModule: any): FeedItem[] {
-  const $ = cheerioModule.load(html);
+function parseWithXPath(
+  html: string,
+  selector: WebsiteRssSelector,
+  xpathModule: XPathModule,
+  xmldomModule: XmlDomModule,
+  startTime: number,
+  debug: boolean,
+  logs: string[]
+): ScrapeResult {
+  const $ = cheerio.load(html);
   const cleanXml = $.xml();
   const doc = new xmldomModule.DOMParser().parseFromString(cleanXml, "text/xml");
   const items: FeedItem[] = [];
+  const debugItems: ScrapeItemDebug[] = [];
 
-  if (!selector.container || !selector.container.trim()) {
-    return items;
+  const containerSelector = selector.container?.trim() || "";
+  if (!containerSelector) {
+    addLog(logs, "错误：XPath 列表容器选择器为空！");
+    return { items: [], executionTime: Date.now() - startTime };
   }
 
-  const containerNodes = xpathModule.select(selector.container, doc);
-  if (!Array.isArray(containerNodes)) {
-    return items;
+  const containerNodes = xpathModule.select(containerSelector, doc);
+  const nodeCount = Array.isArray(containerNodes) ? containerNodes.length : 0;
+  addLog(logs, `使用 XPath 列表容器 "${containerSelector}" 匹配到 ${nodeCount} 个节点`);
+
+  const debugInfo: ScrapeDebugInfo = {
+    htmlLength: html.length,
+    containerCount: nodeCount,
+    selectorType: "xpath",
+    items: debugItems,
+    logs,
+  };
+
+  if (Array.isArray(containerNodes)) {
+    processXPathNodes(containerNodes, selector, xpathModule, items, debugItems, debug, logs);
   }
-
-  for (const containerNode of containerNodes) {
-    const item = parseSingleXPathContainer(containerNode, selector, xpathModule);
-    if (item) {
-      items.push(item);
-    }
-  }
-
-  return items;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseSingleXPathContainer(containerNode: any, selector: WebsiteRssSelector, xpathModule: any): FeedItem | null {
-  const title = extractFieldXPath(containerNode, selector.title, xpathModule);
-  if (!title) return null;
-
-  const link = selector.link ? extractFieldXPath(containerNode, selector.link, xpathModule) : "";
-  const content = selector.content ? extractFieldXPath(containerNode, selector.content, xpathModule) : "";
-  const author = selector.author ? extractFieldXPath(containerNode, selector.author, xpathModule) : undefined;
-  const pubDate = selector.date ? extractFieldXPath(containerNode, selector.date, xpathModule) : undefined;
 
   return {
-    title,
-    link,
-    content: content || undefined,
-    author,
-    pubDate,
+    items,
+    executionTime: Date.now() - startTime,
+    debug: debug ? debugInfo : undefined,
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractFieldXPath(containerNode: any, field: SelectorField, xpathModule: any): string {
-  if (!field || !field.selector || !field.selector.trim()) {
-    return "";
-  }
+function processXPathNodes(
+  containerNodes: unknown[],
+  selector: WebsiteRssSelector,
+  xpathModule: XPathModule,
+  items: FeedItem[],
+  debugItems: ScrapeItemDebug[],
+  debug: boolean,
+  logs: string[]
+): void {
+  const maxDebugCount = 10;
+  containerNodes.forEach((node, idx) => {
+    const { item, itemDebug } = processSingleXPathNode(node, selector, xpathModule, idx);
 
-  const nodes = xpathModule.select(field.selector, containerNode);
-  const el = Array.isArray(nodes) && nodes.length > 0 ? nodes[0] : null;
-  if (!el) return "";
+    if (item) {
+      items.push(item);
+    }
 
-  const value = extractNodeValue(el, field);
-  return applyRegex(value, field);
+    if (debug && idx < maxDebugCount) {
+      debugItems.push(itemDebug);
+      addLog(logs, `XPath 容器 #${idx + 1}: ${itemDebug.passed ? "成功解析" : `跳过 (${itemDebug.reason})`}`);
+    }
+  });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractNodeValue(el: any, field: SelectorField): string {
-  if (el.nodeType === 2) {
-    return el.nodeValue ?? "";
+function processSingleXPathNode(
+  containerNode: unknown,
+  selector: WebsiteRssSelector,
+  xpathModule: XPathModule,
+  index: number
+): { item: FeedItem | null; itemDebug: ScrapeItemDebug } {
+  const fieldsDebug: ScrapeFieldDebug[] = [];
+  const { value: title, debug: titleDebug } = extractFieldXPathDebug(containerNode, selector.title, "title", xpathModule);
+  fieldsDebug.push(titleDebug);
+
+  const { value: link, debug: linkDebug } = extractFieldXPathDebug(containerNode, selector.link, "link", xpathModule);
+  fieldsDebug.push(linkDebug);
+
+  const { value: content, debug: contentDebug } = extractFieldXPathDebug(containerNode, selector.content, "content", xpathModule);
+  fieldsDebug.push(contentDebug);
+
+  const { value: author, debug: authorDebug } = extractFieldXPathDebug(containerNode, selector.author, "author", xpathModule);
+  fieldsDebug.push(authorDebug);
+
+  const { value: date, debug: dateDebug } = extractFieldXPathDebug(containerNode, selector.date, "date", xpathModule);
+  fieldsDebug.push(dateDebug);
+
+  const containerHtmlSnippet = getXPathNodeSnippet(containerNode);
+  const passed = !!title;
+  const reason = passed ? undefined : "标题 (Title) XPath 提取结果为空";
+
+  const item: FeedItem | null = passed
+    ? { title, link: link || "", content: content || undefined, author: author || undefined, pubDate: date || undefined }
+    : null;
+
+  return {
+    item,
+    itemDebug: { index, containerHtmlSnippet, fields: fieldsDebug, passed, reason },
+  };
+}
+
+function getXPathNodeSnippet(node: unknown): string {
+  try {
+    const outerHtml = node ? String(node) : "";
+    return outerHtml.length > 300 ? outerHtml.slice(0, 300) + "..." : outerHtml;
+  } catch {
+    return "[无法获取 XPath 节点片段]";
   }
-  if (el.nodeType === 1) {
+}
+
+function extractFieldXPathDebug(
+  containerNode: unknown,
+  field: SelectorField | undefined,
+  fieldName: string,
+  xpathModule: XPathModule
+): ExtractFieldResult {
+  const selector = field?.selector ?? "";
+  const extractType = field?.extractType ?? "text";
+  const debug: ScrapeFieldDebug = {
+    name: fieldName,
+    selector,
+    extractType,
+    matched: false,
+    rawValue: "",
+    finalValue: "",
+  };
+
+  if (!field || !selector.trim()) {
+    return { value: "", debug };
+  }
+
+  const nodes = xpathModule.select(selector, containerNode);
+  const el = Array.isArray(nodes) && nodes.length > 0 ? nodes[0] : null;
+  if (!el) {
+    debug.error = `未找到匹配 XPath "${selector}" 的子元素`;
+    return { value: "", debug };
+  }
+
+  debug.matched = true;
+  const rawValue = extractNodeValue(el, field);
+  debug.rawValue = rawValue;
+
+  const finalValue = applyRegex(rawValue, field);
+  debug.finalValue = finalValue;
+
+  return { value: finalValue, debug };
+}
+
+function extractNodeValue(el: unknown, field: SelectorField): string {
+  const node = el as { nodeType: number; nodeValue?: string; textContent?: string; getAttribute?: (name: string) => string | null };
+  if (node.nodeType === 2) {
+    return node.nodeValue ?? "";
+  }
+  if (node.nodeType === 1) {
     if (field.extractType === "attr") {
-      return el.getAttribute(field.attrName ?? "") ?? "";
+      return node.getAttribute ? (node.getAttribute(field.attrName ?? "") ?? "") : "";
     }
     if (field.extractType === "html") {
-      return el.toString() ?? "";
+      return String(node);
     }
   }
-  return el.textContent?.trim() ?? el.nodeValue?.trim() ?? "";
+  return node.textContent?.trim() ?? node.nodeValue?.trim() ?? "";
 }

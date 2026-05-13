@@ -105,7 +105,7 @@ router.post("/debug-ad-hoc", async (c) => {
       }
     }
 
-    const result = await scrapeWebsite({ url: body.url, selector: body.selector, authHeaders });
+    const result = await scrapeWebsite({ url: body.url, selector: body.selector, authHeaders, debug: true });
     return c.json({ ...result, success: !result.error, url: body.url, selectorType: body.selector.selectorType });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "调试出错" }, 500);
@@ -117,7 +117,7 @@ router.post("/:id/debug", async (c) => {
   if (!row) return c.json({ error: "配置不存在" }, 404);
 
   const authHeaders = await resolveAuthHeaders(row);
-  const result = await scrapeWebsite({ url: row.url, selector: row.selector, authHeaders });
+  const result = await scrapeWebsite({ url: row.url, selector: row.selector, authHeaders, debug: true });
   return c.json({ ...result, success: !result.error, url: row.url, selectorType: row.selector.selectorType });
 });
 

@@ -135,3 +135,39 @@ export interface ScriptResult {
   logs?: Array<{ level: string; message: string }>;
   executionTime: number;
 }
+
+// ─── 抓取调试诊断信息 ────────────────────────────────────────────────────────
+
+export interface ScrapeFieldDebug {
+  name: string;
+  selector: string;
+  extractType: string;
+  matched: boolean;
+  rawValue: string;
+  finalValue: string;
+  error?: string;
+}
+
+export interface ScrapeItemDebug {
+  index: number;
+  containerHtmlSnippet: string;
+  fields: ScrapeFieldDebug[];
+  passed: boolean;
+  reason?: string;
+}
+
+export interface ScrapeDebugInfo {
+  htmlLength: number;
+  containerCount: number;
+  selectorType: "css" | "xpath";
+  items: ScrapeItemDebug[];
+  logs: string[];
+}
+
+export interface ScrapeResult {
+  items: FeedItem[];
+  error?: string;
+  executionTime: number;
+  debug?: ScrapeDebugInfo;
+}
+
