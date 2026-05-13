@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nowen Note</string>
+    <string name="title_activity_main">Nowen Note</string>
+    <string name="package_name">com.nowen.note</string>
+    <string name="custom_url_scheme">com.nowen.note</string>
+</resources>

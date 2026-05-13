@@ -1,0 +1,16 @@
+{
+  "projectName": "node-template",
+  "admin": {
+    "username": "admin",
+    "email": "admin@nowen-note.local",
+    "password": "admin123"
+  },
+  "server": {
+    "port": 3001
+  },
+  "ai": {
+    "provider": "openai",
+    "apiUrl": "https://api.openai.com/v1",
+    "model": "gpt-4o-mini"
+  }
+}

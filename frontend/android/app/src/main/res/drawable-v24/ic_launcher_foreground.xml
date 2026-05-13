@@ -1,0 +1,60 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportHeight="108"
+    android:viewportWidth="108">
+
+    <!-- 笔记纸 - 带折角的圆角矩形（白色纸面） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,26 L66,26 L80,40 L80,82 C80,83.66 78.66,85 77,85 L28,85 C26.34,85 25,83.66 25,82 L25,29 C25,27.34 26.34,26 28,26 Z" />
+
+    <!-- 纸张折角阴影 -->
+    <path
+        android:fillColor="#C8D6E5"
+        android:pathData="M66,26 L66,40 L80,40 Z" />
+
+    <!-- 品牌蓝色标记笔效果 - 在左侧做一条竖向色带 -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M25,26 L30,26 L30,85 L25,85 Z" />
+
+    <!-- 笔记横线 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M35,48 L72,48"
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="1.5" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M35,55 L72,55"
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="1.5" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M35,62 L72,62"
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="1.5" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M35,69 L60,69"
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="1.5" />
+
+    <!-- 大写字母 N - Nowen品牌标识 -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M40,78 L40,44 L44.5,44 L62,72 L62,44 L66.5,44 L66.5,78 L62,78 L44.5,50 L44.5,78 Z" />
+
+    <!-- 右下角小铅笔装饰 - 倾斜45度 -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M72,66 L78,60 L84,66 L78,72 Z" />
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M78,72 L75,75 L81,75 Z" />
+    <!-- 铅笔笔尖 -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M75,75 L78,78 L81,75 Z" />
+</vector>

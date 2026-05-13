@@ -1,0 +1,22 @@
+# EditorConfig 帮助独立开发者在不同的编辑器和 IDE 之间维护一致的代码风格。
+# 详情参见: https://editorconfig.org
+
+root = true
+
+# 默认适用于所有文件
+[*]
+charset = utf-8                  # 统一使用 UTF-8 编码
+end_of_line = lf                 # 统一使用 Unix 换行符 (LF)，避免跨平台协作时的换行符冲突
+insert_final_newline = true      # 在文件末尾自动插入一个空行（符合 POSIX 标准，防止 git diff 杂乱）
+trim_trailing_whitespace = true  # 自动去除行尾多余的空格，保持代码整洁
+indent_style = space             # 默认使用空格缩进
+indent_size = 2                  # 现代前端/Node.js 项目标准使用 2 空格缩进，适合单屏幕阅读，嵌套时代码更紧凑
+
+# 针对 Markdown 文件的特殊设置
+[*.{md,markdown}]
+trim_trailing_whitespace = false # Markdown 中行尾的双空格表示换行，因此不自动去除行尾空格
+
+# 针对 Makefile 文件的特殊设置
+[Makefile]
+indent_style = tab               # Makefile 语法硬性规定必须使用 Tab 缩进
+indent_size = 4

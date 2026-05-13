@@ -1,4 +1,9 @@
 packages:
-  - 'frontend'
   - 'backend'
-  - 'shared'
+  - 'frontend'
+allowBuilds:
+  better-sqlite3: true
+  electron: true
+  esbuild: true
+  isolated-vm: true
+  sharp: true

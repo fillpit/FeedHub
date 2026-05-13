@@ -1,99 +1,58 @@
-# 多阶段构建 Dockerfile
-FROM node:20-alpine AS base
-
-# 设置工作目录
-WORKDIR /app
-
-# 复制 package 文件和 lock 文件
-COPY package*.json ./
-COPY pnpm-workspace.yaml ./
-COPY pnpm-lock.yaml ./
-COPY frontend/package*.json ./frontend/
-COPY backend/package*.json ./backend/
-COPY shared/package*.json ./shared/
-
-# 复制 TypeScript 配置文件
-COPY frontend/tsconfig*.json ./frontend/
-COPY backend/tsconfig*.json ./backend/
-COPY shared/tsconfig*.json ./shared/
-
-# 安装 pnpm
-RUN npm install -g pnpm
-
-# 安装依赖
+# Stage 1: Build frontend
+FROM node:24-slim AS frontend-build
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN pnpm install
+COPY frontend/ .
+RUN pnpm run build
 
-# 构建共享代码库
-FROM base AS shared-builder
-WORKDIR /app
-COPY shared ./shared
-RUN cd shared && pnpm run build
-
-# 构建前端
-FROM base AS frontend-builder
-WORKDIR /app
-COPY . .
-# 复制已构建的共享代码库
-COPY --from=shared-builder /app/shared/dist ./shared/dist
-RUN pnpm run build:frontend
-
-# 构建后端
-FROM base AS backend-builder
-WORKDIR /app
-COPY . .
-# 复制已构建的共享代码库
-COPY --from=shared-builder /app/shared/dist ./shared/dist
-RUN pnpm run build:backend
-
-# 生产镜像
-FROM node:20-alpine AS production
-
-# 设置时区环境变量（默认为 Asia/Shanghai）
-ENV TZ=Asia/Shanghai
-
-# 安装 nginx、git 和 tzdata（时区数据包）
-RUN apk add --no-cache nginx git tzdata
-
-# 创建应用目录
-WORKDIR /app
-
-# 从构建阶段复制构建产物
-COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
-COPY --from=backend-builder /app/backend/dist ./backend/dist
-COPY --from=backend-builder /app/backend/package*.json ./backend/
-COPY --from=shared-builder /app/shared/dist ./shared/dist
-COPY --from=shared-builder /app/shared/package*.json ./shared/
-
-# 在生产镜像中重新安装后端依赖（只安装生产依赖）
+# Stage 2: Build backend
+FROM node:24-slim AS backend-build
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 WORKDIR /app/backend
-RUN npm install --only=production
+# 安装原生模块编译工具链（better-sqlite3 需要）
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+COPY backend/package.json backend/pnpm-lock.yaml ./
+RUN pnpm install
+COPY backend/ .
+RUN pnpm run build
+# 清理开发依赖，仅保留生产依赖
+RUN pnpm prune --prod
 
-# 安装shared模块的生产依赖
-WORKDIR /app/shared
-RUN npm install --only=production
-
-# 回到应用根目录
+# Stage 3: Production
+FROM node:24-slim
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 WORKDIR /app
 
-# 复制 nginx 配置
-COPY nginx.conf /etc/nginx/nginx.conf
+# 安装运行时的原生依赖所需的最小工具（better-sqlite3 可能在运行时需要部分库，
+# 虽然通常编译好的二进制文件可以运行，但为了保险安装一下）
+RUN apt-get update && apt-get install -y python3 curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# 创建启动脚本
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo '# 设置时区' >> /app/start.sh && \
-    echo 'if [ -n "$TZ" ]; then' >> /app/start.sh && \
-    echo '  ln -snf /usr/share/zoneinfo/$TZ /etc/localtime' >> /app/start.sh && \
-    echo '  echo $TZ > /etc/timezone' >> /app/start.sh && \
-    echo '  echo "时区已设置为: $TZ"' >> /app/start.sh && \
-    echo 'fi' >> /app/start.sh && \
-    echo '# 启动后端服务' >> /app/start.sh && \
-    echo 'cd /app/backend && node dist/backend/src/app.js &' >> /app/start.sh && \
-    echo '# 启动 nginx' >> /app/start.sh && \
-    echo 'nginx -g "daemon off;"' >> /app/start.sh && \
-    chmod +x /app/start.sh
+# 复制后端产物和生产依赖
+COPY --from=backend-build /app/backend/dist ./backend/dist
+COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
+COPY --from=backend-build /app/backend/package.json ./backend/package.json
+COPY backend/templates ./backend/templates
 
-# 暴露端口
-EXPOSE 8008
+# 复制前端产物
+COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-# 设置启动命令
-CMD ["/app/start.sh"]
+RUN mkdir -p /app/data
+
+ENV NODE_ENV=production
+ENV DB_PATH=/app/data/nowen-note.db
+ENV FRONTEND_DIST=/app/frontend/dist
+ENV PORT=3001
+
+EXPOSE 3001
+
+# 运行从 /app 目录启动，这样相对路径能正确对应
+CMD ["node", "backend/dist/index.js"]

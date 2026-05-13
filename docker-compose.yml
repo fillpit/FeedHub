@@ -1,48 +1,22 @@
 services:
-  # Chrome 浏览器服务容器
-  chrome:
+  nodejs-template:
     build:
-      context: ./chrome-service
+      context: .
       dockerfile: Dockerfile
-    # 也可以使用现成的镜像：
-    # image: browserless/chrome:latest
-    ports:
-      - "9222:9222"
-    environment:
-      - CONNECTION_TIMEOUT=60000
-      - MAX_CONCURRENT_SESSIONS=10
+    image: nodejs-template:latest
+    container_name: nodejs-template
     restart: unless-stopped
-    shm_size: 2gb
-    cap_add:
-      - SYS_ADMIN
-    security_opt:
-      - seccomp:unconfined
-
-  # 主应用服务
-  feedhub:
-    image: fillpit/feedhub:latest
     ports:
-      - "8008:8008"
+      - "3001:3001"
+    volumes:
+      - nodejs-template-data:/app/data
     environment:
       - NODE_ENV=production
-      - PORT=8009
-      - JWT_SECRET=eZjgR0bYm7uEv7uL7tfRMqtaj3lh95OE
-      - BASIC_AUTH_USERNAME=admin
-      - BASIC_AUTH_PASSWORD=admin@123
-      - API_BASE_URL=http://localhost:8008
-      - CHROME_SERVICE_URL=http://chrome:9222
-      # 时区设置（可选，默认为 Asia/Shanghai）
-      - TZ=Asia/Shanghai
-    depends_on:
-      - chrome
-    volumes:
-      # 可选：挂载数据目录以持久化数据
-      - ./data:/app/backend/data
-      - ./logs:/app/backend/logs
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://0.0.0.0:8008"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - DB_PATH=/app/data/data.db
+      - PORT=3001
+      # Ollama 地址，如需使用请自行部署 Ollama 并填写正确地址
+      # - OLLAMA_URL=http://host.docker.internal:11434
+
+volumes:
+  node-template-data:
+    driver: local
