@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import type { AnyNode } from "domhandler";
 import { FeedItem, WebsiteRssSelector, SelectorField, ScrapeResult, ScrapeDebugInfo, ScrapeItemDebug, ScrapeFieldDebug } from "../types/feed";
 
 /**
@@ -160,7 +161,7 @@ function parseWithCheerio(
 
 function processCheerioNodes(
   $: cheerio.CheerioAPI,
-  containerNodes: cheerio.Cheerio<cheerio.AnyNode>,
+  containerNodes: cheerio.Cheerio<AnyNode>,
   selector: WebsiteRssSelector,
   items: FeedItem[],
   debugItems: ScrapeItemDebug[],
@@ -168,7 +169,7 @@ function processCheerioNodes(
   logs: string[]
 ): void {
   const maxDebugCount = 10;
-  containerNodes.each((idx: number, el: cheerio.AnyNode) => {
+  containerNodes.each((idx: number, el: AnyNode) => {
     const container = $(el);
     const { item, itemDebug } = processSingleCheerioNode(container, selector, idx);
 
@@ -184,7 +185,7 @@ function processCheerioNodes(
 }
 
 function processSingleCheerioNode(
-  container: cheerio.Cheerio<cheerio.AnyNode>,
+  container: cheerio.Cheerio<AnyNode>,
   selector: WebsiteRssSelector,
   index: number
 ): { item: FeedItem | null; itemDebug: ScrapeItemDebug } {
@@ -218,7 +219,7 @@ function processSingleCheerioNode(
   };
 }
 
-function getContainerHtmlSnippet(container: cheerio.Cheerio<cheerio.AnyNode>): string {
+function getContainerHtmlSnippet(container: cheerio.Cheerio<AnyNode>): string {
   try {
     const outerHtml = container.toString() || "";
     return outerHtml.length > 300 ? outerHtml.slice(0, 300) + "..." : outerHtml;
@@ -228,7 +229,7 @@ function getContainerHtmlSnippet(container: cheerio.Cheerio<cheerio.AnyNode>): s
 }
 
 function extractFieldDebug(
-  container: cheerio.Cheerio<cheerio.AnyNode>,
+  container: cheerio.Cheerio<AnyNode>,
   field: SelectorField | undefined,
   fieldName: string
 ): ExtractFieldResult {
@@ -267,7 +268,7 @@ function extractFieldDebug(
   return { value: finalValue, debug };
 }
 
-function getElementRawValue(el: cheerio.Cheerio<cheerio.AnyNode>, field: SelectorField): string {
+function getElementRawValue(el: cheerio.Cheerio<AnyNode>, field: SelectorField): string {
   if (field.extractType === "attr") {
     return el.attr(field.attrName ?? "") ?? "";
   }

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, RefreshCw, Plus, Trash2, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { X, Save, RefreshCw, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { WebsiteRssConfig, WebsiteRssCreate, WebsiteRssSelector, SelectorField, AuthCredential } from "@/types/feed";
 import { websiteRssApi, authCredentialApi } from "@/lib/feed-api";
-import { AnimatePresence } from "framer-motion";
 import SelectorDebugger from "./SelectorDebugger";
 
 interface Props {
@@ -86,8 +85,8 @@ export default function WebsiteRssForm({ config, onClose, onSave }: Props) {
       const data: WebsiteRssCreate = { key, title, url, selector, renderMode: "static", fetchInterval, rssDescription, authCredentialId, favicon };
       if (isNew) {
         await websiteRssApi.create(data);
-      } else {
-        await websiteRssApi.update(config!.id, data);
+      } else if (config) {
+        await websiteRssApi.update(config.id, data);
       }
       onSave();
     } catch (e) {

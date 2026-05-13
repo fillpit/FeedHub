@@ -15,6 +15,7 @@ export default tseslint.config(
       '**/generated/**',    // 忽略所有自动生成的代码目录（如 Prisma Client 及其运行时代码）
       '**/scratch/**',      // 忽略临时草稿/调试脚本目录
       'scripts/**',
+      '**/data/scripts/**', // 忽略抓取或用户编写的后台动态脚本
     ] 
   },
   

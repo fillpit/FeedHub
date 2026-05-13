@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
 import { BookOpen, Copy, Check, Info, Code, ShieldCheck, HelpCircle } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import FetchGuide from "./FetchGuide";
 

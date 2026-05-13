@@ -1,4 +1,4 @@
-import { FeedOutput, ScriptContext, ScriptResult, FeedItem } from "../types/feed";
+import { ScriptContext, ScriptResult, FeedItem } from "../types/feed";
 import vm from "node:vm";
 import path from "node:path";
 import fs from "node:fs";

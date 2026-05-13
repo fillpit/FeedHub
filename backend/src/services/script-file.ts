@@ -63,7 +63,7 @@ export function deleteScriptFile(folder: string, filePath: string): void {
 /** 创建脚本目录并返回目录名 */
 export function createScriptDirectory(routeName: string): string {
   ensureScriptsDir();
-  const sanitized = routeName.replace(/[^a-zA-Z0-9_\-]/g, "_").toLowerCase();
+  const sanitized = routeName.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
   const timestamp = Date.now();
   const folderName = `${sanitized}_${timestamp}`;
   const fullPath = path.join(SCRIPTS_BASE_DIR, folderName);

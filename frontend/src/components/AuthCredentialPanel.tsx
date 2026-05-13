@@ -169,7 +169,7 @@ function CredentialForm({ credential, onClose, onSave }: {
     try {
       const data: AuthCredentialCreate = { name, authType, credential: cred };
       if (isNew) await authCredentialApi.create(data);
-      else await authCredentialApi.update(credential!.id, data as AuthCredentialUpdate);
+      else if (credential) await authCredentialApi.update(credential.id, data as AuthCredentialUpdate);
       onSave();
     } catch (e) {
       alert(e instanceof Error ? e.message : "保存失败");

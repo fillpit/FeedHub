@@ -60,7 +60,6 @@ export async function getCacheService(): Promise<CacheService> {
   const redisUrl = process.env.REDIS_URL;
   if (redisUrl) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const redisModule = require("redis") as RedisModule;
       const client = redisModule.createClient({ url: redisUrl });
       await client.connect();

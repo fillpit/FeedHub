@@ -10,7 +10,11 @@
     "declaration": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "domhandler": ["../node_modules/.pnpm/domhandler@5.0.3/node_modules/domhandler"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

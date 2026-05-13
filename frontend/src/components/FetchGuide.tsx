@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { HelpCircle, Copy, Check, Terminal, Globe, Send, HelpCircle as HelpIcon } from "lucide-react";
+import { HelpCircle, Copy, Check, Terminal, Globe, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function FetchGuide() {
