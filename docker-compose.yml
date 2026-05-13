@@ -1,22 +1,19 @@
 services:
-  nodejs-template:
+  feed-hub:
     build:
       context: .
       dockerfile: Dockerfile
-    image: nodejs-template:latest
-    container_name: nodejs-template
+    image: feed-hub:latest
+    container_name: feed-hub
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "${WEB_PORT:-3001}:3001"
     volumes:
       - nodejs-template-data:/app/data
     environment:
       - NODE_ENV=production
-      - DB_PATH=/app/data/data.db
+      - DB_PATH=${DB_PATH:-/app/data/data.db}
       - PORT=3001
-      # Ollama 地址，如需使用请自行部署 Ollama 并填写正确地址
-      # - OLLAMA_URL=http://host.docker.internal:11434
-
 volumes:
-  node-template-data:
+  feed-hub-data:
     driver: local
