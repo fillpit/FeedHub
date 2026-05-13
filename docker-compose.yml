@@ -9,7 +9,7 @@ services:
     ports:
       - "${WEB_PORT:-3001}:3001"
     volumes:
-      - nodejs-template-data:/app/data
+      - feed-hub-data:/app/data
     environment:
       - NODE_ENV=production
       - DB_PATH=${DB_PATH:-/app/data/data.db}
