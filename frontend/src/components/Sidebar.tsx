@@ -27,10 +27,9 @@ export default function Sidebar() {
   ];
 
   const feedNavItems: { icon: React.ReactNode; label: string; mode: ViewMode; active: boolean }[] = [
-    { icon: <Rss size={16} />, label: "动态路由", mode: "feed-routes", active: state.viewMode === "feed-routes" },
     { icon: <Globe size={16} />, label: "网页监控", mode: "feed-websites", active: state.viewMode === "feed-websites" },
+    { icon: <Rss size={16} />, label: "动态路由", mode: "feed-routes", active: state.viewMode === "feed-routes" },
     { icon: <KeyRound size={16} />, label: "授权凭证", mode: "feed-credentials", active: state.viewMode === "feed-credentials" },
-    { icon: <Settings size={16} />, label: "全局设置", mode: "feed-settings", active: state.viewMode === "feed-settings" },
   ];
   const navItems = rawNavItems;
 

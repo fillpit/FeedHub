@@ -11,7 +11,6 @@ import LoginPage from "@/components/LoginPage";
 import DynamicRoutePanel from "@/components/DynamicRoutePanel";
 import WebsiteRssPanel from "@/components/WebsiteRssPanel";
 import AuthCredentialPanel from "@/components/AuthCredentialPanel";
-import FeedSettingsPanel from "@/components/FeedSettingsPanel";
 import { AppProvider, useApp, useAppActions, MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH, DEFAULT_SIDEBAR_WIDTH } from "@/store/AppContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SiteSettingsProvider, useSiteSettings } from "@/hooks/useSiteSettings";
@@ -210,8 +209,6 @@ function AppLayout({ user }: { user: User }) {
             <WebsiteRssPanel />
           ) : state.viewMode === "feed-credentials" ? (
             <AuthCredentialPanel />
-          ) : state.viewMode === "feed-settings" ? (
-            <FeedSettingsPanel />
           ) : (
             <Dashboard />
           )}
