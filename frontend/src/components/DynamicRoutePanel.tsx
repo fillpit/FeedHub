@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Rss, Plus, Trash2, Edit2, Play, Copy, Check, RefreshCw, Code } from "lucide-react";
+import { Rss, Plus, Trash2, Edit2, Copy, Check, RefreshCw, Code } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { DynamicRoute } from "@/types/feed";
 import { dynamicRouteApi, getDynamicFeedUrl } from "@/lib/feed-api";
 import { cn } from "@/lib/utils";
 import DynamicRouteForm from "./DynamicRouteForm";
+import DynamicRouteScriptDialog from "./DynamicRouteScriptDialog";
 
 export default function DynamicRoutePanel() {
   const [routes, setRoutes] = useState<DynamicRoute[]>([]);
@@ -15,6 +16,9 @@ export default function DynamicRoutePanel() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<DynamicRoute | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const [scriptDialogOpen, setScriptDialogOpen] = useState(false);
+  const [scriptRoute, setScriptRoute] = useState<DynamicRoute | null>(null);
 
   const loadRoutes = useCallback(async () => {
     setIsLoading(true);
@@ -29,7 +33,9 @@ export default function DynamicRoutePanel() {
     }
   }, []);
 
-  useEffect(() => { loadRoutes(); }, [loadRoutes]);
+  useEffect(() => {
+    loadRoutes();
+  }, [loadRoutes]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("确认删除此路由？此操作不可恢复。")) return;
@@ -49,9 +55,14 @@ export default function DynamicRoutePanel() {
     });
   };
 
-  const handleEdit = (route: DynamicRoute) => {
+  const handleEditConfig = (route: DynamicRoute) => {
     setEditingRoute(route);
     setFormOpen(true);
+  };
+
+  const handleEditScript = (route: DynamicRoute) => {
+    setScriptRoute(route);
+    setScriptDialogOpen(true);
   };
 
   const handleNew = () => {
@@ -59,9 +70,14 @@ export default function DynamicRoutePanel() {
     setFormOpen(true);
   };
 
-  const handleFormSave = () => {
+  const handleFormSave = (savedRoute: DynamicRoute) => {
     setFormOpen(false);
     loadRoutes();
+    if (!editingRoute) {
+      // If it is a newly created route, automatically open the side-by-side script editor dialog!
+      setScriptRoute(savedRoute);
+      setScriptDialogOpen(true);
+    }
   };
 
   return (
@@ -110,7 +126,8 @@ export default function DynamicRoutePanel() {
                   key={route.id}
                   route={route}
                   isCopied={copiedId === route.id}
-                  onEdit={handleEdit}
+                  onEditConfig={handleEditConfig}
+                  onEditScript={handleEditScript}
                   onDelete={handleDelete}
                   onCopyUrl={handleCopyUrl}
                 />
@@ -130,6 +147,20 @@ export default function DynamicRoutePanel() {
           />
         )}
       </AnimatePresence>
+
+      {/* Script Editor Dialog */}
+      <AnimatePresence>
+        {scriptDialogOpen && scriptRoute && (
+          <DynamicRouteScriptDialog
+            route={scriptRoute}
+            onClose={() => {
+              setScriptDialogOpen(false);
+              loadRoutes();
+            }}
+            onSave={loadRoutes}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -137,12 +168,13 @@ export default function DynamicRoutePanel() {
 interface RouteCardProps {
   route: DynamicRoute;
   isCopied: boolean;
-  onEdit: (route: DynamicRoute) => void;
+  onEditConfig: (route: DynamicRoute) => void;
+  onEditScript: (route: DynamicRoute) => void;
   onDelete: (id: number) => void;
   onCopyUrl: (route: DynamicRoute) => void;
 }
 
-function RouteCard({ route, isCopied, onEdit, onDelete, onCopyUrl }: RouteCardProps) {
+function RouteCard({ route, isCopied, onEditConfig, onEditScript, onDelete, onCopyUrl }: RouteCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -187,8 +219,8 @@ function RouteCard({ route, isCopied, onEdit, onDelete, onCopyUrl }: RouteCardPr
             variant="ghost"
             size="icon"
             className="w-7 h-7 text-tx-tertiary hover:text-tx-primary"
-            onClick={() => onEdit(route)}
-            title="编辑路由"
+            onClick={() => onEditScript(route)}
+            title="编辑脚本"
           >
             <Code size={13} />
           </Button>
@@ -196,7 +228,7 @@ function RouteCard({ route, isCopied, onEdit, onDelete, onCopyUrl }: RouteCardPr
             variant="ghost"
             size="icon"
             className="w-7 h-7 text-tx-tertiary hover:text-accent-primary"
-            onClick={() => onEdit(route)}
+            onClick={() => onEditConfig(route)}
             title="编辑配置"
           >
             <Edit2 size={13} />

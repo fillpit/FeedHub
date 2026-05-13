@@ -2,6 +2,7 @@ import { FeedOutput, ScriptContext, ScriptResult, FeedItem } from "../types/feed
 import vm from "node:vm";
 import path from "node:path";
 import fs from "node:fs";
+import util from "node:util";
 
 const SCRIPTS_BASE_DIR = process.env.SCRIPTS_DIR
   || path.join(process.env.ELECTRON_USER_DATA || process.cwd(), "data", "scripts");
@@ -70,7 +71,18 @@ function buildSandbox(
   scriptDir: string,
 ): Record<string, unknown> {
   const makeLogger = (level: string) =>
-    (...args: unknown[]) => logs.push({ level, message: args.map(String).join(" ") });
+    (...args: unknown[]) => {
+      const message = args
+        .map((arg) => {
+          if (typeof arg === "object" && arg !== null) {
+            // 使用 Node.js 内置的 util.inspect 进行深层展开，完美支持循环引用、各种自定义对象及格式化折行
+            return util.inspect(arg, { depth: 4, colors: false, compact: true, breakLength: 100 });
+          }
+          return String(arg);
+        })
+        .join(" ");
+      logs.push({ level, message });
+    };
 
   return {
     console: { log: makeLogger("info"), warn: makeLogger("warn"), error: makeLogger("error") },
@@ -106,7 +118,9 @@ async function executeWithTimeout(
   timeoutMs: number,
 ): Promise<unknown> {
   const ctx = vm.createContext(sandbox);
-  const script = new vm.Script(code, { filename: "main.js" });
+  // 将用户代码包裹在异步自执行函数里：原生解锁顶层 await 和顶层 return 语句的使用
+  const wrappedCode = `(async () => {\n${code}\n})()`;
+  const script = new vm.Script(wrappedCode, { filename: "main.js" });
   const result = script.runInContext(ctx, { timeout: timeoutMs });
   return await Promise.resolve(result);
 }
