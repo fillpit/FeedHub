@@ -247,7 +247,11 @@ function extractFieldDebug(
     return { value: "", debug };
   }
 
-  const el = container.find(selector).first();
+  const trimmedSelector = selector.trim();
+  const el = (trimmedSelector === "." || trimmedSelector === ":self")
+    ? container
+    : container.find(trimmedSelector).first();
+
   if (!el.length) {
     debug.error = `未找到匹配选择器 "${selector}" 的子元素`;
     return { value: "", debug };

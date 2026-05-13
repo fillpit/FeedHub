@@ -21,6 +21,7 @@ const defaultSelector = (): WebsiteRssSelector => ({
   title: { selector: "", extractType: "text" },
   content: { selector: "", extractType: "html" },
   link: { selector: "a", extractType: "attr", attrName: "href" },
+  date: { selector: "", extractType: "text" },
 });
 
 export default function SelectorDebugger({ initialUrl, initialSelector, initialAuthId, onApply, onClose }: Props) {
@@ -110,7 +111,7 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
   return (
     <div className="flex-1 flex h-full overflow-hidden bg-app-bg text-tx-primary">
       {/* Configuration Side */}
-      <div className="w-[320px] border-r border-app-border flex flex-col h-full bg-app-surface/40">
+      <div className="w-[320px] min-w-[320px] shrink-0 border-r border-app-border flex flex-col h-full bg-app-surface/40">
         <div className="p-4 border-b border-app-border bg-app-surface/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Globe size={14} className="text-accent-primary animate-pulse" />
@@ -206,9 +207,18 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
               placeholder={selector.selectorType === "xpath" ? "例: ./a/@href" : "例: a, .title-link"}
             />
 
+            {/* Date Selector */}
+            <SelectorFieldEditor
+              title="4. 发布时间 (Date) (可选)"
+              field={selector.date ?? { selector: "", extractType: "text" }}
+              selectorType={selector.selectorType || "css"}
+              onChange={(updates) => updateSelectorField("date", updates)}
+              placeholder={selector.selectorType === "xpath" ? "例: ./span[@class='date']" : "例: .date, .pub-time"}
+            />
+
             {/* Content Selector */}
             <SelectorFieldEditor
-              title="4. 内容 (Content)"
+              title="5. 内容 (Content)"
               field={selector.content}
               selectorType={selector.selectorType || "css"}
               onChange={(updates) => updateSelectorField("content", updates)}
@@ -244,7 +254,7 @@ export default function SelectorDebugger({ initialUrl, initialSelector, initialA
       </div>
 
       {/* Preview Side */}
-      <div className="flex-1 flex flex-col h-full bg-app-bg">
+      <div className="flex-1 min-w-0 flex flex-col h-full bg-app-bg">
         <div className="p-4 border-b border-app-border bg-app-surface/30 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-1.5">
             <button
@@ -369,10 +379,23 @@ interface FieldEditorProps {
 }
 
 function SelectorFieldEditor({ title, field, selectorType, placeholder, onChange }: FieldEditorProps) {
+  const [showRegex, setShowRegex] = useState(!!field.regexPattern);
+
   return (
     <div className="p-2.5 rounded-lg border border-app-border bg-app-bg/60 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold text-tx-secondary">{title}</span>
+        <button
+          type="button"
+          onClick={() => setShowRegex(!showRegex)}
+          className={`text-[9px] px-1 py-0.5 rounded border transition-colors ${
+            showRegex
+              ? "bg-accent-primary/10 text-accent-primary border-accent-primary/20"
+              : "text-tx-tertiary border-app-border hover:bg-app-hover"
+          }`}
+        >
+          {showRegex ? "收起正则" : "正则过滤"}
+        </button>
       </div>
       <div className="space-y-1.5">
         <div>
@@ -411,6 +434,42 @@ function SelectorFieldEditor({ title, field, selectorType, placeholder, onChange
             </div>
           )}
         </div>
+
+        {showRegex && (
+          <div className="space-y-1.5 border-t border-app-border/40 pt-1.5 mt-1">
+            <div>
+              <span className="text-[9px] text-tx-tertiary">正则匹配模式 (Pattern)</span>
+              <input
+                value={field.regexPattern ?? ""}
+                onChange={(e) => onChange({ regexPattern: e.target.value || undefined })}
+                placeholder="例: (\\d+)分钟前"
+                className="w-full px-2 py-0.5 text-xs font-mono rounded border border-app-border bg-app-surface text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <span className="text-[9px] text-tx-tertiary">修饰符</span>
+                <input
+                  value={field.regexFlags ?? ""}
+                  onChange={(e) => onChange({ regexFlags: e.target.value || undefined })}
+                  placeholder="g, i"
+                  className="w-full px-1.5 py-0.5 text-xs font-mono rounded border border-app-border bg-app-surface text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+              <div>
+                <span className="text-[9px] text-tx-tertiary">捕获组</span>
+                <input
+                  type="number"
+                  value={field.regexGroup ?? ""}
+                  onChange={(e) => onChange({ regexGroup: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="1"
+                  min={0}
+                  className="w-full px-1.5 py-0.5 text-xs rounded border border-app-border bg-app-surface text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -467,6 +526,12 @@ function PreviewItemCard({ item, index, isExpanded, onToggle }: PreviewItemCardP
                 <p className="text-xs text-tx-tertiary mt-0.5">—</p>
               )}
             </div>
+            {item.pubDate && (
+              <div>
+                <span className="text-[10px] text-tx-tertiary uppercase tracking-wider font-semibold">发布时间 (Date)</span>
+                <p className="text-xs text-tx-primary mt-0.5 font-mono">{item.pubDate}</p>
+              </div>
+            )}
             {item.content && (
               <div>
                 <span className="text-[10px] text-tx-tertiary uppercase tracking-wider font-semibold">提取内容 (Content)</span>

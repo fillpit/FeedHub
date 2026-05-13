@@ -5,6 +5,7 @@ import { scrapeWebsite, buildAuthHeaders } from "../services/html-scraper";
 import { buildRssXml, buildJsonFeed } from "../services/rss-builder";
 import { getCacheService, buildCacheKey } from "../services/cache";
 import { nanoid } from "../utils/nanoid";
+import { fetchSiteMeta } from "../services/site-meta";
 
 const router = new Hono();
 
@@ -28,7 +29,7 @@ router.post("/", async (c) => {
   if (!body.url) return c.json({ error: "网站 URL 不能为空" }, 400);
 
   const db = getDb();
-  const key = body.key ?? nanoid(8);
+  const key = body.key?.trim() || nanoid(8);
   const stmt = db.prepare(`
     INSERT INTO website_rss_configs
       (key, title, url, selector, renderMode, authCredentialId, fetchInterval, rssDescription, favicon)
@@ -88,6 +89,20 @@ router.delete("/:id", (c) => {
 });
 
 // ─── 调试选择器 ─────────────────────────────────────────────────────────────
+
+router.post("/fetch-meta", async (c) => {
+  try {
+    const { url } = await c.req.json<{ url: string }>();
+    if (!url) {
+      return c.json({ error: "URL 不能为空" }, 400);
+    }
+    const meta = await fetchSiteMeta(url);
+    return c.json({ success: true, data: meta });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "获取网站信息失败";
+    return c.json({ error: message }, 500);
+  }
+});
 
 router.post("/debug-ad-hoc", async (c) => {
   try {

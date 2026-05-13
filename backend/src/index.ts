@@ -95,6 +95,12 @@ app.get("/api/fonts/file/:id", (c) => {
 
 // JWT 鉴权中间件：保护所有 /api/* 路由（auth 和 health 已在上方注册，不受影响）
 app.use("/api/*", async (c, next) => {
+  const reqPath = c.req.path;
+  if (reqPath.startsWith("/api/dynamic/sub/") || reqPath.startsWith("/api/website/sub/")) {
+    await next();
+    return;
+  }
+
   const authHeader = c.req.header("Authorization");
 
   if (authHeader && authHeader.startsWith("Bearer ")) {

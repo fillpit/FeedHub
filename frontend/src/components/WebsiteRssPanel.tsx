@@ -147,13 +147,15 @@ function WebsiteCard({ config, isCopied, isRefreshing, onEdit, onDelete, onCopyU
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      className="group p-4 rounded-xl border border-app-border bg-app-surface hover:border-accent-primary/30 hover:shadow-sm transition-all"
+      className="group p-4 rounded-xl border border-app-border bg-app-surface hover:border-accent-primary/30 hover:shadow-sm transition-all overflow-hidden"
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 min-w-0">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            {config.favicon && <img src={config.favicon} className="w-4 h-4 rounded" alt="" />}
-            <span className="text-sm font-semibold text-tx-primary truncate">{config.title}</span>
+          <div className="flex items-center gap-2 mb-1 min-w-0">
+            {config.favicon && <img src={config.favicon} className="w-4 h-4 rounded shrink-0" alt="" />}
+            <span className="text-sm font-semibold text-tx-primary truncate flex-1 min-w-0" title={config.title}>
+              {config.title}
+            </span>
             <Badge variant="secondary" className="text-xs shrink-0">{config.renderMode}</Badge>
             {config.lastFetchStatus && (
               <span className={cn(

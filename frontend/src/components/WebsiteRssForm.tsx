@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, RefreshCw, Plus, Trash2 } from "lucide-react";
+import { X, Save, RefreshCw, Plus, Trash2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { WebsiteRssConfig, WebsiteRssCreate, WebsiteRssSelector, SelectorField, AuthCredential } from "@/types/feed";
@@ -33,6 +33,8 @@ export default function WebsiteRssForm({ config, onClose, onSave }: Props) {
   const [selector, setSelector] = useState<WebsiteRssSelector>(config?.selector ?? defaultSelector());
   const [credentials, setCredentials] = useState<AuthCredential[]>([]);
   const [debuggerOpen, setDebuggerOpen] = useState(false);
+  const [favicon, setFavicon] = useState(config?.favicon ?? "");
+  const [isFetchingMeta, setIsFetchingMeta] = useState(false);
 
   useEffect(() => {
     authCredentialApi.list()
@@ -45,8 +47,26 @@ export default function WebsiteRssForm({ config, onClose, onSave }: Props) {
       setTitle(config.title); setUrl(config.url); setKey(config.key);
       setRssDescription(config.rssDescription ?? ""); setFetchInterval(config.fetchInterval);
       setSelector(config.selector); setAuthCredentialId(config.authCredentialId);
+      setFavicon(config.favicon ?? "");
     }
   }, [config]);
+
+  const handleFetchMeta = async () => {
+    if (!url.trim()) return;
+    setIsFetchingMeta(true);
+    try {
+      const res = await websiteRssApi.fetchMeta(url);
+      if (res.success && res.data) {
+        if (res.data.title) setTitle(res.data.title);
+        if (res.data.description) setRssDescription(res.data.description);
+        if (res.data.favicon) setFavicon(res.data.favicon);
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "获取网站信息失败");
+    } finally {
+      setIsFetchingMeta(false);
+    }
+  };
 
   const updateSelector = (updates: Partial<WebsiteRssSelector>) => {
     setSelector((prev) => ({ ...prev, ...updates }));
@@ -63,7 +83,7 @@ export default function WebsiteRssForm({ config, onClose, onSave }: Props) {
     if (!title.trim() || !url.trim()) return;
     setIsSaving(true);
     try {
-      const data: WebsiteRssCreate = { key, title, url, selector, renderMode: "static", fetchInterval, rssDescription, authCredentialId };
+      const data: WebsiteRssCreate = { key, title, url, selector, renderMode: "static", fetchInterval, rssDescription, authCredentialId, favicon };
       if (isNew) {
         await websiteRssApi.create(data);
       } else {
@@ -97,9 +117,63 @@ export default function WebsiteRssForm({ config, onClose, onSave }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* 网站 URL */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <InputField label="网站 URL *" value={url} onChange={setUrl} placeholder="https://news.ycombinator.com" />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleFetchMeta}
+              disabled={isFetchingMeta || !url.trim()}
+              className="h-9 mb-[1px] text-xs border-app-border bg-app-bg hover:bg-app-surface"
+            >
+              {isFetchingMeta ? (
+                <RefreshCw size={13} className="animate-spin mr-1.5" />
+              ) : (
+                <Sparkles size={13} className="mr-1.5 text-accent-primary" />
+              )}
+              智能获取
+            </Button>
+          </div>
+
+          {/* 网站名称 */}
           <InputField label="网站名称 *" value={title} onChange={setTitle} placeholder="例：Hacker News" />
-          <InputField label="网站 URL *" value={url} onChange={setUrl} placeholder="https://news.ycombinator.com" />
-          <InputField label="Feed Key（唯一标识）" value={key} onChange={setKey} placeholder="留空自动生成" />
+
+          {/* 网站图标 URL */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-tx-secondary">网站图标 URL</label>
+              {favicon && (
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src={favicon}
+                    className="w-4 h-4 rounded object-contain border border-app-border"
+                    alt="Favicon"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFavicon("")}
+                    className="text-[10px] text-accent-danger hover:underline"
+                  >
+                    清除
+                  </button>
+                </div>
+              )}
+            </div>
+            <input
+              value={favicon}
+              onChange={(e) => setFavicon(e.target.value)}
+              placeholder="https://example.com/favicon.ico"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-app-border bg-app-bg text-tx-primary placeholder:text-tx-tertiary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            />
+          </div>
+
+
+          {/* Feed 描述 */}
           <InputField label="Feed 描述" value={rssDescription} onChange={setRssDescription} placeholder="该 Feed 的描述..." />
           <div className="grid grid-cols-2 gap-4">
             <NumberField label="刷新间隔（分钟）" value={fetchInterval} onChange={setFetchInterval} min={1} />
@@ -159,6 +233,11 @@ export default function WebsiteRssForm({ config, onClose, onSave }: Props) {
                 label="链接（可选）" field={selector.link ?? { selector: "a", extractType: "attr", attrName: "href" }}
                 selectorType={selector.selectorType || "css"}
                 onChange={(updates) => updateSelectorField("link", updates)}
+              />
+              <SelectorFieldEditor
+                label="发布时间（可选）" field={selector.date ?? { selector: "", extractType: "text" }}
+                selectorType={selector.selectorType || "css"}
+                onChange={(updates) => updateSelectorField("date", updates)}
               />
               <SelectorFieldEditor
                 label="内容" field={selector.content}
@@ -236,9 +315,24 @@ function NumberField({ label, value, onChange, min }: {
 function SelectorFieldEditor({ label, field, selectorType, onChange }: {
   label: string; field: SelectorField; selectorType: "css" | "xpath"; onChange: (updates: Partial<SelectorField>) => void;
 }) {
+  const [showRegex, setShowRegex] = useState(!!field.regexPattern);
+
   return (
     <div className="space-y-2 p-3 rounded-lg border border-app-border bg-app-bg/50">
-      <p className="text-[11px] font-medium text-tx-tertiary uppercase tracking-wider">{label}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-medium text-tx-tertiary uppercase tracking-wider">{label}</p>
+        <button
+          type="button"
+          onClick={() => setShowRegex(!showRegex)}
+          className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+            showRegex
+              ? "bg-accent-primary/10 text-accent-primary border-accent-primary/20"
+              : "text-tx-tertiary border-app-border hover:bg-app-hover"
+          }`}
+        >
+          {showRegex ? "收起正则" : "正则过滤"}
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-[10px] text-tx-tertiary">
@@ -270,6 +364,44 @@ function SelectorFieldEditor({ label, field, selectorType, onChange }: {
             placeholder="href"
             className="w-full px-2 py-1 text-xs rounded border border-app-border bg-app-surface text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
           />
+        </div>
+      )}
+
+      {showRegex && (
+        <div className="space-y-2 border-t border-app-border/40 pt-2 mt-1">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-tx-tertiary">正则匹配模式 (Pattern)</label>
+              <input
+                value={field.regexPattern ?? ""}
+                onChange={(e) => onChange({ regexPattern: e.target.value || undefined })}
+                placeholder="例: (\\d+)分钟前"
+                className="w-full px-2 py-1 text-xs font-mono rounded border border-app-border bg-app-surface text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <label className="text-[10px] text-tx-tertiary">修饰符</label>
+                <input
+                  value={field.regexFlags ?? ""}
+                  onChange={(e) => onChange({ regexFlags: e.target.value || undefined })}
+                  placeholder="g, i"
+                  className="w-full px-1.5 py-1 text-xs font-mono rounded border border-app-border bg-app-surface text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-tx-tertiary">捕获组</label>
+                <input
+                  type="number"
+                  value={field.regexGroup ?? ""}
+                  onChange={(e) => onChange({ regexGroup: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="1"
+                  min={0}
+                  className="w-full px-1.5 py-1 text-xs rounded border border-app-border bg-app-surface text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

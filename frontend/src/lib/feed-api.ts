@@ -76,6 +76,11 @@ export const websiteRssApi = {
   debugAdHoc: (data: { url: string; selector: import("@/types/feed").WebsiteRssSelector; authCredentialId?: number }) =>
     req<ScrapeResult>("/website-rss/debug-ad-hoc", { method: "POST", body: json(data) }),
   refresh: (id: number) => req<{ success: boolean; itemCount?: number; error?: string }>(`/website-rss/${id}/refresh`, { method: "POST" }),
+  fetchMeta: (url: string) =>
+    req<{ success: boolean; data: { title: string; description: string; favicon: string } }>("/website-rss/fetch-meta", {
+      method: "POST",
+      body: json({ url }),
+    }),
 };
 
 // ─── 授权凭证 ────────────────────────────────────────────────────────────────
@@ -102,10 +107,12 @@ export const feedSettingsApi = {
 
 export function getDynamicFeedUrl(routePath: string, type: "rss" | "json" = "rss"): string {
   const base = getBaseUrl();
-  return `${base}/dynamic/sub${routePath}?type=${type}`;
+  const absoluteBase = base.startsWith("http") ? base : `${window.location.origin}${base}`;
+  return `${absoluteBase}/dynamic/sub${routePath}?type=${type}`;
 }
 
 export function getWebsiteFeedUrl(key: string, type: "rss" | "json" = "rss"): string {
   const base = getBaseUrl();
-  return `${base}/website/sub/${key}?type=${type}`;
+  const absoluteBase = base.startsWith("http") ? base : `${window.location.origin}${base}`;
+  return `${absoluteBase}/website/sub/${key}?type=${type}`;
 }
