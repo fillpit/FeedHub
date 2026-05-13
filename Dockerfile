@@ -27,7 +27,7 @@ RUN pnpm --filter node-template-frontend build
 RUN pnpm --filter node-template-backend build
 
 # 剪裁开发依赖，仅在全局和子项目中保留生产运行所需的 production 依赖
-RUN pnpm prune --prod
+RUN pnpm install --prod --ignore-scripts
 
 # Stage 3: Production runtime stage
 FROM node:24-slim
