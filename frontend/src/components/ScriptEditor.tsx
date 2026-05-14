@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Save, FolderOpen, RefreshCw, FileCode2, FilePlus, Sparkles } from "lucide-react";
+import { Save, FolderOpen, RefreshCw, FileCode2, FilePlus, Sparkles, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScriptFile } from "@/types/feed";
 import { dynamicRouteApi } from "@/lib/feed-api";
@@ -56,6 +56,7 @@ function formatJsCode(code: string): string {
  * 智能语法补全提示候选配置字典
  */
 const AUTOCOMPLETE_SUGGESTIONS = [
+  { label: "require", insertText: "require(\"./$0.js\")", desc: "导入同目录下的其他脚本模块或内置 Node 模块" },
   { label: "fetch", insertText: "await fetch($0)", desc: "发起异步 HTTP 网络请求" },
   { label: "params", insertText: "params", desc: "表单自定义配置项参数" },
   { label: "routeParams", insertText: "routeParams", desc: "路由路径参数 (动态路由参数)" },
@@ -262,6 +263,37 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
     }
   };
 
+  const handleCreateFile = async () => {
+    const name = prompt("请输入新建脚本的文件名（如：api.js）：", "utils.js");
+    if (!name || !name.trim()) return;
+    const cleanName = name.trim().endsWith(".js") ? name.trim() : `${name.trim()}.js`;
+    if (files.some(f => f.name === cleanName)) {
+      alert("文件名已存在");
+      return;
+    }
+    try {
+      const initCode = `// 模块：${cleanName}\nmodule.exports = {\n  \n};\n`;
+      await dynamicRouteApi.saveFileContent(routeId, cleanName, initCode);
+      await loadFiles();
+      setActiveFile(cleanName);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "新建失败");
+    }
+  };
+
+  const handleDeleteFile = async (filePath: string, fileName: string) => {
+    if (!confirm(`确定要删除脚本文件 ${fileName} 吗？`)) return;
+    try {
+      await dynamicRouteApi.deleteFile(routeId, filePath);
+      if (activeFile === filePath) {
+        setActiveFile(null);
+      }
+      await loadFiles();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "删除失败");
+    }
+  };
+
   const handleSave = async () => {
     if (!activeFile) return;
     setIsSaving(true);
@@ -344,21 +376,42 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
             <FolderOpen size={12} />
             文件
           </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCreateFile}
+            className="w-5 h-5 text-tx-tertiary hover:text-tx-primary hover:bg-app-hover rounded"
+            title="新建脚本文件"
+          >
+            <Plus size={12} />
+          </Button>
         </div>
-        <div className="flex-1 overflow-y-auto p-1">
+        <div className="flex-1 overflow-y-auto p-1 space-y-0.5">
           {files.map((file) => (
-            <button
+            <div
               key={file.path}
               onClick={() => setActiveFile(file.path)}
               className={cn(
-                "w-full text-left px-2.5 py-1.5 rounded-lg text-xs truncate transition-colors",
+                "group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs truncate transition-colors cursor-pointer",
                 activeFile === file.path
                   ? "bg-accent-primary/10 text-accent-primary font-medium"
                   : "text-tx-secondary hover:bg-app-hover hover:text-tx-primary"
               )}
             >
-              {file.name}
-            </button>
+              <span className="truncate flex-1">{file.name}</span>
+              {file.name !== "main.js" && file.name !== "index.js" && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteFile(file.path, file.name);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-0.5 text-tx-tertiary hover:text-red-500 rounded transition-opacity shrink-0 ml-1"
+                  title="删除文件"
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </div>

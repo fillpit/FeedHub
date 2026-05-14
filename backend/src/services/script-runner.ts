@@ -163,11 +163,17 @@ function handleHostRequire(id: string, scriptDir: string): string {
   if (ALLOWED_BUILTIN.has(id)) {
     throw new Error(`沙箱环境内不支持原生 Node 内置模块 require("${id}")，请使用原生 JS 语法`);
   }
-  const local = path.resolve(scriptDir, id);
-  if (local.startsWith(scriptDir) && fs.existsSync(local)) {
-    return fs.readFileSync(local, "utf-8");
+  const basePath = path.resolve(scriptDir, id);
+  if (!basePath.startsWith(scriptDir)) {
+    throw new Error("非法的模块路径请求");
   }
-  throw new Error(`不允许或无法加载 require("${id}")`);
+  const candidates = [basePath, `${basePath}.js`, `${basePath}.ts`, path.join(basePath, "index.js")];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return fs.readFileSync(candidate, "utf-8");
+    }
+  }
+  throw new Error(`不允许或无法加载模块 require("${id}")`);
 }
 
 function getSandboxInitShim(): string {
@@ -335,6 +341,19 @@ function getSandboxInitShim(): string {
           return await res.json();
         }
       }
+    };
+
+    global._requireCache = global._requireCache || {};
+    global.require = (id) => {
+      if (global._requireCache[id]) {
+        return global._requireCache[id].exports;
+      }
+      const rawCode = _readScriptFile.applySync(undefined, [id]);
+      const module = { exports: {} };
+      global._requireCache[id] = module;
+      const fn = new Function("module", "exports", "require", "params", "routeParams", "authInfo", "hub", "fetch", "console", rawCode);
+      fn(module, module.exports, global.require, global.params, global.routeParams, global.authInfo, global.hub, global.fetch, global.console);
+      return module.exports;
     };
   `;
 }

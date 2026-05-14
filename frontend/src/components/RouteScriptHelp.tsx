@@ -160,14 +160,20 @@ return {
         </div>
       </div>
 
-      {/* Allowed Modules */}
+      {/* Allowed Modules & Multi-script import */}
       <div className="space-y-2.5">
         <div className="flex items-center gap-1.5 text-tx-primary">
           <ShieldCheck size={14} className="text-tx-secondary" />
-          <h5 className="text-xs font-semibold">安全支持的内置 Node 模块</h5>
+          <h5 className="text-xs font-semibold">多脚本互导与内置 Node 模块</h5>
         </div>
         <p className="text-xs text-tx-secondary leading-relaxed">
-          允许通过 <code className="font-mono text-[11px] text-accent-primary">require("模块名")</code> 导入以下核心底层类库来进行高级数据处理：
+          支持在左侧文件栏创建多个脚本文件（如 <code className="font-mono text-[11px] text-accent-primary">utils.js</code>），使用 CommonJS 规范导出并相互导入复用：
+          <br />
+          • 导出方法：<code className="font-mono text-[11px] text-accent-primary">module.exports = &#123; fn: () =&gt; 1 &#125;;</code>
+          <br />
+          • 导入使用：<code className="font-mono text-[11px] text-accent-primary">const utils = require("./utils.js");</code>
+          <br />
+          同时允许导入以下底层模块：
         </p>
         <div className="flex flex-wrap gap-1.5">
           {["crypto", "url", "querystring", "path", "util"].map((m) => (

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import AISettingsPanel from "./AISettingsPanel";
 import SiteSettingsPanel from "./SiteSettingsPanel";
 import BackupPanel from "./BackupPanel";
+import AboutPanel from "./AboutPanel";
 import { useAppActions } from "@/store/AppContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
@@ -133,13 +134,15 @@ export default function AdminPanel() {
 
               {activeTab === "backup" && <BackupPanel />}
 
+              {activeTab === "about" && <AboutPanel />}
+
               {activeTab === "ai" && (
                 <div className="bg-app-surface rounded-3xl border border-app-border p-8 shadow-sm">
                   <AISettingsPanel />
                 </div>
               )}
 
-              {activeTab !== "tasks" && activeTab !== "users" && activeTab !== "ai" && activeTab !== "site" && activeTab !== "backup" && (
+              {activeTab !== "tasks" && activeTab !== "users" && activeTab !== "ai" && activeTab !== "site" && activeTab !== "backup" && activeTab !== "about" && (
                 <div className="h-[50vh] flex flex-col items-center justify-center text-tx-tertiary gap-4 bg-app-surface/40 rounded-3xl border border-app-border border-dashed">
                   <div className="w-16 h-16 rounded-2xl bg-app-surface flex items-center justify-center border border-app-border shadow-sm">
                     <Activity size={32} className="opacity-20" />
