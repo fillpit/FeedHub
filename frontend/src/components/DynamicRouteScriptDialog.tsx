@@ -1,12 +1,12 @@
-import React, { useState, useRef } from "react";
-import { X, FileCode2, Play, BookOpen, Download, Upload, Check } from "lucide-react";
+import React, { useState } from "react";
+import { X, FileCode2, Play, BookOpen, Wand2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { DynamicRoute } from "@/types/feed";
 import ScriptEditor from "./ScriptEditor";
 import RouteDebugDrawer from "./RouteDebugDrawer";
 import RouteScriptHelp from "./RouteScriptHelp";
-import { dynamicRouteApi } from "@/lib/feed-api";
+import CurlConverter from "./CurlConverter";
 
 interface Props {
   route: DynamicRoute;
@@ -14,27 +14,9 @@ interface Props {
   onSave?: () => void;
 }
 
-function downloadExportBlob(exportData: unknown, fileName: string) {
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export default function DynamicRouteScriptDialog({ route, onClose, onSave }: Props) {
   const [currentRoute, setCurrentRoute] = useState<DynamicRoute>(route);
-  const [activeTab, setActiveTab] = useState<"debug" | "help">("debug");
-  const [isExporting, setIsExporting] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<"debug" | "help" | "curl">("debug");
 
   const handleScriptInit = (folder: string) => {
     setCurrentRoute((prev) => ({
@@ -42,80 +24,6 @@ export default function DynamicRouteScriptDialog({ route, onClose, onSave }: Pro
       script: { ...prev.script, folder },
     }));
     if (onSave) onSave();
-  };
-
-  const handleExport = async () => {
-    if (!currentRoute.script.folder) {
-      alert("脚本尚未初始化，无法导出");
-      return;
-    }
-    setIsExporting(true);
-    try {
-      const files = await dynamicRouteApi.listFiles(currentRoute.id);
-      const fileContents = await Promise.all(
-        files.filter(f => f.type === "file").map(async (f) => {
-          const { content } = await dynamicRouteApi.getFileContent(currentRoute.id, f.path);
-          return { path: f.path, content };
-        })
-      );
-
-      const exportData = {
-        version: 1,
-        exportAt: new Date().toISOString(),
-        route: {
-          name: currentRoute.name,
-          path: currentRoute.path,
-          method: currentRoute.method,
-          description: currentRoute.description,
-          refreshInterval: currentRoute.refreshInterval,
-          params: currentRoute.params,
-        },
-        files: fileContents,
-      };
-
-      downloadExportBlob(exportData, `feedhub-script-${currentRoute.name || "export"}.json`);
-    } catch (err) {
-      alert("导出失败: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsImporting(true);
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text) as { files?: Array<{ path: string; content: string }> };
-
-      if (!data.files || !Array.isArray(data.files)) {
-        throw new Error("无效的脚本包格式: 缺少 files 描述");
-      }
-
-      if (!currentRoute.script.folder) {
-        const res = await dynamicRouteApi.initScript(currentRoute.id);
-        setCurrentRoute(prev => ({ ...prev, script: { ...prev.script, folder: res.folder } }));
-      }
-
-      for (const f of data.files) {
-        await dynamicRouteApi.saveFileContent(currentRoute.id, f.path, f.content);
-      }
-
-      setImportSuccess(true);
-      setRefreshKey(prev => prev + 1);
-      setTimeout(() => setImportSuccess(false), 2000);
-      if (onSave) onSave();
-    } catch (err) {
-      alert("导入失败: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsImporting(false);
-      if (e.target) e.target.value = "";
-    }
   };
 
   const isScriptInitialized = !!currentRoute.script.folder;
@@ -157,33 +65,6 @@ export default function DynamicRouteScriptDialog({ route, onClose, onSave }: Pro
             </div>
 
             <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleImportClick}
-                disabled={isImporting}
-                className="gap-1.5 h-8 text-xs border-app-border bg-app-surface text-tx-secondary hover:text-tx-primary hover:bg-app-hover"
-              >
-                {importSuccess ? <Check size={13} className="text-emerald-500" /> : <Upload size={13} />}
-                {isImporting ? "导入中..." : importSuccess ? "导入成功" : "导入脚本包"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExport}
-                disabled={isExporting || !isScriptInitialized}
-                className="gap-1.5 h-8 text-xs border-app-border bg-app-surface text-tx-secondary hover:text-tx-primary hover:bg-app-hover"
-              >
-                <Download size={13} />
-                {isExporting ? "导出中..." : "导出脚本包"}
-              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -200,7 +81,6 @@ export default function DynamicRouteScriptDialog({ route, onClose, onSave }: Pro
             {/* Left Column: Script Editor */}
             <div className="flex-1 h-full overflow-hidden">
               <ScriptEditor
-                key={refreshKey}
                 routeId={currentRoute.id}
                 scriptFolder={currentRoute.script.folder}
                 onInit={handleScriptInit}
@@ -234,6 +114,17 @@ export default function DynamicRouteScriptDialog({ route, onClose, onSave }: Pro
                     <BookOpen size={13} />
                     编写说明
                   </button>
+                  <button
+                    onClick={() => setActiveTab("curl")}
+                    className={`flex-1 py-3 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+                      activeTab === "curl"
+                        ? "border-accent-primary text-accent-primary bg-app-surface/10"
+                        : "border-transparent text-tx-tertiary hover:text-tx-secondary hover:bg-app-hover/30"
+                    }`}
+                  >
+                    <Wand2 size={13} />
+                    cURL转换
+                  </button>
                 </div>
 
                 {/* Tabs Body */}
@@ -243,6 +134,9 @@ export default function DynamicRouteScriptDialog({ route, onClose, onSave }: Pro
                   </div>
                   <div className={activeTab !== "help" ? "hidden" : "flex-1 flex flex-col overflow-hidden"}>
                     <RouteScriptHelp />
+                  </div>
+                  <div className={activeTab !== "curl" ? "hidden" : "flex-1 flex flex-col overflow-hidden"}>
+                    <CurlConverter />
                   </div>
                 </div>
               </div>

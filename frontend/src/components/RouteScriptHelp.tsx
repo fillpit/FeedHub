@@ -99,7 +99,7 @@ return {
               <span className="text-[10px] text-tx-tertiary">Object</span>
             </div>
             <p className="text-xs text-tx-secondary leading-relaxed">
-              内置的高级便捷网络与工具封装库。使用 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">hub.http.get / post</code> 可极速发起请求并解析 JSON。使用 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">hub.date.parse(str)</code> 可智能识别十/十三位时间戳、网页相对时间（如“刚刚”、“5分钟前”、“昨天”）以及中英文常见日期，自动转换为标准 ISO 格式供 RSS 的 pubDate 使用。
+              内置的高级便捷网络与工具封装库。使用 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">hub.http.get(url, params, headers) / post(url, data, headers)</code> 可极速发起带自定义请求头的请求并解析 JSON。使用 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">hub.date.parse(str)</code> 可智能识别十/十三位时间戳、网页相对时间（如“刚刚”、“5分钟前”、“昨天”）以及中英文常见日期，自动转换为标准 ISO 格式供 RSS 的 pubDate 使用。
             </p>
           </div>
 

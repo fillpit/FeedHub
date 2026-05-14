@@ -323,13 +323,13 @@ function getSandboxInitShim(): string {
         }
       },
       http: {
-        get: async (url, params) => {
+        get: async (url, params, headers = {}) => {
           let fullUrl = url;
           if (params) {
             const q = new global.URLSearchParams(params).toString();
             fullUrl += (url.includes("?") ? "&" : "?") + q;
           }
-          const res = await global.fetch(fullUrl);
+          const res = await global.fetch(fullUrl, { headers });
           return await res.json();
         },
         post: async (url, data, headers = {}) => {

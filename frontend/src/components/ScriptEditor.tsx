@@ -146,6 +146,10 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
   const [syntaxError, setSyntaxError] = useState<string | null>(null);
   const [matchingSuggestions, setMatchingSuggestions] = useState<typeof AUTOCOMPLETE_SUGGESTIONS>([]);
   
+  // 新建文件自定义弹窗状态
+  const [isCreatingFile, setIsCreatingFile] = useState(false);
+  const [newFileName, setNewFileName] = useState("utils.js");
+
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLPreElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -263,8 +267,13 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
     }
   };
 
-  const handleCreateFile = async () => {
-    const name = prompt("请输入新建脚本的文件名（如：api.js）：", "utils.js");
+  const handleOpenCreateDialog = () => {
+    setNewFileName("utils.js");
+    setIsCreatingFile(true);
+  };
+
+  const submitCreateFile = async () => {
+    const name = newFileName;
     if (!name || !name.trim()) return;
     const cleanName = name.trim().endsWith(".js") ? name.trim() : `${name.trim()}.js`;
     if (files.some(f => f.name === cleanName)) {
@@ -276,6 +285,7 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
       await dynamicRouteApi.saveFileContent(routeId, cleanName, initCode);
       await loadFiles();
       setActiveFile(cleanName);
+      setIsCreatingFile(false);
     } catch (e) {
       alert(e instanceof Error ? e.message : "新建失败");
     }
@@ -368,7 +378,40 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
   const linesCount = Math.max(content.split("\n").length, 1);
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
+      {/* 新建脚本文件弹窗 */}
+      {isCreatingFile && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-80 bg-app-elevated border border-app-border rounded-xl shadow-2xl p-4 flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <h4 className="text-sm font-semibold text-tx-primary mb-2">新建脚本文件</h4>
+            <input
+              type="text"
+              autoFocus
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+              placeholder="例如：utils.js"
+              className="w-full px-3 py-2 text-xs bg-app-surface border border-app-border rounded-lg text-tx-primary focus:outline-none focus:border-accent-primary mb-4 font-mono"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitCreateFile();
+                } else if (e.key === "Escape") {
+                  setIsCreatingFile(false);
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setIsCreatingFile(false)} className="h-8 text-xs">
+                取消
+              </Button>
+              <Button size="sm" onClick={submitCreateFile} className="h-8 text-xs">
+                确定
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* File Tree */}
       <div className="w-44 border-r border-app-border flex flex-col shrink-0 bg-app-surface/30 select-none">
         <div className="flex items-center justify-between px-3 py-2 border-b border-app-border">
@@ -379,7 +422,7 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleCreateFile}
+            onClick={handleOpenCreateDialog}
             className="w-5 h-5 text-tx-tertiary hover:text-tx-primary hover:bg-app-hover rounded"
             title="新建脚本文件"
           >
@@ -443,7 +486,7 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
           {/* Synchronized Line Numbers Ruler */}
           <div
             ref={lineNumbersRef}
-            className="w-12 py-4 select-none text-right pr-3 bg-zinc-100/50 dark:bg-zinc-900/30 text-zinc-400/80 font-mono text-xs overflow-hidden border-r border-app-border flex flex-col shrink-0"
+            className="w-12 py-4 select-none text-right pr-3 bg-app-surface/30 text-tx-tertiary font-mono text-xs overflow-hidden border-r border-app-border flex flex-col shrink-0"
             style={{ 
               fontFamily: "'Fira Code', 'Cascadia Code', 'Consolas', monospace"
             }}
@@ -456,11 +499,11 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
           </div>
 
           {/* Stacking Textarea + Highlighting Context */}
-          <div className="flex-1 h-full relative overflow-hidden bg-zinc-50 dark:bg-[#1e1e1e]">
+          <div className="flex-1 h-full relative overflow-hidden bg-app-bg">
             {/* 1. Behind Layer: Rendered Syntactically Highlighted Code Block */}
             <pre
               ref={highlightRef}
-              className="absolute inset-0 py-4 px-3 text-[11px] font-mono overflow-hidden pointer-events-none select-none text-zinc-800 dark:text-[#d4d4d4]"
+              className="absolute inset-0 py-4 px-3 text-[11px] font-mono overflow-hidden pointer-events-none select-none text-tx-primary"
               style={{
                 fontFamily: "'Fira Code', 'Cascadia Code', 'Consolas', monospace",
                 lineHeight: "20px",
@@ -491,7 +534,7 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
               onScroll={handleScroll}
               spellCheck={false}
               wrap="off"
-              className="absolute inset-0 py-4 px-3 bg-transparent text-transparent caret-zinc-800 dark:caret-[#d4d4d4] font-mono text-[11px] resize-none outline-none overflow-auto"
+              className="absolute inset-0 py-4 px-3 bg-transparent text-transparent caret-accent-primary font-mono text-[11px] resize-none outline-none overflow-auto"
               style={{ 
                 fontFamily: "'Fira Code', 'Cascadia Code', 'Consolas', monospace",
                 lineHeight: "20px",
