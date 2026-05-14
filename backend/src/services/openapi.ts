@@ -173,38 +173,6 @@ export function generateOpenAPISpec(): Record<string, unknown> {
         post: { tags: ["认证"], summary: "修改密码", requestBody: { content: { "application/json": { schema: { type: "object", properties: { oldPassword: { type: "string" }, newPassword: { type: "string" } } } } } }, responses: { "200": { description: "密码修改成功" } } },
       },
 
-      // ===== 笔记本 =====
-      "/api/notebooks": {
-        get: { tags: ["笔记本"], summary: "获取笔记本列表（树形结构）", responses: { "200": { description: "笔记本列表", content: { "application/json": { schema: { type: "array", items: { $ref: "#/components/schemas/Notebook" } } } } } } },
-        post: { tags: ["笔记本"], summary: "创建笔记本", requestBody: { content: { "application/json": { schema: { type: "object", properties: { name: { type: "string" }, parentId: { type: "string" }, icon: { type: "string" }, color: { type: "string" } }, required: ["name"] } } } }, responses: { "201": { description: "创建成功" } } },
-      },
-      "/api/notebooks/{id}": {
-        put: { tags: ["笔记本"], summary: "更新笔记本", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "更新成功" } } },
-        delete: { tags: ["笔记本"], summary: "删除笔记本", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "删除成功" } } },
-      },
-
-      // ===== 笔记 =====
-      "/api/notes": {
-        get: { tags: ["笔记"], summary: "获取笔记列表", parameters: [{ name: "notebookId", in: "query", schema: { type: "string" } }, { name: "isFavorite", in: "query", schema: { type: "string" } }, { name: "isTrashed", in: "query", schema: { type: "string" } }, { name: "search", in: "query", schema: { type: "string" } }], responses: { "200": { description: "笔记列表" } } },
-        post: { tags: ["笔记"], summary: "创建笔记", requestBody: { content: { "application/json": { schema: { type: "object", properties: { notebookId: { type: "string" }, title: { type: "string" }, content: { type: "string" }, contentText: { type: "string" } }, required: ["notebookId"] } } } }, responses: { "201": { description: "创建成功" } } },
-      },
-      "/api/notes/{id}": {
-        get: { tags: ["笔记"], summary: "获取笔记详情", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "笔记详情", content: { "application/json": { schema: { $ref: "#/components/schemas/Note" } } } } } },
-        put: { tags: ["笔记"], summary: "更新笔记", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "更新成功" } } },
-        delete: { tags: ["笔记"], summary: "永久删除笔记", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { "200": { description: "删除成功" } } },
-      },
-
-      // ===== 标签 =====
-      "/api/tags": {
-        get: { tags: ["标签"], summary: "获取标签列表", responses: { "200": { description: "标签列表" } } },
-        post: { tags: ["标签"], summary: "创建标签", responses: { "201": { description: "创建成功" } } },
-      },
-
-      // ===== 任务 =====
-      "/api/tasks": {
-        get: { tags: ["任务"], summary: "获取任务列表", responses: { "200": { description: "任务列表" } } },
-        post: { tags: ["任务"], summary: "创建任务", responses: { "201": { description: "创建成功" } } },
-      },
       "/api/tasks/stats/summary": {
         get: { tags: ["任务"], summary: "任务统计", responses: { "200": { description: "统计数据" } } },
       },

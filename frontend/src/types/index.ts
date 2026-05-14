@@ -236,3 +236,11 @@ export interface ShareComment {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface BackupItem {
+  filename: string;
+  size: number;
+  createdAt: string;
+  type: "full" | "db-only";
+  description?: string;
+}

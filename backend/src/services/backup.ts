@@ -25,6 +25,7 @@ export interface BackupInfo {
   noteCount: number;
   notebookCount: number;
   checksum: string;
+  description?: string;
 }
 
 export interface BackupOptions {
@@ -62,17 +63,20 @@ export class BackupManager {
     const db = getDb();
 
     // 获取统计
-    const noteCount = (db.prepare("SELECT COUNT(*) as c FROM notes").get() as { c: number } | undefined)?.c || 0;
-    const notebookCount = (db.prepare("SELECT COUNT(*) as c FROM notebooks").get() as { c: number } | undefined)?.c || 0;
+    let noteCount = 0;
+    let notebookCount = 0;
+    try {
+      noteCount = (db.prepare("SELECT COUNT(*) as c FROM dynamic_routes").get() as { c: number } | undefined)?.c || 0;
+      notebookCount = (db.prepare("SELECT COUNT(*) as c FROM website_rss_configs").get() as { c: number } | undefined)?.c || 0;
+    } catch { /* 忽略表不存在的情况 */ }
 
     if (type === "db-only") {
       await db.backup(backupPath);
     } else {
       // 全量备份：使用 JSON 导出（数据库表 + 元信息）
       const tables = [
-        "users", "notebooks", "notes", "tags", "note_tags",
-        "tasks", "system_settings", "diaries", "shares",
-        "note_versions", "share_comments", "custom_fonts",
+        "users", "custom_fonts", "system_settings",
+        "dynamic_routes", "website_rss_configs", "auth_credentials",
       ];
 
       const exportData: Record<string, unknown[]> = {};
@@ -117,6 +121,7 @@ export class BackupManager {
       noteCount,
       notebookCount,
       checksum,
+      description: options.description || "",
     };
 
     // 保存备份元信息
@@ -142,6 +147,56 @@ export class BackupManager {
     }
 
     return backups.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  /** 导入外部备份文件 */
+  async importBackupBuffer(buffer: Buffer, originalFilename: string): Promise<BackupInfo> {
+    this.ensureDir();
+    const id = crypto.randomUUID();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+
+    let type: "full" | "db-only" = "db-only";
+    let description = "手动上传备份";
+
+    // 尝试解析 JSON 判断是否为 full 备份
+    try {
+      const text = buffer.toString("utf-8");
+      if (text.startsWith("{")) {
+        const parsed = JSON.parse(text);
+        if (parsed.type === "full" && parsed.data) {
+          type = "full";
+          if (parsed.description) description = parsed.description;
+        }
+      }
+    } catch { /* 忽略解析错误 */ }
+
+    // 防止文件名冲突
+    const ext = path.extname(originalFilename) || ".bak";
+    const base = path.basename(originalFilename, ext).replace(/[^a-zA-Z0-9_-]/g, "");
+    const filename = `upload-${base}-${timestamp}${ext}`;
+    const backupPath = path.join(this.backupDir, filename);
+
+    fs.writeFileSync(backupPath, buffer);
+
+    const checksum = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
+    const size = buffer.length;
+
+    const info: BackupInfo = {
+      id,
+      filename,
+      size,
+      type,
+      createdAt: new Date().toISOString(),
+      noteCount: 0,
+      notebookCount: 0,
+      checksum,
+      description,
+    };
+
+    const metaPath = path.join(this.backupDir, `${filename}.meta.json`);
+    fs.writeFileSync(metaPath, JSON.stringify(info, null, 2), "utf-8");
+
+    return info;
   }
 
   /** 获取备份文件路径 */
@@ -191,9 +246,8 @@ export class BackupManager {
 
           // 安全：只允许已知的表名
           const allowedTables = [
-            "users", "notebooks", "notes", "tags", "note_tags", "tasks",
-            "system_settings", "diaries", "shares", "note_versions",
-            "share_comments", "custom_fonts", "webhooks",
+            "users", "custom_fonts", "system_settings",
+            "dynamic_routes", "website_rss_configs", "auth_credentials",
           ];
           if (!allowedTables.includes(table)) continue;
 

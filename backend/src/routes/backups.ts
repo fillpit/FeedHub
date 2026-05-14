@@ -38,6 +38,25 @@ backupsRouter.post("/", async (c) => {
   }
 });
 
+// ===== POST /api/backups/upload =====
+backupsRouter.post("/upload", async (c) => {
+  try {
+    const formData = await c.req.parseBody();
+    const file = formData["file"] as File | undefined;
+    if (!file) return c.json({ error: "未找到上传的文件" }, 400);
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const manager = getBackupManager();
+
+    const info = await manager.importBackupBuffer(buffer, file.name);
+    return c.json(info, 201);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return c.json({ error: `上传失败: ${message}` }, 500);
+  }
+});
+
 // ===== GET /api/backups/:filename/download =====
 backupsRouter.get("/:filename/download", (c) => {
   const filename = c.req.param("filename");

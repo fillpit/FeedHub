@@ -102,10 +102,11 @@ app.use("/api/*", async (c, next) => {
   }
 
   const authHeader = c.req.header("Authorization");
+  const queryToken = c.req.query("token");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : queryToken;
 
-  if (authHeader && authHeader.startsWith("Bearer ")) {
+  if (token) {
     try {
-      const token = authHeader.slice(7);
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; username: string };
       c.req.raw.headers.set("X-User-Id", decoded.userId);
     } catch {

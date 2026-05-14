@@ -18,17 +18,17 @@ const res = await fetch("https://api.example.com/items");
 const data = await res.json();
 console.log("请求成功:", data);`;
 
-  const getExample2 = `// 例子 2: GET 请求携带自定义请求参数 (Query Params)
-// 使用 URLSearchParams 对象：它会自动把参数处理成 keyword=value 形式，
-// 并对中文或特殊字符（如空格、&、=）进行自动转码，安全又高效！
-const params = new URLSearchParams({
+  const getExample2 = `// 例子 2: GET 请求携带请求参数 (Query Params)
+// 使用内置的 URLSearchParams 对象：它会自动处理参数拼接，
+// 并对中文或特殊字符进行自动转码，优雅又省事！
+const query = new URLSearchParams({
   keyword: "人工智能",
-  limit: "10",
+  limit: 10,
   category: "tech"
 });
 
-// 拼接后的完整请求地址：https://api.example.com/search?keyword=%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD&limit=10&category=tech
-const res = await fetch(\`https://api.example.com/search?\${params}\`);
+// 拼接后的完整请求地址
+const res = await fetch(\`https://api.example.com/search?\${query}\`);
 const data = await res.json();`;
 
   const getExample3 = `// 例子 3: 携带自定义请求头 (Headers) 的 GET 请求

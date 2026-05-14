@@ -2,19 +2,20 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Shield, Activity, Globe, Bot, Users,
   AlertCircle, Info, Lock, UserPlus, RefreshCw, Plus,
-  Mail, Check, AlertTriangle, ArrowLeft
+  Mail, Check, AlertTriangle, ArrowLeft, Database
 } from "lucide-react";
 import { User } from "@/types";
 import { cn } from "@/lib/utils";
 import AISettingsPanel from "./AISettingsPanel";
 import SiteSettingsPanel from "./SiteSettingsPanel";
+import BackupPanel from "./BackupPanel";
 import { useAppActions } from "@/store/AppContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 
 type AdminTab =
   | "account" | "site" | "ai" | "ai-actions" | "users"
-  | "stats-reading" | "stats-files" | "logs" | "tasks" | "about";
+  | "stats-reading" | "stats-files" | "logs" | "tasks" | "about" | "backup";
 
 interface SidebarItem {
   id: AdminTab;
@@ -44,6 +45,7 @@ export default function AdminPanel() {
     {
       label: "数据",
       items: [
+        { id: "backup", label: "备份与恢复", icon: <Database size={18} />, desc: "数据快照与还原" },
         { id: "about", label: "关于", icon: <Info size={18} />, desc: "版本与项目信息" },
       ]
     }
@@ -129,13 +131,15 @@ export default function AdminPanel() {
 
               {activeTab === "site" && <SiteSettingsPanel />}
 
+              {activeTab === "backup" && <BackupPanel />}
+
               {activeTab === "ai" && (
                 <div className="bg-app-surface rounded-3xl border border-app-border p-8 shadow-sm">
                   <AISettingsPanel />
                 </div>
               )}
 
-              {activeTab !== "tasks" && activeTab !== "users" && activeTab !== "ai" && activeTab !== "site" && (
+              {activeTab !== "tasks" && activeTab !== "users" && activeTab !== "ai" && activeTab !== "site" && activeTab !== "backup" && (
                 <div className="h-[50vh] flex flex-col items-center justify-center text-tx-tertiary gap-4 bg-app-surface/40 rounded-3xl border border-app-border border-dashed">
                   <div className="w-16 h-16 rounded-2xl bg-app-surface flex items-center justify-center border border-app-border shadow-sm">
                     <Activity size={32} className="opacity-20" />

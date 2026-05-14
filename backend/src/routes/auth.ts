@@ -78,7 +78,7 @@ auth.post("/register", async (c) => {
   }
 
   const db = getDb();
-  
+
   // 校验注册策略
   const policy = db.prepare("SELECT value FROM system_settings WHERE key = 'registration_policy'").get() as { value: string } | undefined;
   if (policy?.value !== "open") {
@@ -198,62 +198,6 @@ auth.post("/change-password", async (c) => {
   return c.json({ success: true, message: "账户信息更新成功" });
 });
 
-// 恢复出厂设置
-auth.post("/factory-reset", async (c) => {
-  // auth 路由不经过 JWT 中间件，需要自行解析 token 获取 userId
-  const authHeader = c.req.header("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return c.json({ error: "未授权" }, 401);
-  }
-
-  let userId: string;
-  try {
-    const token = authHeader.slice(7);
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; username: string };
-    userId = decoded.userId;
-  } catch {
-    return c.json({ error: "Token 无效或已过期" }, 401);
-  }
-
-  const body = await c.req.json();
-  const { confirmText } = body as { confirmText: string };
-
-  if (confirmText !== "RESET") {
-    return c.json({ error: "校验码不正确" }, 400);
-  }
-
-  const db = getDb();
-
-  // 在事务中执行所有清理操作
-  const resetTransaction = db.transaction(() => {
-    // 1. 重建 FTS 索引（FTS5 虚拟表不支持普通 DELETE，用 rebuild 清空）
-    db.prepare("INSERT INTO notes_fts(notes_fts) VALUES('rebuild')").run();
-    // 2. 清空关联表
-    db.prepare("DELETE FROM note_tags").run();
-    db.prepare("DELETE FROM attachments").run();
-    // 3. 清空任务
-    db.prepare("DELETE FROM tasks").run();
-    // 4. 清空笔记
-    db.prepare("DELETE FROM notes").run();
-    // 5. 清空标签
-    db.prepare("DELETE FROM tags").run();
-    // 6. 清空笔记本
-    db.prepare("DELETE FROM notebooks").run();
-    // 7. 重置管理员密码为默认值 admin123 (SHA256)
-    const crypto = require("crypto");
-    const defaultHash = crypto.createHash("sha256").update("admin123").digest("hex");
-    db.prepare("UPDATE users SET username = 'admin', passwordHash = ?, updatedAt = datetime('now') WHERE id = ?").run(defaultHash, userId);
-  });
-
-  try {
-    resetTransaction();
-    console.log("💥 系统已恢复出厂设置：数据已清空，密码已重置为 admin123");
-    return c.json({ success: true, message: "系统已恢复出厂设置" });
-  } catch (error) {
-    console.error("恢复出厂设置失败:", error);
-    return c.json({ error: "恢复出厂设置失败" }, 500);
-  }
-});
 
 // 验证 token（前端刷新时调用）
 auth.get("/verify", (c) => {

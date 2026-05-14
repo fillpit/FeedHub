@@ -1,5 +1,5 @@
 import { ScriptContext, ScriptResult, FeedItem } from "../types/feed";
-import vm from "node:vm";
+import ivm from "isolated-vm";
 import path from "node:path";
 import fs from "node:fs";
 import util from "node:util";
@@ -8,8 +8,8 @@ const SCRIPTS_BASE_DIR = process.env.SCRIPTS_DIR
   || path.join(process.env.ELECTRON_USER_DATA || process.cwd(), "data", "scripts");
 
 /**
- * 执行用户脚本，返回 feed 条目列表
- * 使用 Node 内置 vm 模块进行沙箱隔离（低安全性，后续可替换为 isolated-vm）
+ * 执行用户脚本，返回 feed 订阅源对象
+ * 使用 isolated-vm 提供 V8 隔离沙箱
  */
 export async function runScript({
   scriptFolder,
@@ -23,6 +23,11 @@ export async function runScript({
   const startTime = Date.now();
   const logs: Array<{ level: string; message: string }> = [];
 
+  logs.push({
+    level: "info",
+    message: `[流程日志] 接收的参数: ${util.inspect(context.params, { compact: true })}`,
+  });
+
   const scriptDir = path.join(SCRIPTS_BASE_DIR, scriptFolder);
   const mainFile = resolveMainFile(scriptDir);
 
@@ -31,21 +36,307 @@ export async function runScript({
   }
 
   const code = fs.readFileSync(mainFile, "utf-8");
-  const sandbox = buildSandbox(context, logs, scriptDir);
+  const isolate = new ivm.Isolate({ memoryLimit: 128 });
 
   try {
-    const result = await executeWithTimeout(code, sandbox, timeoutMs);
-    const items = normalizeItems(result);
+    const result = await executeInIsolate(isolate, code, context, logs, scriptDir, timeoutMs);
+    const feedData = normalizeResult(result);
+    logs.push({ level: "info", message: `[流程日志] 返回 RSS 结果: [${feedData.title}] 共 ${feedData.items.length} 条数据` });
     return {
       success: true,
-      data: { title: "FeedHub", items },
+      data: feedData,
       logs,
       executionTime: Date.now() - startTime,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: message, logs, executionTime: Date.now() - startTime };
+  } finally {
+    isolate.dispose();
   }
+}
+
+async function executeInIsolate(
+  isolate: ivm.Isolate,
+  code: string,
+  context: ScriptContext,
+  logs: Array<{ level: string; message: string }>,
+  scriptDir: string,
+  timeoutMs: number,
+): Promise<unknown> {
+  const ivmContext = await isolate.createContext();
+  const jail = ivmContext.global;
+  await jail.set("global", jail.derefInto());
+
+  await injectContextData(jail, context);
+  await injectHostReferences(jail, logs, scriptDir);
+
+  const initShim = getSandboxInitShim();
+  const initScript = await isolate.compileScript(initShim, { filename: "shim.js" });
+  await initScript.run(ivmContext);
+
+  const wrappedCode = `(async () => {\n  try {\n    const _res = await (async () => {\n${code}\n    })();\n    return JSON.stringify({ success: true, data: _res ?? null });\n  } catch (err) {\n    return JSON.stringify({ success: false, error: String(err.message || err) });\n  }\n})()`;
+  const userScript = await isolate.compileScript(wrappedCode, { filename: "main.js" });
+  const rawStr = await userScript.run(ivmContext, { promise: true, copy: true, timeout: timeoutMs }) as string;
+  const resultObj = JSON.parse(rawStr);
+  if (!resultObj.success) {
+    throw new Error(resultObj.error);
+  }
+  return resultObj.data;
+}
+
+async function injectContextData(jail: ivm.Reference<Record<string, unknown>>, context: ScriptContext) {
+  await jail.set("params", new ivm.ExternalCopy(context.params ?? {}).copyInto());
+  await jail.set("routeParams", new ivm.ExternalCopy(context.routeParams ?? {}).copyInto());
+  await jail.set("authInfo", new ivm.ExternalCopy(context.authInfo ?? {}).copyInto());
+}
+
+async function injectHostReferences(
+  jail: ivm.Reference<Record<string, unknown>>,
+  logs: Array<{ level: string; message: string }>,
+  scriptDir: string,
+) {
+  await jail.set("_hostLog", new ivm.Reference((level: string, ...args: unknown[]) => {
+    const message = args.map((arg) => String(arg)).join(" ");
+    logs.push({ level, message });
+  }));
+
+  await jail.set("_hostFetch", new ivm.Reference(async (url: string, initStr: string) => {
+    return await handleHostFetch(url, initStr, logs);
+  }));
+
+  await jail.set("_readScriptFile", new ivm.Reference((id: string) => {
+    return handleHostRequire(id, scriptDir);
+  }));
+
+  await jail.set("_setTimeout", new ivm.Reference((cb: ivm.Reference, ms: number) => {
+    setTimeout(() => cb.applyIgnored(undefined, []), ms);
+  }));
+}
+
+async function handleHostFetch(urlStr: string, initStr: string, logs: Array<{ level: string; message: string }>) {
+  const initObj = JSON.parse(initStr);
+  const method = initObj?.method ?? "GET";
+  logs.push({ level: "info", message: `[流程日志] 请求目标接口 (${method}): ${urlStr}` });
+  if (initObj?.body || initObj?.headers) {
+    logs.push({
+      level: "info",
+      message: `[流程日志] 请求配置: ${util.inspect({ headers: initObj.headers, body: initObj.body }, { compact: true })}`,
+    });
+  }
+
+  const res = await globalThis.fetch(urlStr, initObj);
+  logs.push({ level: "info", message: `[流程日志] 接口返回状态: ${res.status} ${res.statusText}` });
+  await logFetchResponse(res, logs);
+
+  const bodyText = await res.text();
+  const headersObj = Object.fromEntries(res.headers.entries());
+
+  return JSON.stringify({
+    status: res.status,
+    statusText: res.statusText,
+    headers: headersObj,
+    bodyText,
+  });
+}
+
+async function logFetchResponse(res: Response, logs: Array<{ level: string; message: string }>) {
+  const cloneRes = res.clone();
+  try {
+    const text = await cloneRes.text();
+    try {
+      const json = JSON.parse(text);
+      const snippet = util.inspect(json, { depth: 2, compact: true, breakLength: 100 });
+      const trimmed = snippet.length > 800 ? snippet.slice(0, 800) + "..." : snippet;
+      logs.push({ level: "info", message: `[流程日志] 接口响应数据 (JSON 截取): ${trimmed}` });
+    } catch {
+      const trimmed = text.length > 500 ? text.slice(0, 500) + "..." : text;
+      logs.push({ level: "info", message: `[流程日志] 接口响应数据 (文本截取): ${trimmed}` });
+    }
+  } catch {
+    logs.push({ level: "warn", message: `[流程日志] 无法读取接口响应数据` });
+  }
+}
+
+function handleHostRequire(id: string, scriptDir: string): string {
+  const ALLOWED_BUILTIN = new Set(["path", "url", "querystring", "crypto", "util"]);
+  if (ALLOWED_BUILTIN.has(id)) {
+    throw new Error(`沙箱环境内不支持原生 Node 内置模块 require("${id}")，请使用原生 JS 语法`);
+  }
+  const local = path.resolve(scriptDir, id);
+  if (local.startsWith(scriptDir) && fs.existsSync(local)) {
+    return fs.readFileSync(local, "utf-8");
+  }
+  throw new Error(`不允许或无法加载 require("${id}")`);
+}
+
+function getSandboxInitShim(): string {
+  return `
+    const _log = (level, ...args) => {
+      const strArgs = args.map(arg => {
+        if (typeof arg === "object" && arg !== null) {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      });
+      _hostLog.applySync(undefined, [level, ...strArgs]);
+    };
+
+    global.console = {
+      log: (...args) => _log("info", ...args),
+      warn: (...args) => _log("warn", ...args),
+      error: (...args) => _log("error", ...args)
+    };
+
+    global.setTimeout = (cb, ms) => _setTimeout.applySync(undefined, [cb, ms], { arguments: { reference: true } });
+
+    global.Headers = class Headers {
+      constructor(init = {}) {
+        this.map = new Map(Object.entries(init));
+      }
+      get(key) { return this.map.get(key); }
+      set(key, val) { this.map.set(key, val); }
+      entries() { return this.map.entries(); }
+    };
+
+    global.URLSearchParams = class URLSearchParams {
+      constructor(init = {}) {
+        this.params = [];
+        if (typeof init === "string") {
+          const str = init.startsWith("?") ? init.slice(1) : init;
+          str.split("&").forEach(pair => {
+            const [k, v] = pair.split("=");
+            if (k) this.params.push([decodeURIComponent(k), decodeURIComponent(v || "")]);
+          });
+        } else if (Array.isArray(init)) {
+          this.params = [...init];
+        } else {
+          Object.entries(init).forEach(([k, v]) => this.params.push([k, String(v)]));
+        }
+      }
+      append(k, v) { this.params.push([k, String(v)]); }
+      delete(k) { this.params = this.params.filter(([key]) => key !== k); }
+      get(k) { const found = this.params.find(([key]) => key === k); return found ? found[1] : null; }
+      getAll(k) { return this.params.filter(([key]) => key === k).map(item => item[1]); }
+      has(k) { return this.params.some(([key]) => key === k); }
+      set(k, v) { this.delete(k); this.append(k, v); }
+      toString() { return this.params.map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v)).join("&"); }
+    };
+
+    global.URL = class URL {
+      constructor(url, base) {
+        let fullUrl = url;
+        if (base && !url.match(/^[a-zA-Z]+:\\/\\//)) {
+          const baseStr = typeof base === "object" ? base.href : base;
+          fullUrl = baseStr.replace(/\\/+$/, "") + "/" + url.replace(/^\\/+/, "");
+        }
+        const [hrefPart, hashPart] = fullUrl.split("#");
+        const [originPath, searchPart] = hrefPart.split("?");
+        this.href = hrefPart;
+        this.hash = hashPart ? "#" + hashPart : "";
+        this.search = searchPart ? "?" + searchPart : "";
+        this.searchParams = new global.URLSearchParams(searchPart || "");
+      }
+      toString() {
+        const searchStr = this.searchParams.toString();
+        const [base] = this.href.split("?");
+        return base + (searchStr ? "?" + searchStr : "") + this.hash;
+      }
+    };
+
+    global.fetch = async (url, init) => {
+      const targetUrl = typeof url === "object" ? url.url : url;
+      let cleanInit = {};
+      if (init) {
+        let headersObj = {};
+        if (init.headers) {
+          if (typeof init.headers.entries === "function") {
+            for (const [k, v] of init.headers.entries()) headersObj[k] = v;
+          } else {
+            Object.assign(headersObj, init.headers);
+          }
+        }
+        cleanInit = {
+          method: init.method ? String(init.method) : "GET",
+          headers: headersObj,
+          body: init.body ? String(init.body) : undefined
+        };
+      }
+      const rawStr = await _hostFetch.apply(undefined, [targetUrl, JSON.stringify(cleanInit)], { arguments: { copy: true }, result: { promise: true, copy: true } });
+      const resData = JSON.parse(rawStr);
+      return {
+        status: resData.status,
+        statusText: resData.statusText,
+        headers: new Headers(resData.headers),
+        text: async () => resData.bodyText,
+        json: async () => JSON.parse(resData.bodyText)
+      };
+    };
+
+    global.hub = {
+      date: {
+        parse: (raw) => {
+          if (!raw) return new Date().toISOString();
+          const str = String(raw).trim();
+          const now = new Date();
+          if (/^\\d{10,13}$/.test(str)) {
+            const ms = str.length === 10 ? Number(str) * 1000 : Number(str);
+            return new Date(ms).toISOString();
+          }
+          if (str.includes("刚刚")) return now.toISOString();
+          if (str.includes("秒前")) {
+            const m = str.match(/(\\d+)\\s*秒前/);
+            if (m) return new Date(now.getTime() - Number(m[1]) * 1000).toISOString();
+          }
+          if (str.includes("分钟前")) {
+            const m = str.match(/(\\d+)\\s*分钟前/);
+            if (m) return new Date(now.getTime() - Number(m[1]) * 60000).toISOString();
+          }
+          if (str.includes("小时前")) {
+            const m = str.match(/(\\d+)\\s*小时前/);
+            if (m) return new Date(now.getTime() - Number(m[1]) * 3600000).toISOString();
+          }
+          if (str.includes("天前")) {
+            const m = str.match(/(\\d+)\\s*天前/);
+            if (m) return new Date(now.getTime() - Number(m[1]) * 86400000).toISOString();
+          }
+          if (str.includes("昨天")) {
+            const y = new Date(now.getTime() - 86400000);
+            const m = str.match(/\\d{1,2}:\\d{1,2}/);
+            const t = m ? " " + m[0] : "";
+            const parsed = new Date(y.getFullYear() + "/" + (y.getMonth() + 1) + "/" + y.getDate() + t);
+            return (!isNaN(parsed) ? parsed : y).toISOString();
+          }
+          const cleanStr = str.replace(/[年月]/g, "-").replace(/日/g, "");
+          const parsed = new Date(cleanStr);
+          return (!isNaN(parsed) ? parsed : now).toISOString();
+        }
+      },
+      http: {
+        get: async (url, params) => {
+          let fullUrl = url;
+          if (params) {
+            const q = new global.URLSearchParams(params).toString();
+            fullUrl += (url.includes("?") ? "&" : "?") + q;
+          }
+          const res = await global.fetch(fullUrl);
+          return await res.json();
+        },
+        post: async (url, data, headers = {}) => {
+          const res = await global.fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...headers },
+            body: JSON.stringify(data)
+          });
+          return await res.json();
+        }
+      }
+    };
+  `;
 }
 
 function resolveMainFile(scriptDir: string): string | null {
@@ -65,64 +356,19 @@ function resolveMainFile(scriptDir: string): string | null {
   return null;
 }
 
-function buildSandbox(
-  context: ScriptContext,
-  logs: Array<{ level: string; message: string }>,
-  scriptDir: string,
-): Record<string, unknown> {
-  const makeLogger = (level: string) =>
-    (...args: unknown[]) => {
-      const message = args
-        .map((arg) => {
-          if (typeof arg === "object" && arg !== null) {
-            // 使用 Node.js 内置的 util.inspect 进行深层展开，完美支持循环引用、各种自定义对象及格式化折行
-            return util.inspect(arg, { depth: 4, colors: false, compact: true, breakLength: 100 });
-          }
-          return String(arg);
-        })
-        .join(" ");
-      logs.push({ level, message });
-    };
-
-  return {
-    console: { log: makeLogger("info"), warn: makeLogger("warn"), error: makeLogger("error") },
-    params: context.params,
-    routeParams: context.routeParams,
-    authInfo: context.authInfo,
-    require: buildSafeRequire(scriptDir),
-    setTimeout,
-    clearTimeout,
-    Promise,
-    fetch: globalThis.fetch,
-    JSON,
-    Buffer,
-    URL,
-    URLSearchParams,
-    process: { env: {} },
-  };
-}
-
-function buildSafeRequire(scriptDir: string) {
-  const ALLOWED_BUILTIN = new Set(["path", "url", "querystring", "crypto", "util"]);
-  return (id: string) => {
-    if (ALLOWED_BUILTIN.has(id)) return require(id);
-    const local = path.resolve(scriptDir, id);
-    if (local.startsWith(scriptDir) && fs.existsSync(local)) return require(local);
-    throw new Error(`不允许 require("${id}")`);
-  };
-}
-
-async function executeWithTimeout(
-  code: string,
-  sandbox: Record<string, unknown>,
-  timeoutMs: number,
-): Promise<unknown> {
-  const ctx = vm.createContext(sandbox);
-  // 将用户代码包裹在异步自执行函数里：原生解锁顶层 await 和顶层 return 语句的使用
-  const wrappedCode = `(async () => {\n${code}\n})()`;
-  const script = new vm.Script(wrappedCode, { filename: "main.js" });
-  const result = script.runInContext(ctx, { timeout: timeoutMs });
-  return await Promise.resolve(result);
+function normalizeResult(raw: unknown): { title: string; description?: string; link?: string; items: FeedItem[] } {
+  if (Array.isArray(raw)) {
+    return { title: "FeedHub", items: normalizeItems(raw) };
+  }
+  if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    const title = obj.title ? String(obj.title) : "FeedHub";
+    const description = obj.description ? String(obj.description) : undefined;
+    const link = obj.link ? String(obj.link) : undefined;
+    const items = normalizeItems(obj.items);
+    return { title, description, link, items };
+  }
+  return { title: "FeedHub", items: [] };
 }
 
 function normalizeItems(raw: unknown): FeedItem[] {
@@ -139,7 +385,6 @@ function normalizeItems(raw: unknown): FeedItem[] {
     }));
 }
 
-/** 确保脚本目录存在 */
 export function ensureScriptsDir(): void {
   if (!fs.existsSync(SCRIPTS_BASE_DIR)) {
     fs.mkdirSync(SCRIPTS_BASE_DIR, { recursive: true });

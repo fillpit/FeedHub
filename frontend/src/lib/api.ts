@@ -1,4 +1,4 @@
-import { Notebook, Note, NoteListItem, Tag, SearchResult, User, Task, TaskStats, TaskFilter, CustomFont, MindMap, MindMapListItem, Diary, DiaryTimeline, DiaryStats, Share, ShareInfo, SharedNoteContent, NoteVersion, ShareComment } from "@/types";
+import { Notebook, Note, NoteListItem, Tag, SearchResult, User, Task, TaskStats, TaskFilter, CustomFont, MindMap, MindMapListItem, Diary, DiaryTimeline, DiaryStats, Share, ShareInfo, SharedNoteContent, NoteVersion, ShareComment, BackupItem } from "@/types";
 
 // 服务器地址管理
 const SERVER_URL_KEY = "nowen-server-url";
@@ -116,6 +116,34 @@ export const api = {
     request<{ token: string; user: User }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   factoryReset: (confirmText: string) =>
     request<{ success: boolean; message: string }>("/auth/factory-reset", { method: "POST", body: JSON.stringify({ confirmText }) }),
+
+  // Backups
+  getBackups: () => request<BackupItem[]>("/backups"),
+  createBackup: (data: { type?: "full" | "db-only"; description?: string }) =>
+    request<BackupItem>("/backups", { method: "POST", body: JSON.stringify(data) }),
+  restoreBackup: (filename: string) =>
+    request<{ success: boolean; stats?: unknown }>(`/backups/${filename}/restore`, { method: "POST" }),
+  deleteBackup: (filename: string) =>
+    request<{ success: boolean }>(`/backups/${filename}`, { method: "DELETE" }),
+  getBackupDownloadUrl: (filename: string) => {
+    const token = getToken();
+    return `${getBaseUrl()}/backups/${filename}/download${token ? `?token=${token}` : ""}`;
+  },
+  uploadBackup: async (file: File): Promise<BackupItem> => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${getBaseUrl()}/backups/upload`, {
+      method: "POST",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: form,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "上传失败");
+    }
+    return res.json();
+  },
 
   // Export / Import
   getExportNotes: () => request<unknown[]>("/export/notes"),
