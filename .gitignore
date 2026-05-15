@@ -24,5 +24,6 @@ backend/.npm-cache/
 .prisma_cache/
 .home/
 .pnpm-home/
-.agent/
-.docs/guidelines
+.agents/
+docs/guidelines/
+.DS_Store
