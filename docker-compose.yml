@@ -14,6 +14,12 @@ services:
       - NODE_ENV=production
       - DB_PATH=${DB_PATH:-/app/data/data.db}
       - PORT=3001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 volumes:
   feed-hub-data:
     driver: local

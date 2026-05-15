@@ -16,6 +16,7 @@ import { generateOpenAPISpec } from "./services/openapi";
 import dynamicRoutesRouter, { handleDynamicFeed } from "./routes/dynamic-routes";
 import websiteRssRouter, { handleWebsiteFeed } from "./routes/website-rss";
 import authCredentialsRouter from "./routes/auth-credentials";
+import npmPackagesRouter from "./routes/npm-packages";
 
 const app = new Hono();
 
@@ -50,9 +51,9 @@ app.get("/api/website/sub/:key", (c) => handleWebsiteFeed(c));
 app.get("/api/settings", (c) => {
   const db = getDb();
   const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy'").all() as { key: string; value: string }[];
-  const result: Record<string, string> = { 
-    site_title: "nowen-note", 
-    site_favicon: "", 
+  const result: Record<string, string> = {
+    site_title: "nowen-note",
+    site_favicon: "",
     editor_font_family: "",
     registration_policy: "closed"
   };
@@ -62,36 +63,12 @@ app.get("/api/settings", (c) => {
   return c.json(result);
 });
 
-// 字体文件下载 & 字体列表（无需 JWT，@font-face 浏览器请求不带 Authorization）
-app.get("/api/fonts", (c) => {
-  const db = getDb();
-  const rows = db.prepare(
-    "SELECT id, name, fileName, format, createdAt FROM custom_fonts ORDER BY createdAt DESC"
-  ).all();
-  return c.json(rows);
-});
-app.get("/api/fonts/file/:id", (c) => {
-  const id = c.req.param("id");
-  const db = getDb();
-  const row = db.prepare("SELECT id, fileName, format FROM custom_fonts WHERE id = ?").get(id) as { id: string; fileName: string; format: string } | undefined;
-  if (!row) return c.json({ error: "字体不存在" }, 404);
+// 健康检查接口（用于 Docker Healthcheck）
+app.get("/health", (c) => c.json({ status: "ok" }));
 
-  const fontsDir = path.join(process.env.ELECTRON_USER_DATA || path.join(process.cwd(), "data"), "fonts");
-  const filePath = path.join(fontsDir, `${row.id}.${row.format}`);
-  if (!fs.existsSync(filePath)) return c.json({ error: "字体文件丢失" }, 404);
+// 健康检查（无需 JWT）
+app.get("/api/health", (c) => c.json({ status: "ok", version: "1.0.0" }));
 
-  const mimeMap: Record<string, string> = {
-    otf: "font/otf", ttf: "font/ttf", otc: "font/collection",
-    ttc: "font/collection", woff: "font/woff", woff2: "font/woff2",
-  };
-  const buffer = fs.readFileSync(filePath);
-  return new Response(buffer, {
-    headers: {
-      "Content-Type": mimeMap[row.format] || "application/octet-stream",
-      "Cache-Control": "public, max-age=31536000, immutable",
-    },
-  });
-});
 
 // JWT 鉴权中间件：保护所有 /api/* 路由（auth 和 health 已在上方注册，不受影响）
 app.use("/api/*", async (c, next) => {
@@ -138,6 +115,7 @@ import feedSettingsRouter from "./routes/feed-settings";
 app.route("/api/dynamic-routes", dynamicRoutesRouter);
 app.route("/api/website-rss", websiteRssRouter);
 app.route("/api/auth-credentials", authCredentialsRouter);
+app.route("/api/npm-packages", npmPackagesRouter);
 app.route("/api/feed-settings", feedSettingsRouter);
 
 // 获取当前登录用户信息

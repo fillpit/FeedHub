@@ -51,11 +51,20 @@ export function RouteCard({
         {route.description && (
           <p className="text-xs text-tx-secondary mt-1 line-clamp-1">{route.description}</p>
         )}
+        {route.params && route.params.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {route.params.map((param, index) => (
+              <Badge key={index} variant="outline" className="text-[10px] py-0 px-1.5 font-normal text-tx-tertiary border-app-border bg-app-surface/50">
+                {param.name}
+                {param.required && <span className="text-accent-danger ml-0.5">*</span>}
+              </Badge>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-3 mt-2">
           <span className="text-[11px] text-tx-tertiary">刷新间隔: {route.refreshInterval}min</span>
-          {route.lastRunAt && (
-            <span className="text-[11px] text-tx-tertiary">上次执行: {new Date(route.lastRunAt).toLocaleString()}</span>
-          )}
+          <span className="text-[11px] text-tx-tertiary">最后抓取时间: {route.lastRunAt ? new Date(route.lastRunAt).toLocaleString() : "暂无"}</span>
+          <span className="text-[11px] text-tx-tertiary">最后抓取状态: {route.lastRunStatus ? (route.lastRunStatus === "success" ? "成功" : "失败") : "暂无"}</span>
         </div>
       </div>
 

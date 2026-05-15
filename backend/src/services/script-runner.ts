@@ -3,6 +3,8 @@ import ivm from "isolated-vm";
 import path from "node:path";
 import fs from "node:fs";
 import util from "node:util";
+import { npmManager } from "./npm-manager";
+import { getDb } from "../db/schema";
 
 const SCRIPTS_BASE_DIR = process.env.SCRIPTS_DIR
   || path.join(process.env.ELECTRON_USER_DATA || process.cwd(), "data", "scripts");
@@ -111,6 +113,21 @@ async function injectHostReferences(
 
   await jail.set("_setTimeout", new ivm.Reference((cb: ivm.Reference, ms: number) => {
     setTimeout(() => cb.applyIgnored(undefined, []), ms);
+  }));
+
+  await jail.set("_hostRequireNpm", new ivm.Reference((id: string) => {
+    const db = getDb();
+    const pkg = db.prepare("SELECT * FROM npm_packages WHERE name = ? AND status = 'installed'").get(id);
+    if (!pkg) {
+      throw new Error(`NPM 包 "${id}" 未安装或未启用`);
+    }
+    const pkgPath = path.join(npmManager.getNpmEnvDir(), "node_modules", id);
+    try {
+      const mod = require(pkgPath);
+      return new ivm.Reference(mod);
+    } catch (err) {
+      throw new Error(`加载 NPM 包 "${id}" 失败: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }));
 }
 
@@ -348,12 +365,51 @@ function getSandboxInitShim(): string {
       if (global._requireCache[id]) {
         return global._requireCache[id].exports;
       }
-      const rawCode = _readScriptFile.applySync(undefined, [id]);
-      const module = { exports: {} };
-      global._requireCache[id] = module;
-      const fn = new Function("module", "exports", "require", "params", "routeParams", "authInfo", "hub", "fetch", "console", rawCode);
-      fn(module, module.exports, global.require, global.params, global.routeParams, global.authInfo, global.hub, global.fetch, global.console);
-      return module.exports;
+      
+      // 尝试加载本地脚本文件
+      try {
+        const rawCode = _readScriptFile.applySync(undefined, [id]);
+        const module = { exports: {} };
+        global._requireCache[id] = module;
+        const fn = new Function("module", "exports", "require", "params", "routeParams", "authInfo", "hub", "fetch", "console", rawCode);
+        fn(module, module.exports, global.require, global.params, global.routeParams, global.authInfo, global.hub, global.fetch, global.console);
+        return module.exports;
+      } catch (err) {
+        // 如果不是本地文件，尝试加载已安装的 NPM 包
+        try {
+          const ref = _hostRequireNpm.applySync(undefined, [id], { result: { reference: true } });
+          if (ref) {
+            // 为 NPM 包创建代理对象，使其在沙箱内可直接调用
+            const createProxy = (r) => {
+              if (typeof r !== "object" || r === null) return r;
+              return new Proxy(() => {}, {
+                apply(target, thisArg, args) {
+                  return r.applySync(undefined, args, { result: { copy: true } });
+                },
+                get(target, prop) {
+                  if (prop === "then") return undefined; // 处理 async/await
+                  try {
+                    const val = r.getSync(prop, { result: { copy: true } });
+                    return val;
+                  } catch {
+                    const nestedRef = r.getSync(prop, { result: { reference: true } });
+                    if (typeof nestedRef === "object" && nestedRef !== null) {
+                      return createProxy(nestedRef);
+                    }
+                    return nestedRef;
+                  }
+                }
+              });
+            };
+            const proxy = createProxy(ref);
+            global._requireCache[id] = { exports: proxy };
+            return proxy;
+          }
+        } catch (npmErr) {
+          throw new Error("Cannot find module '" + id + "' or NPM package not installed: " + npmErr.message);
+        }
+        throw err;
+      }
     };
   `;
 }

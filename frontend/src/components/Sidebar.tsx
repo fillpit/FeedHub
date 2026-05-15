@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PanelLeftClose, PanelLeft, Settings, LogOut, X, Bot, LayoutDashboard, User, Shield,
-  Rss, Globe, KeyRound,
+  Rss, Globe, KeyRound, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SettingsModal from "@/components/SettingsModal";
@@ -30,6 +30,7 @@ export default function Sidebar() {
     { icon: <Globe size={16} />, label: "网页监控", mode: "feed-websites", active: state.viewMode === "feed-websites" },
     { icon: <Rss size={16} />, label: "动态路由", mode: "feed-routes", active: state.viewMode === "feed-routes" },
     { icon: <KeyRound size={16} />, label: "授权凭证", mode: "feed-credentials", active: state.viewMode === "feed-credentials" },
+    { icon: <Package size={16} />, label: "NPM 包管理", mode: "feed-npm", active: state.viewMode === "feed-npm" },
   ];
   const navItems = rawNavItems;
 

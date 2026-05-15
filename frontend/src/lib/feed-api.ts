@@ -103,6 +103,27 @@ export const feedSettingsApi = {
     req<{ success: boolean; error?: string }>("/feed-settings/test-push", { method: "POST", body: json({ type, payload }) }),
 };
 
+// ─── NPM 包管理 ──────────────────────────────────────────────────────────────
+
+export interface NpmPackage {
+  id: number;
+  name: string;
+  version: string;
+  status: "pending" | "installing" | "installed" | "error";
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const npmPackageApi = {
+  list: () => req<NpmPackage[]>("/npm-packages"),
+  add: (name: string, version?: string) => req<{ success: boolean }>("/npm-packages", { method: "POST", body: json({ name, version }) }),
+  delete: (name: string) => req<{ success: boolean }>(`/npm-packages/${name}`, { method: "DELETE" }),
+  refresh: () => req<{ success: boolean }>("/npm-packages/refresh", { method: "POST" }),
+  search: (q: string) => req<Array<{ name: string; version: string; description: string }>>(`/npm-packages/search?q=${encodeURIComponent(q)}`),
+  getVersions: (name: string) => req<string[]>(`/npm-packages/versions/${encodeURIComponent(name)}`),
+};
+
 // ─── Feed URL 生成 ────────────────────────────────────────────────────────────
 
 export function getDynamicFeedUrl(routePath: string, type: "rss" | "json" = "rss"): string {

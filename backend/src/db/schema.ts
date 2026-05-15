@@ -97,6 +97,17 @@ function initSchema(db: Database.Database) {
       createdAt  TEXT NOT NULL DEFAULT (datetime('now')),
       updatedAt  TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- NPM 包管理表
+    CREATE TABLE IF NOT EXISTS npm_packages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      version TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending', -- pending, installing, installed, error
+      error TEXT,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // 数据库迁移：其他需要保留的表如果有新增字段可以在这里通过 try catch 处理
