@@ -3,7 +3,7 @@ import { Play, RefreshCw, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "
 import { Button } from "@/components/ui/button";
 import { ScriptResult, FeedItem, RouteParam } from "@/types/feed";
 import { dynamicRouteApi } from "@/lib/feed-api";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 
 interface Props {
   routeId: number;
@@ -195,9 +195,12 @@ function DebugLogsPanel({ logs }: { logs: Array<{ level: string; message: string
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const handleCopy = useCallback((text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(idx);
-    setTimeout(() => setCopiedIndex(null), 2000);
+    copyToClipboard(text).then((success) => {
+      if (success) {
+        setCopiedIndex(idx);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      }
+    });
   }, []);
 
   return (

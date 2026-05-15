@@ -1,14 +1,18 @@
 import React, { useState } from "react";
 import { HelpCircle, Copy, Check, Terminal, Globe, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/utils";
 
 export default function FetchGuide() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const handleCopy = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
+    copyToClipboard(text).then((success) => {
+      if (success) {
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      }
+    });
   };
 
   const getExample1 = `// 例子 1: 最简单的 GET 请求

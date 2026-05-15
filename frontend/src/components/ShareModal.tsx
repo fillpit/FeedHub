@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { api, getServerUrl } from "@/lib/api";
 import { Share, SharePermission } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard as globalCopyToClipboard } from "@/lib/utils";
 
 interface ShareModalProps {
   noteId: string;
@@ -46,17 +46,8 @@ export default function ShareModal({ noteId, noteTitle, onClose }: ShareModalPro
   };
 
   const copyToClipboard = async (text: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(id);
-      setTimeout(() => setCopied(null), 2000);
-    } catch {
-      const input = document.createElement("input");
-      input.value = text;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
+    const success = await globalCopyToClipboard(text);
+    if (success) {
       setCopied(id);
       setTimeout(() => setCopied(null), 2000);
     }

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { DynamicRoute } from "@/types/feed";
 import { dynamicRouteApi, getDynamicFeedUrl } from "@/lib/feed-api";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import DynamicRouteForm from "./DynamicRouteForm";
 import DynamicRouteScriptDialog from "./DynamicRouteScriptDialog";
 import { RouteCard, EmptyState } from "./DynamicRouteHelpers";
@@ -49,9 +49,11 @@ export default function DynamicRoutePanel() {
   };
 
   const handleCopyUrl = (route: DynamicRoute) => {
-    navigator.clipboard.writeText(getDynamicFeedUrl(route.path)).then(() => {
-      setCopiedId(route.id);
-      setTimeout(() => setCopiedId(null), 2000);
+    copyToClipboard(getDynamicFeedUrl(route.path)).then((success) => {
+      if (success) {
+        setCopiedId(route.id);
+        setTimeout(() => setCopiedId(null), 2000);
+      }
     });
   };
 

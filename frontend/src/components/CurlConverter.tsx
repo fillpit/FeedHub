@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowDown, Copy, Check, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/utils";
 
 export default function CurlConverter() {
   const [curlInput, setCurlInput] = useState("");
@@ -133,9 +134,12 @@ export default function CurlConverter() {
 
   const handleCopy = () => {
     if (!outputCode) return;
-    navigator.clipboard.writeText(outputCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(outputCode).then((success) => {
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    });
   };
 
   return (

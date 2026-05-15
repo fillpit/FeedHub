@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChatMessage {
@@ -152,7 +152,7 @@ export default function AIChatPanel({ onClose, onNavigateToNote }: {
 
   const handleCopyMarkdown = useCallback(() => {
     if (docResult) {
-      navigator.clipboard.writeText(docResult);
+      copyToClipboard(docResult);
     }
   }, [docResult]);
 

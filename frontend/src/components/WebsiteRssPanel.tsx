@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WebsiteRssConfig, WebsiteRssCreate } from "@/types/feed";
 import { websiteRssApi, getWebsiteFeedUrl } from "@/lib/feed-api";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import WebsiteRssForm from "./WebsiteRssForm";
 
 function downloadExportBlob(exportData: unknown, fileName: string) {
@@ -60,8 +60,11 @@ export default function WebsiteRssPanel() {
   };
 
   const handleCopyUrl = (config: WebsiteRssConfig) => {
-    navigator.clipboard.writeText(getWebsiteFeedUrl(config.key)).then(() => {
-      setCopiedId(config.id); setTimeout(() => setCopiedId(null), 2000);
+    copyToClipboard(getWebsiteFeedUrl(config.key)).then((success) => {
+      if (success) {
+        setCopiedId(config.id);
+        setTimeout(() => setCopiedId(null), 2000);
+      }
     });
   };
 
@@ -211,7 +214,6 @@ function WebsiteCard({
         <div className="flex items-center gap-2 mb-1 min-w-0">
           {config.favicon && <img src={config.favicon} className="w-4 h-4 rounded shrink-0" alt="" />}
           <span className="text-sm font-semibold text-tx-primary truncate flex-1 min-w-0" title={config.title}>{config.title}</span>
-          <Badge variant="secondary" className="text-xs shrink-0">{config.renderMode}</Badge>
           {config.lastFetchStatus && (
             <span className={cn("inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border shrink-0", config.lastFetchStatus === "success" ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
               <span className={cn("w-1.5 h-1.5 rounded-full", config.lastFetchStatus === "success" ? "bg-green-500" : "bg-red-500")} />
