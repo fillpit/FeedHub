@@ -12,6 +12,7 @@ interface DialogProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl" | "6xl" | "full";
+  position?: "center" | "right";
   className?: string;
   bodyClassName?: string;
 }
@@ -22,7 +23,7 @@ const sizeClasses = {
   lg: "max-w-lg",
   xl: "max-w-xl",
   "6xl": "max-w-6xl",
-  full: "max-w-[95vw] h-[95vh]",
+  full: "max-w-full h-full",
 };
 
 export function Dialog({
@@ -33,6 +34,7 @@ export function Dialog({
   children,
   footer,
   size = "md",
+  position = "center",
   className,
   bodyClassName,
 }: DialogProps) {
@@ -58,6 +60,8 @@ export function Dialog({
     };
   }, [isOpen]);
 
+  const isCenter = position === "center";
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -72,20 +76,26 @@ export function Dialog({
           />
 
           {/* Dialog Container */}
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+          <div 
+            className={cn(
+              "fixed inset-0 z-[70] flex p-4 pointer-events-none",
+              isCenter ? "items-center justify-center" : "items-stretch justify-end p-0"
+            )}
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+              initial={isCenter ? { opacity: 0, scale: 0.95, y: 15 } : { x: "100%" }}
+              animate={isCenter ? { opacity: 1, scale: 1, y: 0 } : { x: 0 }}
+              exit={isCenter ? { opacity: 0, scale: 0.95, y: 15 } : { x: "100%" }}
+              transition={isCenter ? { type: "spring", bounce: 0.15, duration: 0.4 } : { type: "spring", bounce: 0, duration: 0.3 }}
               className={cn(
-                "w-full bg-app-elevated border border-app-border rounded-2xl shadow-2xl flex flex-col overflow-hidden pointer-events-auto",
+                "w-full bg-app-elevated border-app-border shadow-2xl flex flex-col overflow-hidden pointer-events-auto",
+                isCenter ? "rounded-2xl border" : "h-full border-l",
                 sizeClasses[size],
                 className
               )}
             >
               {/* Header */}
-              {(title || onClose) && (
+              {title && (
                 <div className="flex items-center justify-between px-6 py-4 border-b border-app-border bg-app-surface/50 shrink-0">
                   <div className="min-w-0">
                     {title && (
