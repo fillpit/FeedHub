@@ -24,8 +24,12 @@ export default function DynamicRoutePanel() {
   const [importSuccess, setImportSuccess] = useState(false);
   const [isExportMode, setIsExportMode] = useState(false);
   const [selectedExportIds, setSelectedExportIds] = useState<number[]>([]);
+  const [isSyncing, setIsSyncing] = useState<number | null>(null);
+  const [isInstalling, setIsInstalling] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const projectUploadRef = useRef<HTMLInputElement>(null);
+  const [uploadingRouteId, setUploadingRouteId] = useState<number | null>(null);
 
   const loadRoutes = useCallback(async () => {
     setIsLoading(true); setError(null);
@@ -54,6 +58,58 @@ export default function DynamicRoutePanel() {
   const handleFormSave = (savedRoute: DynamicRoute) => {
     setFormOpen(false); loadRoutes();
     if (!editingRoute) { setScriptRoute(savedRoute); setScriptDialogOpen(true); }
+  };
+
+  const handleGithubSync = async (route: DynamicRoute) => {
+    if (!route.script.githubConfig) {
+      alert("请先在配置中设置 GitHub 仓库信息");
+      setEditingRoute(route);
+      setFormOpen(true);
+      return;
+    }
+    setIsSyncing(route.id);
+    try {
+      await dynamicRouteApi.githubSync(route.id);
+      alert("同步成功");
+      loadRoutes();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "同步失败");
+    } finally {
+      setIsSyncing(null);
+    }
+  };
+
+  const handleUploadProject = (routeId: number) => {
+    setUploadingRouteId(routeId);
+    projectUploadRef.current?.click();
+  };
+
+  const handleProjectFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingRouteId) return;
+    try {
+      await dynamicRouteApi.uploadProject(uploadingRouteId, file);
+      alert("上传成功");
+      loadRoutes();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "上传失败");
+    } finally {
+      setUploadingRouteId(null);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  const handleInstallDeps = async (routeId: number) => {
+    if (!confirm("确定要在该目录下执行 pnpm install 吗？这可能需要一些时间。")) return;
+    setIsInstalling(routeId);
+    try {
+      await dynamicRouteApi.installDeps(routeId);
+      alert("依赖安装成功");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "安装失败");
+    } finally {
+      setIsInstalling(null);
+    }
   };
 
   const handleToggleSelect = (id: number) => {
@@ -111,6 +167,7 @@ export default function DynamicRoutePanel() {
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} className="hidden" />
+          <input ref={projectUploadRef} type="file" accept=".zip" onChange={handleProjectFileChange} className="hidden" />
           <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isImporting || isExportMode} className="gap-1.5 h-8 text-xs border-app-border bg-app-surface text-tx-secondary hover:text-tx-primary hover:bg-app-hover">
             {importSuccess ? <Check size={13} className="text-emerald-500" /> : <Upload size={13} />}
             {isImporting ? "导入中..." : importSuccess ? "导入成功" : "导入路由包"}
@@ -144,6 +201,11 @@ export default function DynamicRoutePanel() {
                   onEditConfig={(r) => { setEditingRoute(r); setFormOpen(true); }}
                   onEditScript={(r) => { setScriptRoute(r); setScriptDialogOpen(true); }}
                   onDelete={handleDelete} onCopyUrl={handleCopyUrl}
+                  onGithubSync={handleGithubSync}
+                  onUploadProject={handleUploadProject}
+                  onInstallDeps={handleInstallDeps}
+                  isSyncing={isSyncing === route.id}
+                  isInstalling={isInstalling === route.id}
                 />
               ))}
             </AnimatePresence>

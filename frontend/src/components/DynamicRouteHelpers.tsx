@@ -1,5 +1,5 @@
 import React from "react";
-import { Rss, Trash2, Edit2, Copy, Check, Code, Plus } from "lucide-react";
+import { Rss, Trash2, Edit2, Copy, Check, Code, Plus, Github, UploadCloud, Package, RefreshCw, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +16,18 @@ interface RouteCardProps {
   onEditScript: (route: DynamicRoute) => void;
   onDelete: (id: number) => void;
   onCopyUrl: (route: DynamicRoute) => void;
+  onGithubSync?: (route: DynamicRoute) => void;
+  onUploadProject?: (id: number) => void;
+  onInstallDeps?: (id: number) => void;
+  isSyncing?: boolean;
+  isInstalling?: boolean;
 }
 
 export function RouteCard({
   route, isCopied, isExportMode, isSelected, onToggleSelect,
-  onEditConfig, onEditScript, onDelete, onCopyUrl
+  onEditConfig, onEditScript, onDelete, onCopyUrl,
+  onGithubSync, onUploadProject, onInstallDeps,
+  isSyncing, isInstalling
 }: RouteCardProps) {
   return (
     <motion.div
@@ -70,6 +77,36 @@ export function RouteCard({
 
       {!isExportMode && (
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {route.script.source === "github" && (
+            <Button
+              variant="ghost" size="icon"
+              className={cn("w-7 h-7 text-tx-tertiary hover:text-accent-primary", isSyncing && "animate-spin text-accent-primary")}
+              onClick={() => onGithubSync?.(route)}
+              title="从 GitHub 同步"
+              disabled={isSyncing}
+            >
+              {isSyncing ? <RefreshCw size={13} /> : <Github size={13} />}
+            </Button>
+          )}
+          {route.script.source !== "github" && (
+            <Button
+              variant="ghost" size="icon"
+              className="w-7 h-7 text-tx-tertiary hover:text-accent-primary"
+              onClick={() => onUploadProject?.(route.id)}
+              title="上传项目 (.zip)"
+            >
+              <UploadCloud size={13} />
+            </Button>
+          )}
+          <Button
+            variant="ghost" size="icon"
+            className={cn("w-7 h-7 text-tx-tertiary hover:text-accent-primary", isInstalling && "animate-spin text-accent-primary")}
+            onClick={() => onInstallDeps?.(route.id)}
+            title="安装项目依赖 (pnpm install)"
+            disabled={isInstalling}
+          >
+            {isInstalling ? <Loader2 size={13} /> : <Package size={13} />}
+          </Button>
           <Button variant="ghost" size="icon" className="w-7 h-7 text-tx-tertiary hover:text-tx-primary" onClick={() => onCopyUrl(route)} title="复制 Feed URL">
             {isCopied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
           </Button>

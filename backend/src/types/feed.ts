@@ -10,13 +10,15 @@ export interface RouteParam {
 
 export interface RouteScript {
   sourceType: "inline";
+  source?: "local" | "github";
   folder: string;
   timeout: number;
-  gitConfig?: {
-    gitUrl: string;
-    gitBranch: string;
-    gitSubPath?: string;
-    lastSyncAt?: string;
+  githubConfig?: {
+    owner: string;
+    repo: string;
+    branch?: string;
+    path?: string;
+    token?: string;
   };
 }
 

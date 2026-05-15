@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { DynamicRoute, DynamicRouteCreate, DynamicRouteUpdate, RouteParam, AuthCredential } from "@/types/feed";
 import { dynamicRouteApi, authCredentialApi } from "@/lib/feed-api";
+import { cn } from "@/lib/utils";
 import RouteParamEditor from "./RouteParamEditor";
 
 interface Props {
@@ -22,6 +23,10 @@ export default function DynamicRouteForm({ route, onClose, onSave }: Props) {
   const [refreshInterval, setRefreshInterval] = useState(route?.refreshInterval ?? 60);
   const [authCredentialId, setAuthCredentialId] = useState<number | undefined>(route?.authCredentialId);
   const [params, setParams] = useState<RouteParam[]>(route?.params ?? []);
+  const [source, setSource] = useState<"local" | "github">(route?.script.source ?? "local");
+  const [githubConfig, setGithubConfig] = useState(route?.script.githubConfig ?? {
+    owner: "", repo: "", branch: "main", path: ""
+  });
   const [credentials, setCredentials] = useState<AuthCredential[]>([]);
 
   // Load available credentials list
@@ -39,6 +44,8 @@ export default function DynamicRouteForm({ route, onClose, onSave }: Props) {
       setRefreshInterval(route.refreshInterval);
       setParams(route.params ?? []);
       setAuthCredentialId(route.authCredentialId);
+      setSource(route.script.source ?? "local");
+      setGithubConfig(route.script.githubConfig ?? { owner: "", repo: "", branch: "main", path: "" });
     }
   }, [route]);
 
@@ -60,7 +67,13 @@ export default function DynamicRouteForm({ route, onClose, onSave }: Props) {
           path: routePath,
           method: "GET",
           params,
-          script: { sourceType: "inline", folder: "", timeout: 30000 },
+          script: { 
+            sourceType: "inline", 
+            source, 
+            githubConfig: source === "github" ? githubConfig : undefined,
+            folder: "", 
+            timeout: 30000 
+          },
           description,
           refreshInterval,
           authCredentialId: authCredentialId || null,
@@ -71,6 +84,11 @@ export default function DynamicRouteForm({ route, onClose, onSave }: Props) {
           name,
           path: routePath,
           params,
+          script: route.script ? {
+            ...route.script,
+            source,
+            githubConfig: source === "github" ? githubConfig : undefined,
+          } : undefined,
           description,
           refreshInterval,
           authCredentialId: authCredentialId || null,
@@ -82,7 +100,7 @@ export default function DynamicRouteForm({ route, onClose, onSave }: Props) {
     } finally {
       setIsSaving(false);
     }
-  }, [name, routePath, params, description, refreshInterval, authCredentialId, isNew, route, onSave]);
+  }, [name, routePath, params, description, refreshInterval, authCredentialId, isNew, route, onSave, githubConfig, source]);
 
   return (
     <Dialog
@@ -168,6 +186,88 @@ export default function DynamicRouteForm({ route, onClose, onSave }: Props) {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* 脚本来源配置 */}
+      <div className="space-y-4 pt-2 pb-2">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-tx-secondary uppercase tracking-wider">脚本来源</label>
+          <div className="flex bg-app-surface border border-app-border rounded-lg p-0.5">
+            <button
+              onClick={() => setSource("local")}
+              className={cn(
+                "px-3 py-1 text-[10px] font-medium rounded-md transition-all",
+                source === "local" ? "bg-app-bg text-accent-primary shadow-sm" : "text-tx-tertiary hover:text-tx-secondary"
+              )}
+            >
+              本地/上传
+            </button>
+            <button
+              onClick={() => setSource("github")}
+              className={cn(
+                "px-3 py-1 text-[10px] font-medium rounded-md transition-all",
+                source === "github" ? "bg-app-bg text-accent-primary shadow-sm" : "text-tx-tertiary hover:text-tx-secondary"
+              )}
+            >
+              GitHub 同步
+            </button>
+          </div>
+        </div>
+
+        {source === "github" && (
+          <div className="space-y-3 p-4 rounded-xl border border-dashed border-app-border bg-app-surface/30">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-medium text-tx-tertiary">Owner *</label>
+                <input
+                  value={githubConfig.owner}
+                  onChange={(e) => setGithubConfig({ ...githubConfig, owner: e.target.value })}
+                  placeholder="例如: google"
+                  className="w-full px-2 py-1.5 text-xs rounded-md border border-app-border bg-app-bg text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-medium text-tx-tertiary">Repo *</label>
+                <input
+                  value={githubConfig.repo}
+                  onChange={(e) => setGithubConfig({ ...githubConfig, repo: e.target.value })}
+                  placeholder="例如: feed-hub"
+                  className="w-full px-2 py-1.5 text-xs rounded-md border border-app-border bg-app-bg text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-medium text-tx-tertiary">Branch</label>
+                <input
+                  value={githubConfig.branch}
+                  onChange={(e) => setGithubConfig({ ...githubConfig, branch: e.target.value })}
+                  placeholder="main"
+                  className="w-full px-2 py-1.5 text-xs rounded-md border border-app-border bg-app-bg text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-medium text-tx-tertiary">Sub Path (可选)</label>
+                <input
+                  value={githubConfig.path}
+                  onChange={(e) => setGithubConfig({ ...githubConfig, path: e.target.value })}
+                  placeholder="scripts/my-script"
+                  className="w-full px-2 py-1.5 text-xs rounded-md border border-app-border bg-app-bg text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-medium text-tx-tertiary">Access Token (私有仓库可选)</label>
+              <input
+                type="password"
+                value={githubConfig.token || ""}
+                onChange={(e) => setGithubConfig({ ...githubConfig, token: e.target.value })}
+                placeholder="ghp_xxxxxxxxxxxx"
+                className="w-full px-2 py-1.5 text-xs rounded-md border border-app-border bg-app-bg text-tx-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Divider */}

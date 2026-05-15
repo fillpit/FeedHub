@@ -97,7 +97,6 @@ app.use("/api/*", async (c, next) => {
 });
 
 import settingsRouter from "./routes/settings";
-import fontsRouter from "./routes/fonts";
 import usersRouter from "./routes/users";
 
 // API 路由（受 JWT 保护）
@@ -107,7 +106,6 @@ app.route("/api/audit", auditRouter);
 app.route("/api/backups", backupsRouter);
 
 app.route("/api/settings", settingsRouter);
-app.route("/api/fonts", fontsRouter);
 app.route("/api/users", usersRouter);
 
 // FeedHub 路由（受 JWT 保护）

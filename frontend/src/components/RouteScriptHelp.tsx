@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BookOpen, Copy, Check, Info, Code, ShieldCheck, HelpCircle } from "lucide-react";
+import { BookOpen, Copy, Check, Info, Code, ShieldCheck, HelpCircle, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function RouteScriptHelp() {
@@ -181,6 +181,36 @@ return {
               {m}
             </span>
           ))}
+        </div>
+      </div>
+
+      {/* Dependency Management */}
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-1.5 text-tx-primary">
+          <Package size={14} className="text-tx-secondary" />
+          <h5 className="text-xs font-semibold">依赖包管理 (NPM Packages)</h5>
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          <div className="p-3 rounded-lg border border-app-border bg-app-bg/40 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-accent-primary bg-accent-primary/10 px-1.5 py-0.5 rounded">全局依赖</span>
+              <p className="text-[11px] text-tx-secondary">通过侧边栏“NPM 包管理”安装</p>
+            </div>
+            <p className="text-xs text-tx-secondary leading-relaxed">
+              适用于所有内联脚本。只需安装一次，即可在任何脚本中通过 <code className="font-mono text-[11px]">require("package-name")</code> 调用。适合存放常用的通用工具库。
+            </p>
+          </div>
+
+          <div className="p-3 rounded-lg border border-app-border bg-app-bg/40 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-accent-secondary bg-accent-secondary/10 px-1.5 py-0.5 rounded">项目局部依赖</span>
+              <p className="text-[11px] text-tx-secondary">在动态路由列表中点击“安装项目依赖”</p>
+            </div>
+            <p className="text-xs text-tx-secondary leading-relaxed">
+              适用于标准 NPM 项目。它会根据该项目下的 <code className="font-mono text-[11px]">package.json</code> 独立安装。
+              系统底层使用 **pnpm** 管理，即使多个项目使用同一个包，物理磁盘也**只占用一份空间**，安装极快且版本互不干扰。
+            </p>
+          </div>
         </div>
       </div>
 

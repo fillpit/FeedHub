@@ -11,7 +11,10 @@ import {
   createScriptDirectory,
   deleteScriptDirectory,
   readReadme,
+  extractZipFromBuffer,
+  installDependencies,
 } from "../services/script-file";
+import { syncFromGithub } from "../services/github-sync";
 import { getCacheService, buildCacheKey } from "../services/cache";
 
 const router = new Hono();
@@ -174,6 +177,53 @@ router.put("/:id/readme", async (c) => {
   const { content } = await c.req.json<{ content: string }>();
   writeScriptFile(route.script.folder, "README.md", content);
   return c.json({ success: true });
+});
+
+router.post("/:id/github-sync", async (c) => {
+  const route = getRouteOrFail(c.req.param("id"));
+  if (!route) return c.json({ error: "路由不存在" }, 404);
+  if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
+
+  const { githubConfig } = route.script;
+  if (!githubConfig) return c.json({ error: "未配置 GitHub 同步信息" }, 400);
+
+  try {
+    await syncFromGithub(route.script.folder, githubConfig);
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
+  }
+});
+
+router.post("/:id/upload", async (c) => {
+  const route = getRouteOrFail(c.req.param("id"));
+  if (!route) return c.json({ error: "路由不存在" }, 404);
+  if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
+
+  const body = await c.req.parseBody();
+  const file = body["file"] as File;
+  if (!file) return c.json({ error: "未上传文件" }, 400);
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  try {
+    extractZipFromBuffer(route.script.folder, buffer);
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
+  }
+});
+
+router.post("/:id/install-deps", async (c) => {
+  const route = getRouteOrFail(c.req.param("id"));
+  if (!route) return c.json({ error: "路由不存在" }, 404);
+  if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
+
+  try {
+    await installDependencies(route.script.folder);
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
+  }
 });
 
 // ─── 调试 ──────────────────────────────────────────────────────────────────

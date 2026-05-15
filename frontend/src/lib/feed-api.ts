@@ -16,10 +16,11 @@ function getBaseUrl(): string {
 
 async function req<T>(url: string, options?: RequestInit): Promise<T> {
   const token = getToken();
+  const isFormData = options?.body instanceof FormData;
   const res = await fetch(`${getBaseUrl()}${url}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
@@ -60,6 +61,18 @@ export const dynamicRouteApi = {
   // 调试
   debug: (id: number, params?: Record<string, string>) =>
     req<ScriptResult>(`/dynamic-routes/${id}/debug`, { method: "POST", body: json({ params }) }),
+
+  // 扩展功能
+  githubSync: (id: number) => req<{ success: boolean }>(`/dynamic-routes/${id}/github-sync`, { method: "POST" }),
+  uploadProject: (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return req<{ success: boolean }>(`/dynamic-routes/${id}/upload`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  installDeps: (id: number) => req<{ success: boolean }>(`/dynamic-routes/${id}/install-deps`, { method: "POST" }),
 };
 
 // ─── 网页监控 ────────────────────────────────────────────────────────────────

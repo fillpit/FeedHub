@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { SCRIPTS_BASE_DIR, ensureScriptsDir } from "./script-runner";
 
 /** 列出脚本目录的所有文件 */
@@ -86,6 +87,39 @@ export function readReadme(folder: string): string | null {
     if (fs.existsSync(filePath)) return fs.readFileSync(filePath, "utf-8");
   }
   return null;
+}
+
+/** 解压 Zip 到脚本目录 */
+export function extractZipFromBuffer(folder: string, buffer: Buffer): void {
+  const targetDir = path.join(SCRIPTS_BASE_DIR, folder);
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+  const tempZipPath = path.join(targetDir, `upload_${Date.now()}.zip`);
+  fs.writeFileSync(tempZipPath, buffer);
+
+  try {
+    // 使用系统 unzip 命令
+    execSync(`unzip -o "${tempZipPath}" -d "${targetDir}"`);
+  } catch (error) {
+    throw new Error(`解压失败: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    if (fs.existsSync(tempZipPath)) fs.unlinkSync(tempZipPath);
+  }
+}
+
+/** 在脚本目录下安装依赖 */
+export async function installDependencies(folder: string): Promise<void> {
+  const targetDir = path.join(SCRIPTS_BASE_DIR, folder);
+  if (!fs.existsSync(path.join(targetDir, "package.json"))) {
+    throw new Error("目录中不存在 package.json，无法安装依赖");
+  }
+
+  try {
+    // 使用 pnpm 安装
+    execSync("pnpm install", { cwd: targetDir, stdio: "inherit" });
+  } catch (error) {
+    throw new Error(`依赖安装失败: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 /** 防路径遍历：解析后必须在 scriptDir 内 */

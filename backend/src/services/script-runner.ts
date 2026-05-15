@@ -116,17 +116,29 @@ async function injectHostReferences(
   }));
 
   await jail.set("_hostRequireNpm", new ivm.Reference((id: string) => {
+    // 1. 尝试从脚本本地 node_modules 加载
+    const localPkgPath = path.join(scriptDir, "node_modules", id);
+    try {
+      if (fs.existsSync(localPkgPath)) {
+        const mod = require(localPkgPath);
+        return new ivm.Reference(mod);
+      }
+    } catch (err) {
+      console.warn(`Failed to load local npm package ${id}:`, err);
+    }
+
+    // 2. 尝试从全局 NPM 环境加载
     const db = getDb();
     const pkg = db.prepare("SELECT * FROM npm_packages WHERE name = ? AND status = 'installed'").get(id);
     if (!pkg) {
-      throw new Error(`NPM 包 "${id}" 未安装或未启用`);
+      throw new Error(`NPM 包 "${id}" 未安装或未启用 (本地或全局均未找到)`);
     }
-    const pkgPath = path.join(npmManager.getNpmEnvDir(), "node_modules", id);
+    const globalPkgPath = path.join(npmManager.getNpmEnvDir(), "node_modules", id);
     try {
-      const mod = require(pkgPath);
+      const mod = require(globalPkgPath);
       return new ivm.Reference(mod);
     } catch (err) {
-      throw new Error(`加载 NPM 包 "${id}" 失败: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(`加载全局 NPM 包 "${id}" 失败: ${err instanceof Error ? err.message : String(err)}`);
     }
   }));
 }
@@ -180,17 +192,24 @@ function handleHostRequire(id: string, scriptDir: string): string {
   if (ALLOWED_BUILTIN.has(id)) {
     throw new Error(`沙箱环境内不支持原生 Node 内置模块 require("${id}")，请使用原生 JS 语法`);
   }
-  const basePath = path.resolve(scriptDir, id);
-  if (!basePath.startsWith(scriptDir)) {
-    throw new Error("非法的模块路径请求");
-  }
-  const candidates = [basePath, `${basePath}.js`, `${basePath}.ts`, path.join(basePath, "index.js")];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      return fs.readFileSync(candidate, "utf-8");
+
+  // 这里的 id 可能是相对路径也可能是包名
+  // 如果是相对路径 (以 . 或 / 开头)
+  if (id.startsWith(".") || id.startsWith("/")) {
+    const basePath = path.resolve(scriptDir, id);
+    if (!basePath.startsWith(scriptDir)) {
+      throw new Error("非法的模块路径请求");
+    }
+    const candidates = [basePath, `${basePath}.js`, `${basePath}.ts`, path.join(basePath, "index.js")];
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return fs.readFileSync(candidate, "utf-8");
+      }
     }
   }
-  throw new Error(`不允许或无法加载模块 require("${id}")`);
+
+  // 如果不是相对路径，或者相对路径没找到，返回特定的错误标识，让沙箱尝试加载 NPM 包
+  throw new Error(`MODULE_NOT_FOUND: ${id}`);
 }
 
 function getSandboxInitShim(): string {
