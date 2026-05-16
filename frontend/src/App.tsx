@@ -6,7 +6,6 @@ import { Capacitor } from "@capacitor/core";
 import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import AdminPanel from "@/components/AdminPanel";
-import AIChatPanel from "@/components/AIChatPanel";
 import LoginPage from "@/components/LoginPage";
 import DynamicRoutePanel from "@/components/DynamicRoutePanel";
 import WebsiteRssPanel from "@/components/WebsiteRssPanel";
@@ -129,8 +128,6 @@ function AppLayout({ user }: { user: User }) {
     }
   }, [user, actions]);
 
-  const isAIChatView = state.viewMode === "ai-chat";
-
   const handleBackToList = useCallback(() => {
     actions.setMobileView("list");
   }, [actions]);
@@ -191,15 +188,6 @@ function AppLayout({ user }: { user: User }) {
       </div>
       <SidebarResizeHandle />
 
-      {isAIChatView ? (
-        <div className="flex-1 flex flex-col">
-          <MobileTopBar />
-          <AIChatPanel
-            onClose={() => actions.setViewMode("dashboard")}
-            onNavigateToNote={async () => { /* no-op */ }}
-          />
-        </div>
-      ) : (
         <div className="flex-1 flex flex-col">
           <MobileTopBar />
           {state.viewMode === "admin" ? (
@@ -216,7 +204,6 @@ function AppLayout({ user }: { user: User }) {
             <Dashboard />
           )}
         </div>
-      )}
     </div>
   );
 }

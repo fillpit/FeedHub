@@ -141,18 +141,7 @@ export default function AdminPanel() {
               {activeTab === "about" && <AboutPanel />}
 
               {activeTab === "ai" && (
-                <div className="bg-app-surface rounded-3xl border border-app-border p-8 shadow-sm">
-                  <AISettingsPanel />
-                </div>
-              )}
-
-              {activeTab !== "tasks" && activeTab !== "users" && activeTab !== "ai" && activeTab !== "site" && activeTab !== "backup" && activeTab !== "about" && (
-                <div className="h-[50vh] flex flex-col items-center justify-center text-tx-tertiary gap-4 bg-app-surface/40 rounded-3xl border border-app-border border-dashed">
-                  <div className="w-16 h-16 rounded-2xl bg-app-surface flex items-center justify-center border border-app-border shadow-sm">
-                    <Activity size={32} className="opacity-20" />
-                  </div>
-                  <p className="text-sm font-medium">「{sidebarGroups.flatMap(g => g.items).find(i => i.id === activeTab)?.label}」模块正在建设中...</p>
-                </div>
+                <AISettingsPanel />
               )}
             </motion.div>
           </AnimatePresence>

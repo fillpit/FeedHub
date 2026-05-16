@@ -79,7 +79,7 @@ function getSavedNoteListWidth(): number {
 function getSavedViewMode(): ViewMode {
   try {
     const saved = localStorage.getItem("nowen-view-mode") as ViewMode;
-    const validModes: ViewMode[] = ["dashboard", "notebook", "favorites", "trash", "all", "search", "tasks", "tag", "mindmaps", "ai-chat", "diary", "codex", "admin", "feed-routes", "feed-websites", "feed-credentials", "feed-npm"];
+    const validModes: ViewMode[] = ["dashboard", "notebook", "favorites", "trash", "all", "search", "tasks", "tag", "mindmaps", "diary", "codex", "admin", "feed-routes", "feed-websites", "feed-credentials", "feed-npm"];
     if (saved && validModes.includes(saved)) return saved;
   } catch {}
   return "dashboard";

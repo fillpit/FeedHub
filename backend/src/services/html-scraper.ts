@@ -1,6 +1,9 @@
 import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
 import { FeedItem, WebsiteRssSelector, SelectorField, ScrapeResult, ScrapeDebugInfo, ScrapeItemDebug, ScrapeFieldDebug } from "../types/feed";
+import { getDb } from "../db/schema";
+import { ChromeFetcher } from "./chrome-fetcher";
+import { BrowserlessFetcher } from "./browserless-fetcher";
 
 /**
  * 网页抓取服务 - 带诊断和调试支持
@@ -98,12 +101,62 @@ async function runXPathScraping(
 }
 
 async function fetchHtml(url: string, headers: Record<string, string>): Promise<string> {
-  const response = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; FeedHub/1.0)", ...headers },
-    signal: AbortSignal.timeout(30000),
-  });
-  if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  return response.text();
+  const db = getDb();
+  
+  // 1. 读取设置
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key IN ('cdp_enabled', 'cdp_url', 'browserless_enabled', 'browserless_url', 'browserless_token')").all() as { key: string; value: string }[];
+  
+  const settings: Record<string, string> = {};
+  for (const row of rows) {
+    settings[row.key] = row.value;
+  }
+
+  const cdpEnabled = settings.cdp_enabled === "1";
+  const cdpUrl = settings.cdp_url || "http://localhost:9222";
+  const browserlessEnabled = settings.browserless_enabled === "1";
+  const browserlessUrl = settings.browserless_url || "http://localhost:3000";
+  const browserlessToken = settings.browserless_token || "";
+
+  const errors: string[] = [];
+
+  // 2. 尝试 CDP
+  if (cdpEnabled && cdpUrl) {
+    try {
+      console.log(`[html-scraper] 尝试使用 Chrome CDP 抓取: ${url}`);
+      const fetcher = new ChromeFetcher(cdpUrl);
+      return await fetcher.fetch(url);
+    } catch (err: any) {
+      console.error(`[html-scraper] Chrome CDP 抓取失败: ${err.message}`);
+      errors.push(`CDP 失败: ${err.message}`);
+    }
+  }
+
+  // 3. 尝试 Browserless
+  if (browserlessEnabled && browserlessUrl) {
+    try {
+      console.log(`[html-scraper] 尝试使用 Browserless 抓取: ${url}`);
+      const fetcher = new BrowserlessFetcher(browserlessUrl, browserlessToken);
+      return await fetcher.fetch(url);
+    } catch (err: any) {
+      console.error(`[html-scraper] Browserless 抓取失败: ${err.message}`);
+      errors.push(`Browserless 失败: ${err.message}`);
+    }
+  }
+
+  // 4. 降级到标准 HTTP 请求
+  try {
+    console.log(`[html-scraper] 使用标准 HTTP 抓取: ${url}`);
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; FeedHub/1.0)", ...headers },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.text();
+  } catch (err: any) {
+    console.error(`[html-scraper] 标准 HTTP 抓取失败: ${err.message}`);
+    errors.push(`标准 HTTP 失败: ${err.message}`);
+    throw new Error(`所有抓取方式均失败: ${errors.join(" | ")}`);
+  }
 }
 
 async function tryLoadXpath(): Promise<XPathModule | null> {

@@ -21,18 +21,13 @@ export default function Sidebar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const user = state.user;
 
-  const rawNavItems: { icon: React.ReactNode; label: string; mode: ViewMode; active: boolean; badge?: string }[] = [
+  const navItems: { icon: React.ReactNode; label: string; mode: ViewMode; active: boolean; badge?: string }[] = [
     { icon: <LayoutDashboard size={16} />, label: t('sidebar.dashboard', "仪表盘"), mode: "dashboard", active: state.viewMode === "dashboard" },
-    { icon: <Bot size={16} />, label: "AI 秘书", mode: "ai-chat", active: state.viewMode === "ai-chat" },
-  ];
-
-  const feedNavItems: { icon: React.ReactNode; label: string; mode: ViewMode; active: boolean }[] = [
     { icon: <Globe size={16} />, label: "网页监控", mode: "feed-websites", active: state.viewMode === "feed-websites" },
     { icon: <Rss size={16} />, label: "动态路由", mode: "feed-routes", active: state.viewMode === "feed-routes" },
     { icon: <KeyRound size={16} />, label: "授权凭证", mode: "feed-credentials", active: state.viewMode === "feed-credentials" },
     { icon: <Package size={16} />, label: "NPM 包管理", mode: "feed-npm", active: state.viewMode === "feed-npm" },
   ];
-  const navItems = rawNavItems;
 
   if (state.sidebarCollapsed) {
     return (
@@ -162,11 +157,6 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
-        <div className="px-2 mb-2">
-          <span className="text-[10px] font-bold text-tx-tertiary uppercase tracking-widest opacity-60">
-            主导航
-          </span>
-        </div>
         {navItems.map((item) => (
           <button
             key={item.mode}
@@ -184,44 +174,6 @@ export default function Sidebar() {
             {item.active && (
               <motion.div
                 layoutId="nav-active"
-                className="absolute left-0 w-1 h-5 bg-accent-primary rounded-r-full"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              />
-            )}
-            <div className={cn(
-              "flex items-center justify-center transition-transform group-hover:scale-110",
-              item.active ? "text-accent-primary" : "text-tx-tertiary group-hover:text-tx-primary"
-            )}>
-              {item.icon}
-            </div>
-            {item.label}
-          </button>
-        ))}
-
-        {/* FeedHub 导航分组 */}
-        <div className="px-2 mt-4 mb-2">
-          <span className="text-[10px] font-bold text-tx-tertiary uppercase tracking-widest opacity-60">
-            FeedHub
-          </span>
-        </div>
-        {feedNavItems.map((item) => (
-          <button
-            key={item.mode}
-            onClick={() => {
-              actions.setViewMode(item.mode);
-              actions.setMobileSidebar(false);
-            }}
-            className={cn(
-              "group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative overflow-hidden",
-              item.active
-                ? "bg-app-active text-accent-primary shadow-sm"
-                : "text-tx-secondary hover:bg-app-hover hover:text-tx-primary"
-            )}
-          >
-            {item.active && (
-              <motion.div
-                layoutId="nav-active-feed"
                 className="absolute left-0 w-1 h-5 bg-accent-primary rounded-r-full"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

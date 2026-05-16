@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { getDb } from "../db/schema";
 import { testRedisConnection, clearCacheServiceInstance } from "../services/cache";
 import { testCdpConnection } from "../services/cdp";
+import { BrowserlessFetcher } from "../services/browserless-fetcher";
 
 const settings = new Hono();
 
@@ -14,6 +15,9 @@ export interface SiteSettings {
   redis_url?: string;
   cdp_enabled?: string;
   cdp_url?: string;
+  browserless_enabled?: string;
+  browserless_url?: string;
+  browserless_token?: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -25,12 +29,15 @@ const DEFAULTS: SiteSettings = {
   redis_url: "redis://localhost:6379",
   cdp_enabled: "0",
   cdp_url: "http://localhost:9222",
+  browserless_enabled: "0",
+  browserless_url: "http://localhost:3000",
+  browserless_token: "",
 };
 
 // 获取所有站点设置
 settings.get("/", (c) => {
   const db = getDb();
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -74,6 +81,15 @@ settings.put("/", async (c) => {
     if (body.cdp_url !== undefined) {
       upsert.run("cdp_url", body.cdp_url);
     }
+    if (body.browserless_enabled !== undefined) {
+      upsert.run("browserless_enabled", body.browserless_enabled);
+    }
+    if (body.browserless_url !== undefined) {
+      upsert.run("browserless_url", body.browserless_url);
+    }
+    if (body.browserless_token !== undefined) {
+      upsert.run("browserless_token", body.browserless_token);
+    }
   });
   tx();
 
@@ -81,7 +97,7 @@ settings.put("/", async (c) => {
   clearCacheServiceInstance();
 
   // 返回更新后的全部设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -121,6 +137,28 @@ settings.post("/cdp/test", async (c) => {
     return c.json({
       success: false,
       message: err.message || "连接失败"
+    });
+  }
+});
+
+// 测试 Browserless 连接
+settings.post("/browserless/test", async (c) => {
+  try {
+    const body = await c.req.json() as { browserless_url: string; browserless_token?: string };
+    if (!body.browserless_url) {
+      return c.json({ success: false, message: "Browserless 地址不能为空" }, 400);
+    }
+
+    const fetcher = new BrowserlessFetcher(body.browserless_url, body.browserless_token || "");
+    const { version } = await fetcher.testConnection();
+    return c.json({
+      success: true,
+      message: `连接成功！Browserless 状态/版本: ${version}`
+    });
+  } catch (err: any) {
+    return c.json({
+      success: false,
+      message: `无法连接至 Browserless 服务: ${err.message || "连接失败"}`
     });
   }
 });

@@ -81,6 +81,16 @@ const PROVIDER_PRESETS: ProviderPreset[] = [
     color: "from-orange-500 to-pink-500",
   },
   {
+    id: "siliconflow",
+    name: "SiliconFlow (硅基流动)",
+    desc: "ai.siliconflowDesc",
+    models: "DeepSeek-V3 / DeepSeek-R1 / Qwen2.5",
+    url: "https://api.siliconflow.cn/v1",
+    defaultModel: "deepseek-ai/DeepSeek-V3",
+    needsKey: true,
+    color: "from-blue-600 to-sky-500",
+  },
+  {
     id: "ollama",
     name: "Custom / Ollama",
     desc: "ai.ollamaCustomDesc",
@@ -116,18 +126,18 @@ const ActionArea = ({
   const msg = saveMsgs[scenario];
 
   return (
-    <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-3">
+    <div className="mt-4 pt-4 border-t border-app-border flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleSave(scenario)}
             disabled={loading}
             type="button"
-            className="flex items-center justify-center gap-2 w-28 h-8 bg-accent-primary hover:bg-accent-primary/90 text-white rounded-lg text-[10px] font-bold transition-all disabled:opacity-40 shrink-0 relative overflow-hidden"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-accent-primary hover:bg-accent-primary/90 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40 shrink-0 shadow-lg shadow-accent-primary/20 relative overflow-hidden"
           >
-            <div className="w-3 h-3 flex items-center justify-center shrink-0 relative">
-              <Loader2 size={12} className={cn("animate-spin absolute transition-all duration-300", isSaving[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
-              <Check size={12} className={cn("absolute transition-all duration-300", !isSaving[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
+            <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0 relative">
+              <Loader2 size={14} className={cn("animate-spin absolute transition-all duration-300", isSaving[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
+              <Check size={14} className={cn("absolute transition-all duration-300", !isSaving[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
             </div>
             <span>保存配置</span>
           </button>
@@ -136,11 +146,11 @@ const ActionArea = ({
             onClick={() => handleTest(scenario)}
             disabled={loading}
             type="button"
-            className="flex items-center justify-center gap-2 w-28 h-8 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[10px] font-bold text-zinc-700 dark:text-zinc-300 hover:border-accent-primary/50 transition-all disabled:opacity-40 bg-white dark:bg-zinc-900 shadow-sm shrink-0 relative overflow-hidden"
+            className="flex items-center justify-center gap-2 px-4 py-2 border border-app-border rounded-xl text-xs font-bold text-tx-secondary hover:text-tx-primary hover:border-tx-tertiary transition-all disabled:opacity-40 bg-app-bg shadow-sm shrink-0 relative overflow-hidden"
           >
-            <div className="w-3 h-3 flex items-center justify-center shrink-0 relative">
-              <Loader2 size={12} className={cn("animate-spin absolute transition-all duration-300", isTesting[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
-              <RefreshCw size={12} className={cn("absolute transition-all duration-300", !isTesting[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
+            <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0 relative">
+              <Loader2 size={14} className={cn("animate-spin absolute transition-all duration-300", isTesting[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
+              <RefreshCw size={14} className={cn("absolute transition-all duration-300", !isTesting[scenario] ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
             </div>
             <span>测试连接</span>
           </button>
@@ -148,14 +158,14 @@ const ActionArea = ({
 
         <div className="h-8 flex items-center gap-3 min-w-[200px] relative">
           <span className={cn(
-            "text-[10px] font-bold transition-all duration-500 absolute",
+            "text-xs font-bold transition-all duration-500 absolute",
             msg ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none",
             msg?.includes("成功") ? "text-emerald-500" : "text-red-500"
           )}>
             {msg || "保存成功"}
           </span>
           <span className={cn(
-            "flex items-center gap-1 text-[10px] font-bold text-emerald-500 transition-all duration-500 absolute left-[80px]",
+            "flex items-center gap-1 text-xs font-bold text-emerald-500 transition-all duration-500 absolute left-[80px]",
             (result && result.success) ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none"
           )}>
             <CircleCheck size={12} />
@@ -166,7 +176,7 @@ const ActionArea = ({
 
       <div className="h-[30px] flex items-center overflow-hidden">
         <div className={cn(
-          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-500 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20",
+          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-500 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20",
           (result && !result.success) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
         )}>
           <AlertCircle size={12} />
@@ -494,17 +504,18 @@ export default function AISettingsPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-1">{t("ai.title")}</h3>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("ai.description")}</p>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <Bot size={20} className="text-indigo-500" />
+          <h2 className="text-lg font-bold text-tx-primary">{t("ai.title")}</h2>
+          {isConfigured && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+              <CircleCheck size={12} />
+              {t("ai.configured")}
+            </span>
+          )}
         </div>
-        {isConfigured && (
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase">
-            <CircleCheck size={14} />
-            {t("ai.configured")}
-          </span>
-        )}
+        <p className="text-sm text-tx-secondary">{t("ai.description")}</p>
       </div>
 
       {/* 全局默认配置卡片 */}
@@ -647,17 +658,21 @@ export default function AISettingsPanel() {
             <ActionArea scenario="global" {...commonActionAreaProps} />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-1">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-1">
             <div className="space-y-1">
-              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">端点</div>
-              <div className="text-xs font-mono text-zinc-500 dark:text-zinc-400 truncate">{settings.ai_api_url || "未设置"}</div>
+              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">默认服务商</div>
+              <div className="text-xs font-bold text-zinc-700 dark:text-zinc-200">{currentPreset?.name || "自定义"}</div>
             </div>
             <div className="space-y-1">
               <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">默认模型</div>
-              <div className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">{settings.ai_model || "未设置"}</div>
+              <div className="text-xs font-bold text-zinc-700 dark:text-zinc-200">{settings.ai_model || "未设置"}</div>
             </div>
             <div className="space-y-1">
-              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">API Key</div>
+              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">端点</div>
+              <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">{settings.ai_api_url || "未设置"}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">API KEY</div>
               <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{settings.ai_api_key_set ? "********" : "未配置"}</div>
             </div>
           </div>

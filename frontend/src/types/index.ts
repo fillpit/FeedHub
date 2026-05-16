@@ -77,7 +77,7 @@ export interface SearchResult {
   snippet: string;
 }
 
-export type ViewMode = "dashboard" | "notebook" | "favorites" | "trash" | "all" | "search" | "tasks" | "tag" | "mindmaps" | "ai-chat" | "diary" | "codex" | "admin" | "feed-routes" | "feed-websites" | "feed-credentials" | "feed-settings" | "feed-npm";
+export type ViewMode = "dashboard" | "notebook" | "favorites" | "trash" | "all" | "search" | "tasks" | "tag" | "mindmaps" | "diary" | "codex" | "admin" | "feed-routes" | "feed-websites" | "feed-credentials" | "feed-settings" | "feed-npm";
 
 
 

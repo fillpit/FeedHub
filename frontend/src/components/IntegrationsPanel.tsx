@@ -1,317 +1,204 @@
 import React, { useState, useEffect } from "react";
-import { Loader2, Database, Check, RefreshCw, Cpu } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { Rss, Chrome, Globe, HelpCircle, Terminal, Cpu, Database } from "lucide-react";
 import { api } from "@/lib/api";
+import { IntegrationCard, CopyButton } from "./IntegrationCard";
+import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
+import { BrowserlessConfig } from "./BrowserlessConfig";
+import { RedisConfig } from "./RedisConfig";
 
-export default function IntegrationsPanel() {
-  const [enabled, setEnabled] = useState(false);
-  const [redisUrl, setRedisUrl] = useState("redis://localhost:6379");
-  const [cdpEnabled, setCdpEnabled] = useState(false);
-  const [cdpUrl, setCdpUrl] = useState("http://localhost:9222");
-  
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [testLoading, setTestLoading] = useState(false);
-  
-  const [cdpTestResult, setCdpTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [cdpTestLoading, setCdpTestLoading] = useState(false);
-  
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+const CHROME_CMD = "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222";
+const DOCKER_CMD = "docker run -d -p 3000:3000 --restart always -e \"MAX_CONCURRENT_SESSIONS=10\" -e \"TOKEN=your_secure_token\" browserless/chrome";
 
-  useEffect(() => {
-    setIsLoading(true);
-    api.getSiteSettings()
-      .then((data) => {
-        setEnabled(data.redis_enabled === "1");
-        setRedisUrl(data.redis_url || "redis://localhost:6379");
-        setCdpEnabled(data.cdp_enabled === "1");
-        setCdpUrl(data.cdp_url || "http://localhost:9222");
-      })
-      .catch((err) => {
-        console.error("Failed to load settings", err);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
-
-  const handleSaveRedis = async (nextEnabled: boolean) => {
-    setIsSaving(true);
-    setSaveMessage(null);
-    try {
-      await api.updateSiteSettings({
-        redis_enabled: nextEnabled ? "1" : "0",
-        redis_url: redisUrl,
-      });
-      setEnabled(nextEnabled);
-      setSaveMessage({ type: 'success', text: "Redis 配置已保存！" });
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err: any) {
-      setSaveMessage({ type: 'error', text: "保存失败: " + err.message });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveCdp = async (nextEnabled: boolean) => {
-    setIsSaving(true);
-    setSaveMessage(null);
-    try {
-      await api.updateSiteSettings({
-        cdp_enabled: nextEnabled ? "1" : "0",
-        cdp_url: cdpUrl,
-      });
-      setCdpEnabled(nextEnabled);
-      setSaveMessage({ type: 'success', text: "CDP 配置已保存！" });
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err: any) {
-      setSaveMessage({ type: 'error', text: "保存失败: " + err.message });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleTestRedis = async () => {
-    setTestLoading(true);
-    setTestResult(null);
-    try {
-      const res = await api.testRedisConnection({ redis_url: redisUrl });
-      setTestResult(res);
-    } catch (err: any) {
-      setTestResult({ success: false, message: err.message });
-    } finally {
-      setTestLoading(false);
-    }
-  };
-
-  const handleTestCdp = async () => {
-    setCdpTestLoading(true);
-    setCdpTestResult(null);
-    try {
-      const res = await api.testCdpConnection({ cdp_url: cdpUrl });
-      setCdpTestResult(res);
-    } catch (err: any) {
-      setCdpTestResult({ success: false, message: err.message });
-    } finally {
-      setCdpTestLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 py-4 justify-center">
-        <Loader2 className="w-5 h-5 text-accent-primary animate-spin" />
-        <span className="text-sm text-tx-tertiary">加载配置中...</span>
-      </div>
-    );
-  }
-
+/**
+ * GReader instruction node
+ */
+const GReaderInstructions: React.FC = () => {
   return (
-    <div className="bg-app-surface rounded-3xl border border-app-border p-8 shadow-sm space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* 标题 */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
-          <Database size={20} />
+    <div className="space-y-2">
+      <div className="font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-500 text-xs">
+        <HelpCircle className="w-3.5 h-3.5" />
+        接入指南：
+      </div>
+      <ul className="list-disc list-inside space-y-1 text-[11px] text-tx-secondary leading-relaxed">
+        <li>直接使用你的 <strong>本站账号与登录密码</strong> 在阅读器中进行鉴权登录。</li>
+        <li>对于部分知名阅读器，选择 <strong>"Google Reader"</strong> 类型的服务商，然后填入上面的物理网关。</li>
+      </ul>
+    </div>
+  );
+};
+
+/**
+ * Chrome Remote Debugging instruction node with improved readability and color balance
+ */
+const ChromeDebuggingInstructions: React.FC = () => (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-bold text-tx-primary flex items-center gap-1.5">
+        <Terminal className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+        Mac Mini 终端快速启动指令
+      </span>
+      <CopyButton text={CHROME_CMD} tooltip="复制运行指令" />
+    </div>
+    <p className="text-[11px] text-tx-secondary leading-relaxed">
+      要在同一局域网（或本地）激活无头 Chrome 调试会话，请先关闭正在运行的所有 Chrome 实例，再在 Mac Mini 终端复制并直接运行以下命令：
+    </p>
+    <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
+      {CHROME_CMD}
+    </div>
+    <p className="text-[10px] text-tx-tertiary leading-relaxed">
+      💡 <strong>登录提示：</strong> 启动后，请直接在弹出的 Chrome 实例中正常登录你的目标平台。后续系统抓取时将复用 Cookie 绕过验证机制。
+    </p>
+    <div className="p-4 bg-rose-500/[0.02] dark:bg-rose-500/[0.04] border border-rose-500/10 dark:border-rose-500/20 rounded-xl space-y-2.5 text-[11px] leading-relaxed text-tx-secondary">
+      <span className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 text-xs">
+        ⚠️ 局域网访问连接拒绝（安全策略限制）
+      </span>
+      <p>
+        从 Chromium M113 版本开始，由于安全防范考量，Chrome <strong>彻底禁用 <code>--remote-debugging-address=0.0.0.0</code> 选项</strong>。如果强行指定，Chrome 会直接拒绝启动。
+      </p>
+      <p className="font-bold text-tx-primary text-xs pt-1 border-t border-app-border/10">【解决方案】：</p>
+      <div className="space-y-3 pl-1">
+        <div>
+          <strong className="text-tx-primary">方案一：SSH 隧道转发（最安全，免安装）</strong>
+          <p className="mt-0.5">在部署本系统的服务器终端中运行以下命令（将服务器本地 9222 安全转发至 Mac Mini）：</p>
+          <code className="block mt-1.5 p-2 bg-app-bg border border-app-border/60 rounded font-mono text-[11px] text-tx-primary">
+            ssh -L 9222:127.0.0.1:9222 user@{"<Mac_Mini_IP>"}
+          </code>
         </div>
         <div>
-          <h3 className="text-xl font-bold text-tx-primary">集成服务</h3>
-          <p className="text-xs text-tx-secondary mt-1">配置第三方服务以增强系统功能。</p>
+          <strong className="text-tx-primary">方案二：socat 端口映射（支持后台持久运行）</strong>
+          <p className="mt-0.5">在 Mac Mini 安装并运行 socat 转发，利用 nohup 后台挂载持久运行：</p>
+          <code className="block mt-1.5 p-3 bg-app-bg border border-app-border/60 rounded font-mono text-[11px] text-tx-primary leading-normal whitespace-pre-wrap">
+            <span className="text-tx-tertiary"># 1. 安装 socat</span>{"\n"}
+            brew install socat{"\n"}{"\n"}
+            <span className="text-tx-tertiary"># 2. 在后台持久运行转发（窗口关闭不中断）</span>{"\n"}
+            nohup socat TCP-LISTEN:9223,fork,reuseaddr TCP:127.0.0.1:9222 &gt; /dev/null 2&gt;&amp;1 &amp;{"\n"}{"\n"}
+            <span className="text-tx-tertiary"># 3. 后续如需关闭此服务，执行以下命令：</span>{"\n"}
+            killall socat
+          </code>
         </div>
       </div>
+    </div>
+  </div>
+);
 
-      {/* Redis 配置卡片 */}
-      <div className="p-6 rounded-2xl bg-app-bg border border-app-border space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <span className="text-sm font-bold text-tx-primary">Redis 缓存支持</span>
-            <p className="text-xs text-tx-tertiary leading-relaxed">
-              开启后，系统将使用 Redis 缓存网页监控和动态路由的抓取结果，防止频繁请求。
-            </p>
-          </div>
-          <button
-            onClick={() => handleSaveRedis(!enabled)}
-            disabled={isSaving}
-            className={cn(
-              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none shadow-inner",
-              enabled ? "bg-accent-primary" : "bg-app-hover"
-            )}
-          >
-            <span
-              className={cn(
-                "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-300 ease-in-out",
-                enabled ? "translate-x-5" : "translate-x-0"
-              )}
-            />
-          </button>
+/**
+ * Browserless instruction node
+ */
+const BrowserlessInstructions: React.FC = () => (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-bold text-tx-primary flex items-center gap-1.5">
+        <Cpu className="w-3.5 h-3.5 text-teal-500 dark:text-teal-400" />
+        独立 Docker 极致部署镜像
+      </span>
+      <CopyButton text={DOCKER_CMD} tooltip="复制 Docker 指令" />
+    </div>
+    <p className="text-[11px] text-tx-secondary leading-relaxed">
+      你可以通过下面的指令在一台闲置 babys 独立服务器或群晖上快速启动 Browserless 实例：
+    </p>
+    <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
+      {DOCKER_CMD}
+    </div>
+  </div>
+);
+
+/**
+ * Main Integration Configuration Panel Component
+ */
+export default function IntegrationsPanel() {
+  const { t } = useTranslation();
+  const [serverUrl, setServerUrl] = useState("");
+  const [activeStates, setActiveStates] = useState<Record<string, boolean>>({
+    redis: false,
+    greader: true,
+    chrome_debugging: false,
+    browserless: false,
+  });
+
+  const fetchActiveStatus = () => {
+    api.getSiteSettings()
+      .then((data) => {
+        setActiveStates({
+          redis: data.redis_enabled === "1",
+          greader: true,
+          chrome_debugging: data.cdp_enabled === "1",
+          browserless: data.browserless_enabled === "1",
+        });
+      })
+      .catch((err) => console.error("Failed to load integrations state", err));
+  };
+
+  useEffect(() => {
+    let url = window.location.origin;
+    if (import.meta.env.VITE_API_URL) {
+      if (import.meta.env.VITE_API_URL.startsWith('http')) {
+        url = new URL(import.meta.env.VITE_API_URL).origin;
+      } else {
+        url = window.location.origin;
+      }
+    }
+    setServerUrl(url);
+    fetchActiveStatus();
+  }, []);
+
+  const greaderContent = (
+    <div className="space-y-4 animate-in fade-in duration-300">
+      <p className="text-xs text-tx-secondary leading-relaxed">
+        {t('settings.greaderServerInfo')}
+      </p>
+      <div className="flex items-center gap-2 max-w-md">
+        <div className="flex-1 bg-app-bg border border-app-border rounded-xl px-4 py-3 text-xs text-tx-primary truncate select-all font-mono font-bold">
+          {serverUrl}
         </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-tx-secondary uppercase tracking-wider ml-1">
-            Redis 连接地址
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={redisUrl}
-              onChange={(e) => setRedisUrl(e.target.value)}
-              className="flex-1 px-4 py-3 bg-app-surface border border-app-border rounded-xl text-xs text-tx-primary outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all font-mono"
-              placeholder="redis://localhost:6379"
-            />
-            <button
-              onClick={handleTestRedis}
-              disabled={testLoading}
-              className="px-4 py-3 bg-app-surface hover:bg-app-hover border border-app-border rounded-xl text-xs font-bold text-tx-secondary hover:text-tx-primary transition-all disabled:opacity-50 shadow-sm shrink-0 flex items-center gap-2"
-            >
-              {testLoading ? <Loader2 size={14} className="animate-spin" /> : null}
-              验证连接
-            </button>
-          </div>
-        </div>
-
-        {testResult && (
-          <div
-            className={cn(
-              "p-4 rounded-xl text-xs leading-relaxed border transition-all duration-300 animate-in zoom-in-95",
-              testResult.success
-                ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/10"
-                : "bg-rose-500/5 text-rose-500 border-rose-500/10"
-            )}
-          >
-            <div className="font-bold flex items-center gap-1.5 mb-1">
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full",
-                  testResult.success ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                )}
-              />
-              {testResult.success ? "连接成功" : "连接失败"}
-            </div>
-            <span className="text-[11px] opacity-90">{testResult.message}</span>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3 pt-1">
-          <button
-            onClick={() => handleSaveRedis(enabled)}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-accent-primary hover:bg-accent-primary/90 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-lg shadow-accent-primary/20"
-          >
-            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            保存配置
-          </button>
-          {saveMessage && (
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold animate-in fade-in slide-in-from-left-2",
-              saveMessage.type === 'success' ? "text-emerald-500 bg-emerald-500/10" : "text-rose-500 bg-rose-500/10"
-            )}>
-              {saveMessage.type === 'success' ? <Check size={14} /> : <RefreshCw size={14} className="animate-spin" />}
-              {saveMessage.text}
-            </div>
-          )}
-        </div>
+        <CopyButton text={serverUrl} tooltip="复制服务器网关" />
       </div>
+    </div>
+  );
 
-      {/* Chrome CDP 配置卡片 */}
-      <div className="p-6 rounded-2xl bg-app-bg border border-app-border space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <span className="text-sm font-bold text-tx-primary">Chrome CDP 支持</span>
-            <p className="text-xs text-tx-tertiary leading-relaxed">
-              开启后，系统将优先使用 Chrome CDP 进行网页抓取，适用于需要 JavaScript 渲染的页面。
-            </p>
-          </div>
-          <button
-            onClick={() => handleSaveCdp(!cdpEnabled)}
-            disabled={isSaving}
-            className={cn(
-              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none shadow-inner",
-              cdpEnabled ? "bg-accent-primary" : "bg-app-hover"
-            )}
-          >
-            <span
-              className={cn(
-                "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-300 ease-in-out",
-                cdpEnabled ? "translate-x-5" : "translate-x-0"
-              )}
-            />
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-tx-secondary uppercase tracking-wider ml-1">
-            CDP 连接地址
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={cdpUrl}
-              onChange={(e) => setCdpUrl(e.target.value)}
-              className="flex-1 px-4 py-3 bg-app-surface border border-app-border rounded-xl text-xs text-tx-primary outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all font-mono"
-              placeholder="http://localhost:9222"
-            />
-            <button
-              onClick={handleTestCdp}
-              disabled={cdpTestLoading}
-              className="px-4 py-3 bg-app-surface hover:bg-app-hover border border-app-border rounded-xl text-xs font-bold text-tx-secondary hover:text-tx-primary transition-all disabled:opacity-50 shadow-sm shrink-0 flex items-center gap-2"
-            >
-              {cdpTestLoading ? <Loader2 size={14} className="animate-spin" /> : null}
-              验证连接
-            </button>
-          </div>
-        </div>
-
-        {cdpTestResult && (
-          <div
-            className={cn(
-              "p-4 rounded-xl text-xs leading-relaxed border transition-all duration-300 animate-in zoom-in-95",
-              cdpTestResult.success
-                ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/10"
-                : "bg-rose-500/5 text-rose-500 border-rose-500/10"
-            )}
-          >
-            <div className="font-bold flex items-center gap-1.5 mb-1">
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full",
-                  cdpTestResult.success ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                )}
-              />
-              {cdpTestResult.success ? "连接成功" : "连接失败"}
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <section className="space-y-12">
+        <IntegrationCard
+          icon={<Database className="w-4 h-4 text-emerald-500" />}
+          title="Redis 缓存集成"
+          description="使用 Redis 高速缓存网页内容，极大地提升二次抓取速度，并有效减少对源站的并发请求压力。"
+          badgeText={activeStates.redis ? "已开启" : "未开启"}
+          isActive={activeStates.redis}
+          content={<RedisConfig onStateChange={fetchActiveStatus} />}
+          instructions={
+            <div className="space-y-2">
+              <div className="font-bold flex items-center gap-1.5 text-emerald-600 dark:text-emerald-500 text-xs">
+                <HelpCircle className="w-3.5 h-3.5" />
+                配置说明：
+              </div>
+              <p className="text-[11px] text-tx-secondary leading-relaxed">
+                请确保填入正确的 Redis 连接字符串（例如 <code>redis://localhost:6379</code>）。如果 Redis 服务设置了密码，请使用 <code>redis://:password@host:port</code> 格式。
+              </p>
             </div>
-            <span className="text-[11px] opacity-90">{cdpTestResult.message}</span>
-          </div>
-        )}
+          }
+        />
 
-        <div className="flex items-center gap-3 pt-1">
-          <button
-            onClick={() => handleSaveCdp(cdpEnabled)}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-accent-primary hover:bg-accent-primary/90 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-lg shadow-accent-primary/20"
-          >
-            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            保存配置
-          </button>
-          {saveMessage && (
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold animate-in fade-in slide-in-from-left-2",
-              saveMessage.type === 'success' ? "text-emerald-500 bg-emerald-500/10" : "text-rose-500 bg-rose-500/10"
-            )}>
-              {saveMessage.type === 'success' ? <Check size={14} /> : <RefreshCw size={14} className="animate-spin" />}
-              {saveMessage.text}
-            </div>
-          )}
-        </div>
-      </div>
+        <IntegrationCard
+          icon={<Chrome className="w-4 h-4 text-indigo-500" />}
+          title="Chrome 远程调试"
+          description="一键劫持 Chrome 运行会话进行全文提取。无缝利用本地 Cookie、完美绕过 Cloudflare 与防爬拦截。"
+          badgeText={activeStates.chrome_debugging ? "已开启" : "未开启"}
+          isActive={activeStates.chrome_debugging}
+          content={<ChromeDebuggingConfig onStateChange={fetchActiveStatus} />}
+          instructions={<ChromeDebuggingInstructions />}
+        />
 
-      {/* 提示信息 */}
-      <div className="p-6 rounded-2xl bg-app-bg/50 border border-app-border border-dashed space-y-3">
-        <div className="flex items-start gap-3 text-xs text-tx-tertiary">
-          <div className="mt-0.5 shrink-0 opacity-60"><Database size={14} /></div>
-          <p>💡 <strong>提示：</strong> 请确保外部服务已启动并可从本系统访问。Redis 默认地址为 <code>redis://localhost:6379</code>，CDP 默认地址为 <code>http://localhost:9222</code>。</p>
-        </div>
-      </div>
+        <IntegrationCard
+          icon={<Globe className="w-4 h-4 text-teal-500" />}
+          title="Browserless 云端/独立容器集成"
+          description="连接云端或私有化 Docker 部署的无头 Chrome 容器阵列（Browserless）。专为处理复杂的 SPA 单页应用设计，高并发极速加载。"
+          badgeText={activeStates.browserless ? "已开启" : "未开启"}
+          isActive={activeStates.browserless}
+          content={<BrowserlessConfig onStateChange={fetchActiveStatus} />}
+          instructions={<BrowserlessInstructions />}
+        />
+      </section>
     </div>
   );
 }
