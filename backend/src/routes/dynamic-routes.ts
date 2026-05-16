@@ -226,6 +226,103 @@ router.post("/:id/install-deps", async (c) => {
   }
 });
 
+router.post("/:id/npm-install", async (c) => {
+  const route = getRouteOrFail(c.req.param("id"));
+  if (!route) return c.json({ error: "路由不存在" }, 404);
+  if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
+
+  const { exec } = await import("node:child_process");
+  const util = await import("node:util");
+  const path = await import("node:path");
+  const { SCRIPTS_BASE_DIR } = await import("../services/script-runner");
+  const execAsync = util.promisify(exec);
+
+  const scriptDir = path.join(SCRIPTS_BASE_DIR, route.script.folder);
+  try {
+    const { stdout, stderr } = await execAsync("npm install", { cwd: scriptDir, timeout: 60000 });
+    return c.json({ success: true, logs: stdout + "\n" + stderr });
+  } catch (err: any) {
+    return c.json({ success: false, logs: err.stdout + "\n" + err.stderr + "\n" + err.message }, 500);
+  }
+});
+
+router.post("/:id/import-rsshub", async (c) => {
+  const route = getRouteOrFail(c.req.param("id"));
+  if (!route) return c.json({ error: "路由不存在" }, 404);
+  if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
+
+  const { rsshubRoute } = await c.req.json<{ rsshubRoute: string }>();
+  if (!rsshubRoute) return c.json({ error: "未提供 RSSHub 路由" }, 400);
+
+  const { findRsshubRouteFile } = await import("../services/rsshub");
+  const match = await findRsshubRouteFile(rsshubRoute);
+
+  if (!match) {
+    return c.json({ error: "在本地 RSSHub 代码库中未找到对应的路由源文件" }, 404);
+  }
+
+  const db = getDb();
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'ai_%'").all() as { key: string; value: string }[];
+  const settings: Record<string, string> = {};
+  for (const row of rows) settings[row.key] = row.value;
+
+  const apiUrl = (settings.ai_chat_api_url || settings.ai_api_url || "").replace(/\/+$/, "");
+  const apiKey = settings.ai_chat_api_key || settings.ai_api_key;
+  const model = settings.ai_chat_model || settings.ai_model || "gpt-4o-mini";
+
+  if (!apiUrl) {
+    return c.json({ error: "未配置 AI API 地址" }, 400);
+  }
+
+  const prompt = `你是一个专业的 TypeScript/JavaScript 开发工程师。
+用户希望将以下 RSSHub 的源文件（路径：${match.filePath}）转换为 FeedHub 的独立抓取脚本。
+由于 FeedHub 支持完整的 Node 原生 \`vm\` 环境以及 npm 模块，你可以保留 cheerio、got、ofetch 等常见包的使用，但请直接在一份 main.js 文件中输出转换后的完整可用代码。
+
+要求：
+1. 移除对 RSSHub 特有上下文（如 ctx.cache, ctx.state.data 等）的依赖，直接调用目标网站 API 或爬取网页。
+2. 提取出原文件中的请求逻辑（fetch/got/axios）、解析逻辑（cheerio/json）。
+3. FeedHub 脚本最后必须将结果作为数组或包含 title, link, items 的对象 \`return\` 出去。每个 item 包含 title, link, description/content, pubDate 等字段。
+4. 提供代码时，请将其包裹在 \`\`\`javascript 和 \`\`\` 之间，不需要多余的解释说明。
+
+RSSHub 源码：
+\`\`\`javascript
+${match.content.slice(0, 8000)} // 截断以防止过长
+\`\`\`
+`;
+
+  try {
+    const res = await fetch(`${apiUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+      }),
+    });
+
+    if (!res.ok) {
+      const errTxt = await res.text();
+      return c.json({ error: `AI 服务返回错误: ${res.status} ${errTxt.slice(0, 200)}` }, 502);
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content || "";
+
+    // 提取 ```javascript ... ``` 块
+    const codeMatch = content.match(/```(?:javascript|js|typescript|ts)\n([\s\S]*?)```/);
+    const code = codeMatch ? codeMatch[1].trim() : content.trim();
+
+    writeScriptFile(route.script.folder, "main.js", code);
+    return c.json({ success: true, code, message: "已通过 AI 生成代码并覆盖 main.js" });
+  } catch (err: any) {
+    return c.json({ error: err.message || "AI 转换失败" }, 500);
+  }
+});
+
 // ─── 调试 ──────────────────────────────────────────────────────────────────
 
 router.post("/:id/debug", async (c) => {

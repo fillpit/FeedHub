@@ -54,6 +54,9 @@ export const dynamicRouteApi = {
   deleteFile: (id: number, filePath: string) =>
     req<{ success: boolean }>(`/dynamic-routes/${id}/files`, { method: "DELETE", body: json({ path: filePath }) }),
   initScript: (id: number) => req<{ folder: string }>(`/dynamic-routes/${id}/init-script`, { method: "POST" }),
+  npmInstall: (id: number) => req<{ success: boolean; logs: string }>(`/dynamic-routes/${id}/npm-install`, { method: "POST" }),
+  importRsshub: (id: number, rsshubRoute: string) =>
+    req<{ success: boolean; code: string; message?: string }>(`/dynamic-routes/${id}/import-rsshub`, { method: "POST", body: json({ rsshubRoute }) }),
   getReadme: (id: number) => req<{ content: string }>(`/dynamic-routes/${id}/readme`),
   saveReadme: (id: number, content: string) =>
     req<{ success: boolean }>(`/dynamic-routes/${id}/readme`, { method: "PUT", body: json({ content }) }),

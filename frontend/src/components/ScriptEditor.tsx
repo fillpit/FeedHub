@@ -252,6 +252,41 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
     if (activeFile) loadFileContent(activeFile);
   }, [activeFile, loadFileContent]);
 
+  // NPM & RSSHub Import states
+  const [isNpmInstalling, setIsNpmInstalling] = useState(false);
+  const [isImportingRsshub, setIsImportingRsshub] = useState(false);
+  const [rsshubRoute, setRsshubRoute] = useState("");
+
+  const handleNpmInstall = async () => {
+    setIsNpmInstalling(true);
+    try {
+      const res = await dynamicRouteApi.npmInstall(routeId);
+      alert(res.success ? "安装成功！\n" + res.logs : "安装失败：\n" + res.logs);
+    } catch (e: any) {
+      alert("NPM 安装出错：" + e.message);
+    } finally {
+      setIsNpmInstalling(false);
+    }
+  };
+
+  const submitImportRsshub = async () => {
+    if (!rsshubRoute.trim()) return;
+    setIsImportingRsshub(true);
+    try {
+      const res = await dynamicRouteApi.importRsshub(routeId, rsshubRoute.trim());
+      await loadFiles();
+      setActiveFile("main.js");
+      setContent(res.code);
+      setHasUnsavedChanges(false);
+      alert("导入成功！");
+    } catch (e: any) {
+      alert("导入失败：" + e.message);
+    } finally {
+      setIsImportingRsshub(false);
+      setRsshubRoute("");
+    }
+  };
+
   const handleInitScript = async () => {
     setIsInitializing(true);
     try {
@@ -275,13 +310,20 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
   const submitCreateFile = async () => {
     const name = newFileName;
     if (!name || !name.trim()) return;
-    const cleanName = name.trim().endsWith(".js") ? name.trim() : `${name.trim()}.js`;
+    // Allow package.json
+    let cleanName = name.trim();
+    if (!cleanName.endsWith(".js") && !cleanName.endsWith(".ts") && !cleanName.endsWith(".json")) {
+      cleanName = `${cleanName}.js`;
+    }
     if (files.some(f => f.name === cleanName)) {
       alert("文件名已存在");
       return;
     }
     try {
-      const initCode = `// 模块：${cleanName}\nmodule.exports = {\n  \n};\n`;
+      let initCode = `// 模块：${cleanName}\nmodule.exports = {\n  \n};\n`;
+      if (cleanName === "package.json") {
+        initCode = `{\n  "name": "script",\n  "version": "1.0.0",\n  "dependencies": {\n    "cheerio": "*"\n  }\n}`;
+      }
       await dynamicRouteApi.saveFileContent(routeId, cleanName, initCode);
       await loadFiles();
       setActiveFile(cleanName);
@@ -292,7 +334,7 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
   };
 
   const handleDeleteFile = async (filePath: string, fileName: string) => {
-    if (!confirm(`确定要删除脚本文件 ${fileName} 吗？`)) return;
+    if (!confirm(`确定要删除文件 ${fileName} 吗？`)) return;
     try {
       await dynamicRouteApi.deleteFile(routeId, filePath);
       if (activeFile === filePath) {
@@ -376,20 +418,61 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
   }
 
   const linesCount = Math.max(content.split("\n").length, 1);
+  const hasPackageJson = files.some(f => f.name === "package.json");
 
   return (
     <div className="flex h-full relative">
+      {/* 导入 RSSHub 弹窗 */}
+      {isImportingRsshub && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-96 bg-app-elevated border border-app-border rounded-xl shadow-2xl p-4 flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <h4 className="text-sm font-semibold text-tx-primary mb-2 flex items-center gap-1">
+              <Sparkles size={14} className="text-accent-primary" />
+              通过 AI 导入 RSSHub 路由
+            </h4>
+            <p className="text-[11px] text-tx-tertiary mb-3">
+              输入 RSSHub 官方文档中的路由（例如：/bilibili/user/dynamic/:uid/:routeParams?），AI 将尝试拉取源码并转换为主程序代码。
+            </p>
+            <input
+              type="text"
+              autoFocus
+              value={rsshubRoute}
+              onChange={(e) => setRsshubRoute(e.target.value)}
+              placeholder="/bilibili/user/dynamic/:uid"
+              className="w-full px-3 py-2 text-xs bg-app-surface border border-app-border rounded-lg text-tx-primary focus:outline-none focus:border-accent-primary mb-4 font-mono"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitImportRsshub();
+                } else if (e.key === "Escape") {
+                  setIsImportingRsshub(false);
+                  setRsshubRoute("");
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={() => { setIsImportingRsshub(false); setRsshubRoute(""); }} className="h-8 text-xs">
+                取消
+              </Button>
+              <Button size="sm" onClick={submitImportRsshub} disabled={!rsshubRoute.trim()} className="h-8 text-xs">
+                确定导入
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 新建脚本文件弹窗 */}
       {isCreatingFile && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="w-80 bg-app-elevated border border-app-border rounded-xl shadow-2xl p-4 flex flex-col animate-in fade-in zoom-in-95 duration-150">
-            <h4 className="text-sm font-semibold text-tx-primary mb-2">新建脚本文件</h4>
+            <h4 className="text-sm font-semibold text-tx-primary mb-2">新建文件</h4>
             <input
               type="text"
               autoFocus
               value={newFileName}
               onChange={(e) => setNewFileName(e.target.value)}
-              placeholder="例如：utils.js"
+              placeholder="例如：utils.js 或 package.json"
               className="w-full px-3 py-2 text-xs bg-app-surface border border-app-border rounded-lg text-tx-primary focus:outline-none focus:border-accent-primary mb-4 font-mono"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -424,7 +507,7 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
             size="icon"
             onClick={handleOpenCreateDialog}
             className="w-5 h-5 text-tx-tertiary hover:text-tx-primary hover:bg-app-hover rounded"
-            title="新建脚本文件"
+            title="新建文件"
           >
             <Plus size={12} />
           </Button>
@@ -465,6 +548,31 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
         <div className="flex items-center justify-between px-3 py-2 border-b border-app-border bg-app-surface/50 select-none shrink-0">
           <span className="text-[11px] text-tx-tertiary font-mono">{activeFile ?? ""}</span>
           <div className="flex items-center gap-2">
+            {hasPackageJson && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNpmInstall}
+                disabled={isNpmInstalling}
+                className="h-6 px-2 text-xs gap-1 hover:bg-app-hover text-tx-secondary hover:text-tx-primary"
+                title="根据 package.json 安装依赖"
+              >
+                {isNpmInstalling ? <RefreshCw size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+                安装依赖
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setRsshubRoute(""); setIsImportingRsshub(true); }}
+              className="h-6 px-2 text-[10px] gap-1 text-accent-primary border-accent-primary/20 hover:bg-accent-primary/10"
+            >
+              <Sparkles size={11} />
+              AI 导入 RSSHub
+            </Button>
+            
+            <div className="w-px h-3 bg-app-border mx-1" />
+
             {hasUnsavedChanges && (
               <span className="text-[10px] text-amber-500">● 未保存</span>
             )}
