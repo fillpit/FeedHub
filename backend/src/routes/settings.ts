@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getDb } from "../db/schema";
 import { testRedisConnection, clearCacheServiceInstance } from "../services/cache";
+import { testCdpConnection } from "../services/cdp";
 
 const settings = new Hono();
 
@@ -11,6 +12,8 @@ export interface SiteSettings {
   registration_policy: "open" | "invite" | "closed";
   redis_enabled?: string;
   redis_url?: string;
+  cdp_enabled?: string;
+  cdp_url?: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -20,12 +23,14 @@ const DEFAULTS: SiteSettings = {
   registration_policy: "closed",
   redis_enabled: "0",
   redis_url: "redis://localhost:6379",
+  cdp_enabled: "0",
+  cdp_url: "http://localhost:9222",
 };
 
 // 获取所有站点设置
 settings.get("/", (c) => {
   const db = getDb();
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -63,6 +68,12 @@ settings.put("/", async (c) => {
     if (body.redis_url !== undefined) {
       upsert.run("redis_url", body.redis_url);
     }
+    if (body.cdp_enabled !== undefined) {
+      upsert.run("cdp_enabled", body.cdp_enabled);
+    }
+    if (body.cdp_url !== undefined) {
+      upsert.run("cdp_url", body.cdp_url);
+    }
   });
   tx();
 
@@ -70,7 +81,7 @@ settings.put("/", async (c) => {
   clearCacheServiceInstance();
 
   // 返回更新后的全部设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -87,6 +98,24 @@ settings.post("/redis/test", async (c) => {
     }
 
     const result = await testRedisConnection(body.redis_url);
+    return c.json(result);
+  } catch (err: any) {
+    return c.json({
+      success: false,
+      message: err.message || "连接失败"
+    });
+  }
+});
+
+// 测试 CDP 连接
+settings.post("/cdp/test", async (c) => {
+  try {
+    const body = await c.req.json() as { cdp_url: string };
+    if (!body.cdp_url) {
+      return c.json({ success: false, message: "CDP 地址不能为空" }, 400);
+    }
+
+    const result = await testCdpConnection(body.cdp_url);
     return c.json(result);
   } catch (err: any) {
     return c.json({

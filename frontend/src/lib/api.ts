@@ -161,6 +161,8 @@ export const api = {
     registration_policy: "open" | "invite" | "closed";
     redis_enabled?: string;
     redis_url?: string;
+    cdp_enabled?: string;
+    cdp_url?: string;
   }>("/settings"),
   updateSiteSettings: (data: { 
     site_title?: string; 
@@ -169,6 +171,8 @@ export const api = {
     registration_policy?: string;
     redis_enabled?: string;
     redis_url?: string;
+    cdp_enabled?: string;
+    cdp_url?: string;
   }) =>
     request<{ 
       site_title: string; 
@@ -177,12 +181,19 @@ export const api = {
       registration_policy: string;
       redis_enabled?: string;
       redis_url?: string;
+      cdp_enabled?: string;
+      cdp_url?: string;
     }>("/settings", {
       method: "PUT",
       body: JSON.stringify(data),
     }),
   testRedisConnection: (data: { redis_url: string }) =>
     request<{ success: boolean; message: string }>("/settings/redis/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  testCdpConnection: (data: { cdp_url: string }) =>
+    request<{ success: boolean; message: string }>("/settings/cdp/test", {
       method: "POST",
       body: JSON.stringify(data),
     }),
