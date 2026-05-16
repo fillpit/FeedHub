@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Shield, Activity, Globe, Bot, Users,
   AlertCircle, Info, Lock, UserPlus, RefreshCw, Plus,
-  Mail, Check, AlertTriangle, ArrowLeft, Database
+  Mail, Check, AlertTriangle, ArrowLeft, Database, Cpu
 } from "lucide-react";
 import { User } from "@/types";
 import { cn } from "@/lib/utils";
 import AISettingsPanel from "./AISettingsPanel";
 import SiteSettingsPanel from "./SiteSettingsPanel";
+import IntegrationsPanel from "./IntegrationsPanel";
 import BackupPanel from "./BackupPanel";
 import AboutPanel from "./AboutPanel";
 import { useAppActions } from "@/store/AppContext";
@@ -16,7 +17,7 @@ import { api } from "@/lib/api";
 
 type AdminTab =
   | "account" | "site" | "ai" | "ai-actions" | "users"
-  | "stats-reading" | "stats-files" | "logs" | "tasks" | "about" | "backup";
+  | "stats-reading" | "stats-files" | "logs" | "tasks" | "about" | "backup" | "integrations";
 
 interface SidebarItem {
   id: AdminTab;
@@ -41,6 +42,7 @@ export default function AdminPanel() {
         { id: "site", label: "站点", icon: <Globe size={18} />, desc: "名称、目录、缓存" },
         { id: "ai", label: "AI 设置", icon: <Bot size={18} />, desc: "模型与 API 配置" },
         { id: "users", label: "用户管理", icon: <Users size={18} />, desc: "账号、角色、注册策略" },
+        { id: "integrations", label: "集成服务", icon: <Cpu size={18} />, desc: "Redis 等第三方服务" },
       ]
     },
     {
@@ -131,6 +133,8 @@ export default function AdminPanel() {
               {activeTab === "users" && <UserManagementView />}
 
               {activeTab === "site" && <SiteSettingsPanel />}
+
+              {activeTab === "integrations" && <IntegrationsPanel />}
 
               {activeTab === "backup" && <BackupPanel />}
 

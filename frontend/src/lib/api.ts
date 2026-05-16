@@ -154,10 +154,36 @@ export const api = {
     }),
 
   // Site Settings
-  getSiteSettings: () => request<{ site_title: string; site_favicon: string; editor_font_family: string; registration_policy: "open" | "invite" | "closed" }>("/settings"),
-  updateSiteSettings: (data: { site_title?: string; site_favicon?: string; editor_font_family?: string; registration_policy?: string }) =>
-    request<{ site_title: string; site_favicon: string; editor_font_family: string; registration_policy: string }>("/settings", {
+  getSiteSettings: () => request<{ 
+    site_title: string; 
+    site_favicon: string; 
+    editor_font_family: string; 
+    registration_policy: "open" | "invite" | "closed";
+    redis_enabled?: string;
+    redis_url?: string;
+  }>("/settings"),
+  updateSiteSettings: (data: { 
+    site_title?: string; 
+    site_favicon?: string; 
+    editor_font_family?: string; 
+    registration_policy?: string;
+    redis_enabled?: string;
+    redis_url?: string;
+  }) =>
+    request<{ 
+      site_title: string; 
+      site_favicon: string; 
+      editor_font_family: string; 
+      registration_policy: string;
+      redis_enabled?: string;
+      redis_url?: string;
+    }>("/settings", {
       method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  testRedisConnection: (data: { redis_url: string }) =>
+    request<{ success: boolean; message: string }>("/settings/redis/test", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 
