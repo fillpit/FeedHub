@@ -187,7 +187,7 @@ export const BrowserlessConfig: React.FC<BrowserlessConfigProps> = ({ onStateCha
     setIsLoading(true);
     api.getSiteSettings()
       .then((data) => {
-        setEnabled(data.browserless_fetching_enabled === "1");
+        setEnabled(data.browserless_enabled === "1");
         setBrowserlessUrl(data.browserless_url || "http://localhost:3000");
         setBrowserlessToken(data.browserless_token || "");
       })
@@ -205,7 +205,7 @@ export const BrowserlessConfig: React.FC<BrowserlessConfigProps> = ({ onStateCha
     setSaveError(null);
     try {
       await api.updateSiteSettings({
-        browserless_fetching_enabled: nextEnabled ? "1" : "0",
+        browserless_enabled: nextEnabled ? "1" : "0",
         browserless_url: browserlessUrl,
         browserless_token: browserlessToken,
       });
@@ -213,8 +213,8 @@ export const BrowserlessConfig: React.FC<BrowserlessConfigProps> = ({ onStateCha
       setSaveSuccess(true);
       onStateChange();
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err: any) {
-      setSaveError(err.message);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setIsSaving(false);
     }
@@ -229,8 +229,8 @@ export const BrowserlessConfig: React.FC<BrowserlessConfigProps> = ({ onStateCha
         browserless_token: browserlessToken,
       });
       setTestResult(res);
-    } catch (err: any) {
-      setTestResult({ success: false, message: err.message });
+    } catch (err: unknown) {
+      setTestResult({ success: false, message: err instanceof Error ? err.message : "测试失败" });
     } finally {
       setTestLoading(false);
     }

@@ -262,8 +262,8 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
     try {
       const res = await dynamicRouteApi.npmInstall(routeId);
       alert(res.success ? "安装成功！\n" + res.logs : "安装失败：\n" + res.logs);
-    } catch (e: any) {
-      alert("NPM 安装出错：" + e.message);
+    } catch (e: unknown) {
+      alert("NPM 安装出错：" + (e instanceof Error ? e.message : "未知错误"));
     } finally {
       setIsNpmInstalling(false);
     }
@@ -279,8 +279,8 @@ export default function ScriptEditor({ routeId, scriptFolder, onInit }: Props) {
       setContent(res.code);
       setHasUnsavedChanges(false);
       alert("导入成功！");
-    } catch (e: any) {
-      alert("导入失败：" + e.message);
+    } catch (e: unknown) {
+      alert("导入失败：" + (e instanceof Error ? e.message : "未知错误"));
     } finally {
       setIsImportingRsshub(false);
       setRsshubRoute("");

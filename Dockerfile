@@ -2,6 +2,8 @@
 FROM node:24-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV COREPACK_NPM_REGISTRY="https://registry.npmmirror.com"
+ENV NPM_CONFIG_REGISTRY="https://registry.npmmirror.com"
 RUN corepack enable
 WORKDIR /app
 

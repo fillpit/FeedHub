@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Shield, Activity, Globe, Bot, Users,
+  Shield, Globe, Bot, Users,
   AlertCircle, Info, Lock, UserPlus, RefreshCw, Plus,
   Mail, Check, AlertTriangle, ArrowLeft, Database, Cpu
 } from "lucide-react";

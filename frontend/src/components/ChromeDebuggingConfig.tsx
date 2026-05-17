@@ -183,8 +183,8 @@ export const ChromeDebuggingConfig: React.FC<ChromeDebuggingConfigProps> = ({ on
       setSaveSuccess(true);
       onStateChange();
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err: any) {
-      setSaveError(err.message);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setIsSaving(false);
     }
@@ -196,8 +196,8 @@ export const ChromeDebuggingConfig: React.FC<ChromeDebuggingConfigProps> = ({ on
     try {
       const res = await api.testCdpConnection({ cdp_url: debugUrl });
       setTestResult(res);
-    } catch (err: any) {
-      setTestResult({ success: false, message: err.message });
+    } catch (err: unknown) {
+      setTestResult({ success: false, message: err instanceof Error ? err.message : "测试失败" });
     } finally {
       setTestLoading(false);
     }

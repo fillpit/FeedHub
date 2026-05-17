@@ -113,9 +113,9 @@ export async function testRedisConnection(url: string): Promise<{ success: boole
     await client.ping();
     await client.quit();
     return { success: true, message: "Redis 连接成功！" };
-  } catch (err: any) {
+  } catch (err: unknown) {
     try { await client.quit(); } catch {}
-    return { success: false, message: `Redis 连接失败: ${err.message}` };
+    return { success: false, message: `Redis 连接失败: ${err instanceof Error ? err.message : "连接失败"}` };
   }
 }
 

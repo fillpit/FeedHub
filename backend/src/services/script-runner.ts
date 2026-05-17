@@ -4,8 +4,6 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import fs from "node:fs";
 import util from "node:util";
-import { npmManager } from "./npm-manager";
-import { getDb } from "../db/schema";
 
 const SCRIPTS_BASE_DIR = process.env.SCRIPTS_DIR
   || path.join(process.env.ELECTRON_USER_DATA || process.cwd(), "data", "scripts");

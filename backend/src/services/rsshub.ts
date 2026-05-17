@@ -64,8 +64,6 @@ export async function findRsshubRouteFile(routePath: string): Promise<{ filePath
         
         // 我们提取路径的核心部分，例如 /bilibili/user/dynamic，去掉 /:xxx 参数部分
         const coreRoute = routePath.split('/:')[0];
-        // 如果核心部分太短，增加一些限制
-        const segments = routePath.split('/').filter(Boolean);
         
         if (content.includes(routePath)) {
           matchedFile = fullPath;

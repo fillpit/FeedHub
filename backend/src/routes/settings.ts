@@ -115,10 +115,10 @@ settings.post("/redis/test", async (c) => {
 
     const result = await testRedisConnection(body.redis_url);
     return c.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({
       success: false,
-      message: err.message || "连接失败"
+      message: err instanceof Error ? err.message : "连接失败"
     });
   }
 });
@@ -133,10 +133,10 @@ settings.post("/cdp/test", async (c) => {
 
     const result = await testCdpConnection(body.cdp_url);
     return c.json(result);
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({
       success: false,
-      message: err.message || "连接失败"
+      message: err instanceof Error ? err.message : "连接失败"
     });
   }
 });
@@ -155,10 +155,10 @@ settings.post("/browserless/test", async (c) => {
       success: true,
       message: `连接成功！Browserless 状态/版本: ${version}`
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return c.json({
       success: false,
-      message: `无法连接至 Browserless 服务: ${err.message || "连接失败"}`
+      message: `无法连接至 Browserless 服务: ${err instanceof Error ? err.message : "连接失败"}`
     });
   }
 });

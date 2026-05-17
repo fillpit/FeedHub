@@ -191,8 +191,8 @@ export const RedisConfig: React.FC<RedisConfigProps> = ({ onStateChange }) => {
       setSaveSuccess(true);
       onStateChange();
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err: any) {
-      setSaveError(err.message);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setIsSaving(false);
     }
@@ -206,8 +206,8 @@ export const RedisConfig: React.FC<RedisConfigProps> = ({ onStateChange }) => {
         redis_url: redisUrl,
       });
       setTestResult(res);
-    } catch (err: any) {
-      setTestResult({ success: false, message: err.message });
+    } catch (err: unknown) {
+      setTestResult({ success: false, message: err instanceof Error ? err.message : "测试失败" });
     } finally {
       setTestLoading(false);
     }

@@ -125,9 +125,10 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
       console.log(`[html-scraper] 尝试使用 Chrome CDP 抓取: ${url}`);
       const fetcher = new ChromeFetcher(cdpUrl);
       return await fetcher.fetch(url);
-    } catch (err: any) {
-      console.error(`[html-scraper] Chrome CDP 抓取失败: ${err.message}`);
-      errors.push(`CDP 失败: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "未知错误";
+      console.error(`[html-scraper] Chrome CDP 抓取失败: ${message}`);
+      errors.push(`CDP 失败: ${message}`);
     }
   }
 
@@ -137,9 +138,10 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
       console.log(`[html-scraper] 尝试使用 Browserless 抓取: ${url}`);
       const fetcher = new BrowserlessFetcher(browserlessUrl, browserlessToken);
       return await fetcher.fetch(url);
-    } catch (err: any) {
-      console.error(`[html-scraper] Browserless 抓取失败: ${err.message}`);
-      errors.push(`Browserless 失败: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "未知错误";
+      console.error(`[html-scraper] Browserless 抓取失败: ${message}`);
+      errors.push(`Browserless 失败: ${message}`);
     }
   }
 
@@ -152,9 +154,10 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     return await response.text();
-  } catch (err: any) {
-    console.error(`[html-scraper] 标准 HTTP 抓取失败: ${err.message}`);
-    errors.push(`标准 HTTP 失败: ${err.message}`);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "未知错误";
+    console.error(`[html-scraper] 标准 HTTP 抓取失败: ${message}`);
+    errors.push(`标准 HTTP 失败: ${message}`);
     throw new Error(`所有抓取方式均失败: ${errors.join(" | ")}`);
   }
 }

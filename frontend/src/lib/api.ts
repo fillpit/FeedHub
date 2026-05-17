@@ -163,6 +163,9 @@ export const api = {
     redis_url?: string;
     cdp_enabled?: string;
     cdp_url?: string;
+    browserless_enabled?: string;
+    browserless_url?: string;
+    browserless_token?: string;
   }>("/settings"),
   updateSiteSettings: (data: { 
     site_title?: string; 
@@ -173,6 +176,9 @@ export const api = {
     redis_url?: string;
     cdp_enabled?: string;
     cdp_url?: string;
+    browserless_enabled?: string;
+    browserless_url?: string;
+    browserless_token?: string;
   }) =>
     request<{ 
       site_title: string; 
@@ -194,6 +200,11 @@ export const api = {
     }),
   testCdpConnection: (data: { cdp_url: string }) =>
     request<{ success: boolean; message: string }>("/settings/cdp/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  testBrowserlessConnection: (data: { browserless_url: string; browserless_token: string }) =>
+    request<{ success: boolean; message: string }>("/settings/browserless/test", {
       method: "POST",
       body: JSON.stringify(data),
     }),

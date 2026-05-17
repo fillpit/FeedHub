@@ -6,6 +6,16 @@
 
 const TEST_PAGE_URL = "https://www.diggingfly.com/";
 
+interface SimpleWebSocket {
+  send(data: string): void;
+  close(): void;
+  readyState: number;
+  onopen?: () => void;
+  onerror?: (err: unknown) => void;
+  onclose?: () => void;
+  onmessage?: (event: { data: { toString(): string } }) => void;
+}
+
 export class ChromeFetcher {
   private debugUrl: string;
 
@@ -18,13 +28,14 @@ export class ChromeFetcher {
    * 使用 Chrome 的远程调试接口抓取一个页面的 HTML 内容
    */
   async fetch(url: string): Promise<string> {
-    const WS = (globalThis as any).WebSocket;
+    const globalObj = globalThis as unknown as { WebSocket?: new (url: string) => SimpleWebSocket };
+    const WS = globalObj.WebSocket;
     if (!WS) {
       throw new Error("当前 Node.js 环境不支持原生的 WebSocket，请升级至 Node.js v22 或更高版本。");
     }
 
     let targetId: string | null = null;
-    let ws: any = null;
+    let ws: SimpleWebSocket | null = null;
 
     try {
       // 1. 调用 Chrome API 创建一个新的空白标签页
@@ -41,9 +52,9 @@ export class ChromeFetcher {
 
       return await new Promise<string>((resolve, reject) => {
         let msgId = 1;
-        const pendingRequests = new Map<number, { resolve: (val: any) => void; reject: (err: any) => void }>();
+        const pendingRequests = new Map<number, { resolve: (val: unknown) => void; reject: (err: Error) => void }>();
 
-        const sendCmd = (method: string, params: any = {}) => {
+        const sendCmd = (method: string, params: Record<string, unknown> = {}) => {
           const id = msgId++;
           const payload = JSON.stringify({ id, method, params });
           if (ws && ws.readyState === 1 /* OPEN */) {
@@ -51,7 +62,7 @@ export class ChromeFetcher {
           } else {
             throw new Error("WebSocket 连接未就绪");
           }
-          return new Promise<any>((res, rej) => {
+          return new Promise<unknown>((res, rej) => {
             pendingRequests.set(id, { resolve: res, reject: rej });
           });
         };
@@ -75,6 +86,11 @@ export class ChromeFetcher {
           }
         };
 
+        if (!ws) {
+          reject(new Error("WebSocket 连接未初始化"));
+          return;
+        }
+
         ws.onopen = async () => {
           try {
             // 开启 Page 域以接收加载事件
@@ -86,7 +102,7 @@ export class ChromeFetcher {
           }
         };
 
-        ws.onerror = (_event: any) => {
+        ws.onerror = (_event: unknown) => {
           cleanup(new Error(`WebSocket 控制标签页时出错`));
         };
 
@@ -94,18 +110,20 @@ export class ChromeFetcher {
           reject(new Error("WebSocket 连接被提前关闭"));
         };
 
-        ws.onmessage = async (event: any) => {
+        ws.onmessage = async (event: { data: { toString(): string } }) => {
           try {
-            const data = JSON.parse(event.data.toString());
+            const data = JSON.parse(event.data.toString()) as { id?: number; error?: { message?: string }; result?: unknown; method?: string };
 
             // 匹配请求回调
             if (data.id && pendingRequests.has(data.id)) {
-              const req = pendingRequests.get(data.id)!;
-              pendingRequests.delete(data.id);
-              if (data.error) {
-                req.reject(new Error(data.error.message || "CDP 命令执行失败"));
-              } else {
-                req.resolve(data.result);
+              const req = pendingRequests.get(data.id);
+              if (req) {
+                pendingRequests.delete(data.id);
+                if (data.error) {
+                  req.reject(new Error(data.error.message || "CDP 命令执行失败"));
+                } else {
+                  req.resolve(data.result);
+                }
               }
               return;
             }
@@ -119,7 +137,7 @@ export class ChromeFetcher {
               const evalResult = await sendCmd("Runtime.evaluate", {
                 expression: "document.documentElement.outerHTML",
                 returnByValue: true
-              });
+              }) as { result?: { value?: string } };
 
               const html = evalResult?.result?.value;
               if (html) {
@@ -135,7 +153,7 @@ export class ChromeFetcher {
         };
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (ws) {
         try { ws.close(); } catch {}
       }
@@ -158,8 +176,8 @@ export class ChromeFetcher {
       const data = await res.json() as { Browser: string };
       await this.openTestPage();
       return { version: data.Browser || "Unknown Chrome" };
-    } catch (err: any) {
-      throw new Error(`无法连接至 Chrome 调试端口 (${this.debugUrl}): ${err.message}`);
+    } catch (err: unknown) {
+      throw new Error(`无法连接至 Chrome 调试端口 (${this.debugUrl}): ${err instanceof Error ? err.message : "未知错误"}`);
     }
   }
 
@@ -172,8 +190,8 @@ export class ChromeFetcher {
       if (!openRes.ok) {
         throw new Error(`HTTP 状态码: ${openRes.status}`);
       }
-    } catch (err: any) {
-      throw new Error(`控制浏览器打开测试网页失败: ${err.message}`);
+    } catch (err: unknown) {
+      throw new Error(`控制浏览器打开测试网页失败: ${err instanceof Error ? err.message : "未知错误"}`);
     }
   }
 }

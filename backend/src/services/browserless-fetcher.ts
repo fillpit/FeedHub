@@ -46,8 +46,9 @@ export class BrowserlessFetcher {
         const statusMsg = data.status || "ok";
         return { version: `Browserless (Status: ${statusMsg}, Limit: ${data.limit ?? "无"})` };
       }
-    } catch (err: any) {
-      console.warn("[BrowserlessFetcher] /status failed, trying /json/version:", err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.warn("[BrowserlessFetcher] /status failed, trying /json/version:", message);
     }
 
     const res = await globalThis.fetch(`${this.url}/json/version${tokenQuery}`, {

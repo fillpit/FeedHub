@@ -241,8 +241,12 @@ router.post("/:id/npm-install", async (c) => {
   try {
     const { stdout, stderr } = await execAsync("npm install", { cwd: scriptDir, timeout: 60000 });
     return c.json({ success: true, logs: stdout + "\n" + stderr });
-  } catch (err: any) {
-    return c.json({ success: false, logs: err.stdout + "\n" + err.stderr + "\n" + err.message }, 500);
+  } catch (err: unknown) {
+    const error = err as Record<string, unknown>;
+    const stdout = typeof error.stdout === "string" ? error.stdout : "";
+    const stderr = typeof error.stderr === "string" ? error.stderr : "";
+    const message = typeof error.message === "string" ? error.message : "Unknown error";
+    return c.json({ success: false, logs: stdout + "\n" + stderr + "\n" + message }, 500);
   }
 });
 
@@ -318,8 +322,8 @@ ${match.content.slice(0, 8000)} // 截断以防止过长
 
     writeScriptFile(route.script.folder, "main.js", code);
     return c.json({ success: true, code, message: "已通过 AI 生成代码并覆盖 main.js" });
-  } catch (err: any) {
-    return c.json({ error: err.message || "AI 转换失败" }, 500);
+  } catch (err: unknown) {
+    return c.json({ error: err instanceof Error ? err.message : "AI 转换失败" }, 500);
   }
 });
 

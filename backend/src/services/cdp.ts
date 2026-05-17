@@ -25,13 +25,13 @@ export async function testCdpConnection(url: string): Promise<{ success: boolean
       success: true, 
       message: `成功连接到 CDP 并打开网页！页面 ID: ${data.id || "未知"}` 
     };
-  } catch (err: any) {
-    if (err.name === "AbortError") {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "AbortError") {
       return { success: false, message: "CDP 连接超时" };
     }
     return { 
       success: false, 
-      message: `CDP 连接失败: ${err.message}` 
+      message: `CDP 连接失败: ${err instanceof Error ? err.message : "连接失败"}` 
     };
   }
 }
