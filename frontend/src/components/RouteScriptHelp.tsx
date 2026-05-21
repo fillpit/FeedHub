@@ -15,13 +15,24 @@ export default function RouteScriptHelp() {
     });
   };
 
-  const codeExample1 = `// 示例 1: 使用 hub.http.get 抓取并返回完整 RSS
+  const codeExample1 = `// 示例 1: 使用 fetch 抓取并返回完整 RSS
 console.log("正在获取文章列表...");
 
-const posts = await hub.http.get("https://api.example.com/posts", {
+const requestParams = {
   category: params.category || "tech",
   limit: params.limit || 10
+};
+
+// 过滤空参数并构造 query
+const query = new URLSearchParams();
+Object.entries(requestParams).forEach(([key, value]) => {
+  if (value !== '' && value !== null && value !== undefined) {
+    query.append(key, value);
+  }
 });
+
+const response = await fetch(\`https://api.example.com/posts?\${query.toString()}\`);
+const posts = await response.json();
 
 console.log(\`抓取完成，共获得 \${posts.length} 条数据\`);
 
@@ -41,10 +52,18 @@ return {
   const codeExample2 = `// 示例 2: 提交数据分析并组装完整 RSS 对象
 console.log("准备向第三方服务发送请求...");
 
-const result = await hub.http.post("https://api.example.com/analyze", {
-  routeId: routeParams.id || "default",
-  query: params.keyword || "AI"
+const response = await fetch("https://api.example.com/analyze", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    routeId: routeParams.id || "default",
+    query: params.keyword || "AI"
+  })
 });
+
+const result = await response.json();
 
 if (!result.success) {
   console.error("数据分析失败:", result.errorMsg);
@@ -99,11 +118,11 @@ return {
           {/* hub */}
           <div className="p-3 rounded-lg border border-app-border bg-app-bg/40 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-tx-primary font-mono">hub.http / hub.date</span>
+              <span className="text-xs font-semibold text-tx-primary font-mono">hub.date</span>
               <span className="text-[10px] text-tx-tertiary">Object</span>
             </div>
             <p className="text-xs text-tx-secondary leading-relaxed">
-              内置的高级便捷网络与工具封装库。使用 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">hub.http.get(url, params, headers) / post(url, data, headers)</code> 可极速发起带自定义请求头的请求并解析 JSON。使用 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">hub.date.parse(str)</code> 可智能识别十/十三位时间戳、网页相对时间（如“刚刚”、“5分钟前”、“昨天”）以及中英文常见日期，自动转换为标准 ISO 格式供 RSS 的 pubDate 使用。
+              内置的高级便捷时间解析库。使用 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">hub.date.parse(str)</code> 可智能识别十/十三位时间戳、网页相对时间（如“刚刚”、“5分钟前”、“昨天”）以及中英文常见日期，自动转换为标准 ISO 格式供 RSS 的 pubDate 使用。
             </p>
           </div>
 
@@ -143,11 +162,11 @@ return {
           {/* fetch */}
           <div className="p-3 rounded-lg border border-app-border bg-app-bg/40 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-tx-primary font-mono">fetch(url, options)</span>
-              <span className="text-[10px] text-tx-tertiary">Promise</span>
+              <span className="text-xs font-semibold text-tx-primary font-mono">fetch / URLSearchParams</span>
+              <span className="text-[10px] text-tx-tertiary">Global API</span>
             </div>
             <p className="text-xs text-tx-secondary leading-relaxed">
-              标准的底层网络请求方法。支持自定义 Headers、Body 等，用于请求外部平台 API。
+              标准的底层网络请求方法和参数构造器。支持自定义 Headers、Body 等，用于请求外部平台 API，并使用 URLSearchParams 方便地拼接 query 参数。
             </p>
           </div>
 

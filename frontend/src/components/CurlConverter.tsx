@@ -98,13 +98,20 @@ export default function CurlConverter() {
       const hasCustomHeaders = Object.keys(customHeaders).length > 0;
       const hasQuery = Object.keys(queryParams).length > 0;
 
-      if (hasCustomHeaders) {
-        setOutputCode(`const res = await hub.http.get(\n  "${baseUrl}",\n  ${hasQuery ? JSON.stringify(queryParams, null, 2) : "null"},\n  ${JSON.stringify(customHeaders, null, 2)}\n);\nconsole.log(res);`);
-      } else if (hasQuery) {
-        setOutputCode(`const res = await hub.http.get("${baseUrl}", ${JSON.stringify(queryParams, null, 2)});\nconsole.log(res);`);
-      } else {
-        setOutputCode(`const res = await hub.http.get("${baseUrl}");\nconsole.log(res);`);
+      let codeStr = "";
+      if (hasQuery) {
+        codeStr += `const query = new URLSearchParams();\nObject.entries(${JSON.stringify(queryParams, null, 2)}).forEach(([k, v]) => {\n  if (v !== '' && v !== null && v !== undefined) query.append(k, v);\n});\n\n`;
       }
+
+      const urlStr = hasQuery ? `\`${baseUrl}?\${query.toString()}\`` : `"${baseUrl}"`;
+
+      if (hasCustomHeaders) {
+        codeStr += `const response = await fetch(${urlStr}, {\n  headers: ${JSON.stringify(customHeaders, null, 2)}\n});\n`;
+      } else {
+        codeStr += `const response = await fetch(${urlStr});\n`;
+      }
+      codeStr += `const res = await response.json();\nconsole.log(res);`;
+      setOutputCode(codeStr);
     } else {
       let bodyObj: unknown = bodyStr;
       try {
@@ -124,11 +131,14 @@ export default function CurlConverter() {
       delete customHeaders["content-length"];
 
       const hasCustomHeaders = Object.keys(customHeaders).length > 0;
+      
+      let codeStr = `const response = await fetch("${baseUrl}", {\n  method: "POST",\n`;
       if (hasCustomHeaders) {
-        setOutputCode(`const res = await hub.http.post(\n  "${baseUrl}",\n  ${JSON.stringify(bodyObj, null, 2)},\n  ${JSON.stringify(customHeaders, null, 2)}\n);\nconsole.log(res);`);
-      } else {
-        setOutputCode(`const res = await hub.http.post("${baseUrl}", ${JSON.stringify(bodyObj, null, 2)});\nconsole.log(res);`);
+        codeStr += `  headers: ${JSON.stringify(customHeaders, null, 2)},\n`;
       }
+      codeStr += `  body: JSON.stringify(${JSON.stringify(bodyObj, null, 2)})\n});\n`;
+      codeStr += `const res = await response.json();\nconsole.log(res);`;
+      setOutputCode(codeStr);
     }
   };
 
@@ -146,10 +156,10 @@ export default function CurlConverter() {
     <div className="h-full overflow-y-auto p-4 flex flex-col gap-4 select-text">
       <div className="flex items-center gap-2 text-tx-primary">
         <Wand2 size={16} className="text-accent-primary" />
-        <h4 className="text-sm font-semibold">cURL 转 hub.http 请求</h4>
+        <h4 className="text-sm font-semibold">cURL 转 fetch 请求</h4>
       </div>
       <p className="text-xs text-tx-tertiary">
-        粘贴浏览器的 cURL 命令，自动转换为适用于当前沙箱的 hub.http 请求代码。
+        粘贴浏览器的 cURL 命令，自动转换为适用于当前沙箱的 fetch 请求代码。
       </p>
 
       <div className="flex flex-col gap-2">

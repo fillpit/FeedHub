@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { Rss, Chrome, Globe, HelpCircle, Terminal, Cpu, Database } from "lucide-react";
+import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database } from "lucide-react";
 import { api } from "@/lib/api";
 import { IntegrationCard, CopyButton } from "./IntegrationCard";
 import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
@@ -9,24 +8,6 @@ import { RedisConfig } from "./RedisConfig";
 
 const CHROME_CMD = "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222";
 const DOCKER_CMD = "docker run -d -p 3000:3000 --restart always -e \"MAX_CONCURRENT_SESSIONS=10\" -e \"TOKEN=your_secure_token\" browserless/chrome";
-
-/**
- * GReader instruction node
- */
-const GReaderInstructions: React.FC = () => {
-  return (
-    <div className="space-y-2">
-      <div className="font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-500 text-xs">
-        <HelpCircle className="w-3.5 h-3.5" />
-        接入指南：
-      </div>
-      <ul className="list-disc list-inside space-y-1 text-[11px] text-tx-secondary leading-relaxed">
-        <li>直接使用你的 <strong>本站账号与登录密码</strong> 在阅读器中进行鉴权登录。</li>
-        <li>对于部分知名阅读器，选择 <strong>"Google Reader"</strong> 类型的服务商，然后填入上面的物理网关。</li>
-      </ul>
-    </div>
-  );
-};
 
 /**
  * Chrome Remote Debugging instruction node with improved readability and color balance
@@ -107,8 +88,6 @@ const BrowserlessInstructions: React.FC = () => (
  * Main Integration Configuration Panel Component
  */
 export default function IntegrationsPanel() {
-  const { t } = useTranslation();
-  const [serverUrl, setServerUrl] = useState("");
   const [activeStates, setActiveStates] = useState<Record<string, boolean>>({
     redis: false,
     greader: true,
@@ -130,31 +109,8 @@ export default function IntegrationsPanel() {
   };
 
   useEffect(() => {
-    let url = window.location.origin;
-    if (import.meta.env.VITE_API_URL) {
-      if (import.meta.env.VITE_API_URL.startsWith('http')) {
-        url = new URL(import.meta.env.VITE_API_URL).origin;
-      } else {
-        url = window.location.origin;
-      }
-    }
-    setServerUrl(url);
     fetchActiveStatus();
   }, []);
-
-  const greaderContent = (
-    <div className="space-y-4 animate-in fade-in duration-300">
-      <p className="text-xs text-tx-secondary leading-relaxed">
-        {t('settings.greaderServerInfo')}
-      </p>
-      <div className="flex items-center gap-2 max-w-md">
-        <div className="flex-1 bg-app-bg border border-app-border rounded-xl px-4 py-3 text-xs text-tx-primary truncate select-all font-mono font-bold">
-          {serverUrl}
-        </div>
-        <CopyButton text={serverUrl} tooltip="复制服务器网关" />
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

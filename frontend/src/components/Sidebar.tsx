@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  PanelLeftClose, PanelLeft, Settings, LogOut, X, Bot, LayoutDashboard, User, Shield,
+  PanelLeftClose, PanelLeft, Settings, LogOut, X, LayoutDashboard, User, Shield,
   Rss, Globe, KeyRound, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

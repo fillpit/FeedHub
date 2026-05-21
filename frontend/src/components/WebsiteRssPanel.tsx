@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Globe, Plus, Trash2, Edit2, Copy, Check, RefreshCw, Download, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { WebsiteRssConfig, WebsiteRssCreate } from "@/types/feed";
 import { websiteRssApi, getWebsiteFeedUrl } from "@/lib/feed-api";
 import { cn, copyToClipboard } from "@/lib/utils";
