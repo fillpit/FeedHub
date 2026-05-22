@@ -464,7 +464,8 @@ function findMatchedRoute(routePath: string): FindRouteResult {
 }
 
 export async function handleDynamicFeed(c: import("hono").Context): Promise<Response> {
-  const routePath = "/" + c.req.param("*");
+  const prefix = "/api/dynamic/sub";
+  const routePath = c.req.path.slice(prefix.length);
   const type = (c.req.query("type") ?? "rss") as "rss" | "json";
   const { matchedRow, routeParams } = findMatchedRoute(routePath);
   if (!matchedRow) return c.json({ error: "路由不存在" }, 404);
