@@ -47,19 +47,46 @@ app.get("/api/openapi.json", (c) => c.json(generateOpenAPISpec()));
 app.get("/api/dynamic/sub/*", (c) => handleDynamicFeed(c));
 app.get("/api/website/sub/:key", (c) => handleWebsiteFeed(c));
 
-// 站点设置（GET 无需 JWT，允许未登录时加载品牌信息）
+// 站点设置（GET 无需 JWT，允许未登录时加载品牌信息；已登录用户返回完整配置）
 app.get("/api/settings", (c) => {
   const db = getDb();
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy'").all() as { key: string; value: string }[];
+  
+  // 检查是否有合法的登录 Token
+  const authHeader = c.req.header("Authorization");
+  const queryToken = c.req.query("token");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : queryToken;
+  
+  let isAuthenticated = false;
+  if (token) {
+    try {
+      jwt.verify(token, JWT_SECRET);
+      isAuthenticated = true;
+    } catch {
+      // 忽略无效 token，只作为未登录处理
+    }
+  }
+
   const result: Record<string, string> = {
     site_title: "nowen-note",
     site_favicon: "",
     editor_font_family: "",
     registration_policy: "closed"
   };
-  for (const row of rows) {
-    result[row.key] = row.value;
+
+  if (isAuthenticated) {
+    // 已登录用户，返回完整配置
+    const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%'").all() as { key: string; value: string }[];
+    for (const row of rows) {
+      result[row.key] = row.value;
+    }
+  } else {
+    // 未登录用户，只返回公共的非敏感配置
+    const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy'").all() as { key: string; value: string }[];
+    for (const row of rows) {
+      result[row.key] = row.value;
+    }
   }
+  
   return c.json(result);
 });
 

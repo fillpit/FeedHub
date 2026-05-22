@@ -166,6 +166,8 @@ export const api = {
     browserless_enabled?: string;
     browserless_url?: string;
     browserless_token?: string;
+    cloak_enabled?: string;
+    cloak_url?: string;
   }>("/settings"),
   updateSiteSettings: (data: { 
     site_title?: string; 
@@ -179,6 +181,8 @@ export const api = {
     browserless_enabled?: string;
     browserless_url?: string;
     browserless_token?: string;
+    cloak_enabled?: string;
+    cloak_url?: string;
   }) =>
     request<{ 
       site_title: string; 
@@ -189,6 +193,8 @@ export const api = {
       redis_url?: string;
       cdp_enabled?: string;
       cdp_url?: string;
+      cloak_enabled?: string;
+      cloak_url?: string;
     }>("/settings", {
       method: "PUT",
       body: JSON.stringify(data),
@@ -200,6 +206,11 @@ export const api = {
     }),
   testCdpConnection: (data: { cdp_url: string }) =>
     request<{ success: boolean; message: string }>("/settings/cdp/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  testCloakConnection: (data: { cloak_url: string }) =>
+    request<{ success: boolean; message: string }>("/settings/cloak/test", {
       method: "POST",
       body: JSON.stringify(data),
     }),

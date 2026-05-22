@@ -1,13 +1,39 @@
 import React, { useState, useEffect } from "react";
-import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database } from "lucide-react";
+import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { IntegrationCard, CopyButton } from "./IntegrationCard";
 import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
 import { BrowserlessConfig } from "./BrowserlessConfig";
 import { RedisConfig } from "./RedisConfig";
+import { CloakBrowserConfig } from "./CloakBrowserConfig";
 
 const CHROME_CMD = "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222";
+const CLOAK_DOCKER_CMD = "docker run -d -p 9122:9122 --name cloak-browser --restart always cloakbrowser/browser:latest --remote-debugging-port=9122 --remote-debugging-address=0.0.0.0";
 const DOCKER_CMD = "docker run -d -p 3000:3000 --restart always -e \"MAX_CONCURRENT_SESSIONS=10\" -e \"TOKEN=your_secure_token\" browserless/chrome";
+
+/**
+ * CloakBrowser instructions node
+ */
+const CloakBrowserInstructions: React.FC = () => (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-bold text-tx-primary flex items-center gap-1.5">
+        <Cpu className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />
+        Docker 独立部署命令
+      </span>
+      <CopyButton text={CLOAK_DOCKER_CMD} tooltip="复制 Docker 部署指令" />
+    </div>
+    <p className="text-[11px] text-tx-secondary leading-relaxed">
+      你可以通过 Docker 在独立服务器或私有化群晖上极速拉取并持久部署 CloakBrowser 容器服务（默认开启 9122 端口）：
+    </p>
+    <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
+      {CLOAK_DOCKER_CMD}
+    </div>
+    <p className="text-[10px] text-tx-tertiary leading-relaxed">
+      💡 <strong>抓取顺序：</strong> 系统执行内容提取任务时，<strong>CloakBrowser 防关联指纹浏览器拥有最高级优先权</strong>，完美保障抓取的隐蔽性与稳定性。
+    </p>
+  </div>
+);
 
 /**
  * Chrome Remote Debugging instruction node with improved readability and color balance
@@ -91,6 +117,7 @@ export default function IntegrationsPanel() {
   const [activeStates, setActiveStates] = useState<Record<string, boolean>>({
     redis: false,
     greader: true,
+    cloak: false,
     chrome_debugging: false,
     browserless: false,
   });
@@ -101,6 +128,7 @@ export default function IntegrationsPanel() {
         setActiveStates({
           redis: data.redis_enabled === "1",
           greader: true,
+          cloak: data.cloak_enabled === "1",
           chrome_debugging: data.cdp_enabled === "1",
           browserless: data.browserless_enabled === "1",
         });
@@ -128,11 +156,24 @@ export default function IntegrationsPanel() {
                 <HelpCircle className="w-3.5 h-3.5" />
                 配置说明：
               </div>
-              <p className="text-[11px] text-tx-secondary leading-relaxed">
-                请确保填入正确的 Redis 连接字符串（例如 <code>redis://localhost:6379</code>）。如果 Redis 服务设置了密码，请使用 <code>redis://:password@host:port</code> 格式。
+              <p className="text-[11px] text-tx-secondary leading-relaxed space-y-1.5 flex flex-col">
+                <span>请确保填入正确的 Redis 连接字符串（例如 <code>redis://localhost:6379</code>）。</span>
+                <span>• <strong>配置密码：</strong>使用 <code>redis://:password@host:port</code> 格式。</span>
+                <span>• <strong>指定数据库库编号：</strong>在主机地址末尾加斜杠加数字（范围一般为 <code>/0</code> 到 <code>/15</code>），如 <code>redis://host:port/1</code>。</span>
+                <span>• <strong>完整混合配置示例：</strong><code>redis://:my_password@127.0.0.1:6379/2</code>（表示连接到密码为 my_password 且端口为 6379 的 2 号数据库实例）。</span>
               </p>
             </div>
           }
+        />
+
+        <IntegrationCard
+          icon={<EyeOff className="w-4 h-4 text-orange-500" />}
+          title="CloakBrowser 防关联浏览器 (Stealth CDP)"
+          description="集成 CloakBrowser 指纹浏览器，通过远程调试接口以极高优先级进行网络内容抓取，彻底防封抗反爬。"
+          badgeText={activeStates.cloak ? "已开启" : "未开启"}
+          isActive={activeStates.cloak}
+          content={<CloakBrowserConfig onStateChange={fetchActiveStatus} />}
+          instructions={<CloakBrowserInstructions />}
         />
 
         <IntegrationCard
@@ -148,7 +189,7 @@ export default function IntegrationsPanel() {
         <IntegrationCard
           icon={<Globe className="w-4 h-4 text-teal-500" />}
           title="Browserless 云端/独立容器集成"
-          description="连接云端或私有化 Docker 部署的无头 Chrome 容器阵列（Browserless）。专为处理复杂的 SPA 单页应用设计，高并发极速加载。"
+          description="连接云端或私有化 Docker 部署 of 无头 Chrome 容器阵列（Browserless）。专为处理复杂的 SPA 单页应用设计，高并发极速加载。"
           badgeText={activeStates.browserless ? "已开启" : "未开启"}
           isActive={activeStates.browserless}
           content={<BrowserlessConfig onStateChange={fetchActiveStatus} />}

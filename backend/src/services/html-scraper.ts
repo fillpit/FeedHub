@@ -104,13 +104,15 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
   const db = getDb();
   
   // 1. 读取设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key IN ('cdp_enabled', 'cdp_url', 'browserless_enabled', 'browserless_url', 'browserless_token')").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key IN ('cloak_enabled', 'cloak_url', 'cdp_enabled', 'cdp_url', 'browserless_enabled', 'browserless_url', 'browserless_token')").all() as { key: string; value: string }[];
   
   const settings: Record<string, string> = {};
   for (const row of rows) {
     settings[row.key] = row.value;
   }
 
+  const cloakEnabled = settings.cloak_enabled === "1";
+  const cloakUrl = settings.cloak_url || "http://localhost:9122";
   const cdpEnabled = settings.cdp_enabled === "1";
   const cdpUrl = settings.cdp_url || "http://localhost:9222";
   const browserlessEnabled = settings.browserless_enabled === "1";
@@ -119,7 +121,20 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
 
   const errors: string[] = [];
 
-  // 2. 尝试 CDP
+  // 2. 尝试 CloakBrowser（最高优先级）
+  if (cloakEnabled && cloakUrl) {
+    try {
+      console.log(`[html-scraper] 尝试使用 CloakBrowser 抓取: ${url}`);
+      const fetcher = new ChromeFetcher(cloakUrl);
+      return await fetcher.fetch(url);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "未知错误";
+      console.error(`[html-scraper] CloakBrowser 抓取失败: ${message}`);
+      errors.push(`CloakBrowser 失败: ${message}`);
+    }
+  }
+
+  // 3. 尝试 CDP
   if (cdpEnabled && cdpUrl) {
     try {
       console.log(`[html-scraper] 尝试使用 Chrome CDP 抓取: ${url}`);
@@ -132,7 +147,7 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
     }
   }
 
-  // 3. 尝试 Browserless
+  // 4. 尝试 Browserless
   if (browserlessEnabled && browserlessUrl) {
     try {
       console.log(`[html-scraper] 尝试使用 Browserless 抓取: ${url}`);
@@ -145,7 +160,7 @@ async function fetchHtml(url: string, headers: Record<string, string>): Promise<
     }
   }
 
-  // 4. 降级到标准 HTTP 请求
+  // 5. 降级到标准 HTTP 请求
   try {
     console.log(`[html-scraper] 使用标准 HTTP 抓取: ${url}`);
     const response = await fetch(url, {

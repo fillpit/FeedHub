@@ -33,16 +33,16 @@ interface SidebarGroup {
 
 export default function AdminPanel() {
   const actions = useAppActions();
-  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+  const [activeTab, setActiveTab] = useState<AdminTab>("site");
 
   const sidebarGroups: SidebarGroup[] = [
     {
       label: "通用",
       items: [
         { id: "site", label: "站点", icon: <Globe size={18} />, desc: "名称、目录、缓存" },
+        { id: "integrations", label: "集成服务", icon: <Cpu size={18} />, desc: "Redis 等第三方服务" },
         { id: "ai", label: "AI 设置", icon: <Bot size={18} />, desc: "模型与 API 配置" },
         { id: "users", label: "用户管理", icon: <Users size={18} />, desc: "账号、角色、注册策略" },
-        { id: "integrations", label: "集成服务", icon: <Cpu size={18} />, desc: "Redis 等第三方服务" },
       ]
     },
     {

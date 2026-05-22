@@ -18,6 +18,8 @@ export interface SiteSettings {
   browserless_enabled?: string;
   browserless_url?: string;
   browserless_token?: string;
+  cloak_enabled?: string;
+  cloak_url?: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -32,12 +34,14 @@ const DEFAULTS: SiteSettings = {
   browserless_enabled: "0",
   browserless_url: "http://localhost:3000",
   browserless_token: "",
+  cloak_enabled: "0",
+  cloak_url: "http://localhost:9122",
 };
 
 // 获取所有站点设置
 settings.get("/", (c) => {
   const db = getDb();
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -90,6 +94,12 @@ settings.put("/", async (c) => {
     if (body.browserless_token !== undefined) {
       upsert.run("browserless_token", body.browserless_token);
     }
+    if (body.cloak_enabled !== undefined) {
+      upsert.run("cloak_enabled", body.cloak_enabled);
+    }
+    if (body.cloak_url !== undefined) {
+      upsert.run("cloak_url", body.cloak_url);
+    }
   });
   tx();
 
@@ -97,7 +107,7 @@ settings.put("/", async (c) => {
   clearCacheServiceInstance();
 
   // 返回更新后的全部设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -132,6 +142,24 @@ settings.post("/cdp/test", async (c) => {
     }
 
     const result = await testCdpConnection(body.cdp_url);
+    return c.json(result);
+  } catch (err: unknown) {
+    return c.json({
+      success: false,
+      message: err instanceof Error ? err.message : "连接失败"
+    });
+  }
+});
+
+// 测试 CloakBrowser 连接
+settings.post("/cloak/test", async (c) => {
+  try {
+    const body = await c.req.json() as { cloak_url: string };
+    if (!body.cloak_url) {
+      return c.json({ success: false, message: "CloakBrowser 地址不能为空" }, 400);
+    }
+
+    const result = await testCdpConnection(body.cloak_url);
     return c.json(result);
   } catch (err: unknown) {
     return c.json({
