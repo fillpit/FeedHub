@@ -62,8 +62,8 @@ export const dynamicRouteApi = {
     req<{ success: boolean }>(`/dynamic-routes/${id}/readme`, { method: "PUT", body: json({ content }) }),
 
   // 调试
-  debug: (id: number, params?: Record<string, string>) =>
-    req<ScriptResult>(`/dynamic-routes/${id}/debug`, { method: "POST", body: json({ params }) }),
+  debug: (id: number, params?: Record<string, string>, routeParams?: Record<string, string>) =>
+    req<ScriptResult>(`/dynamic-routes/${id}/debug`, { method: "POST", body: json({ params, routeParams }) }),
 
   // 扩展功能
   githubSync: (id: number) => req<{ success: boolean }>(`/dynamic-routes/${id}/github-sync`, { method: "POST" }),

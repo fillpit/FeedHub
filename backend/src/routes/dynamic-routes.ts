@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getDb } from "../db/schema";
-import type { DynamicRoute, DynamicRouteCreate, DynamicRouteUpdate } from "../types/feed";
+import type { DynamicRoute, DynamicRouteCreate, DynamicRouteUpdate, FeedOutput } from "../types/feed";
 import { runScript } from "../services/script-runner";
 import { buildRssXml, buildJsonFeed } from "../services/rss-builder";
 import {
@@ -334,10 +334,10 @@ router.post("/:id/debug", async (c) => {
   if (!route) return c.json({ error: "路由不存在" }, 404);
   if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
 
-  const body = await c.req.json<{ params?: Record<string, string> }>().catch(() => ({ params: undefined }));
+  const body = await c.req.json<{ params?: Record<string, string>; routeParams?: Record<string, string> }>().catch(() => ({ params: undefined, routeParams: undefined }));
   const result = await runScript({
     scriptFolder: route.script.folder,
-    context: { params: body.params ?? {}, routeParams: {} },
+    context: { params: body.params ?? {}, routeParams: body.routeParams ?? {} },
     timeoutMs: route.script.timeout ?? 30000,
   });
 
@@ -369,43 +369,132 @@ function validateRouteBody(body: DynamicRouteCreate): void {
 
 // ─── 公开 Feed 输出（在 index.ts 中注册，不需要 JWT） ────────────────────────
 
-export async function handleDynamicFeed(c: import("hono").Context): Promise<Response> {
-  const routePath = "/" + c.req.param("path");
-  const type = (c.req.query("type") ?? "rss") as "rss" | "json";
+interface UpdateRouteStatusParams {
+  readonly routeId: number;
+  readonly isSuccess: boolean;
+  readonly error: string | null;
+}
+
+function updateRouteStatus(params: UpdateRouteStatusParams): void {
   const db = getDb();
+  const statusUpdate = params.isSuccess ? "success" : "failure";
+  db.prepare("UPDATE dynamic_routes SET lastRunAt = datetime('now'), lastRunStatus = ?, lastRunError = ?, updatedAt = datetime('now') WHERE id = ?")
+    .run(statusUpdate, params.error, params.routeId);
+}
 
-  const row = db.prepare("SELECT * FROM dynamic_routes WHERE path = ?").get(routePath) as DynamicRoute | undefined;
-  if (!row) return c.json({ error: "路由不存在" }, 404);
+interface FormatFeedParams {
+  readonly data: FeedOutput;
+  readonly type: "rss" | "json";
+  readonly selfUrl: string;
+}
 
-  const route = deserializeRoute(row);
+function formatFeed(params: FormatFeedParams): string {
+  return params.type === "json"
+    ? JSON.stringify(buildJsonFeed(params.data, params.selfUrl))
+    : buildRssXml(params.data, params.selfUrl);
+}
+
+interface CacheFeedParams {
+  readonly cacheKey: string;
+  readonly type: "rss" | "json";
+}
+
+async function getCachedFeed(params: CacheFeedParams): Promise<Response | null> {
+  const cache = await getCacheService();
+  const cached = await cache.get(params.cacheKey);
+  if (!cached) return null;
+  return new Response(cached, { headers: contentTypeHeader(params.type) });
+}
+
+interface MatchSegResult {
+  readonly isMatched: boolean;
+  readonly name?: string;
+  readonly val?: string;
+}
+
+function matchSegment(patSeg: string, pathSeg: string | undefined): MatchSegResult {
+  if (patSeg.startsWith(":")) {
+    const isOptional = patSeg.endsWith("?");
+    const name = isOptional ? patSeg.slice(1, -1) : patSeg.slice(1);
+    if (pathSeg === undefined) {
+      return { isMatched: isOptional };
+    }
+    return { isMatched: true, name, val: pathSeg };
+  }
+  return { isMatched: patSeg === pathSeg };
+}
+
+interface MatchPathResult {
+  readonly isMatched: boolean;
+  readonly routeParams: Record<string, string>;
+}
+
+function matchPath(pattern: string, path: string): MatchPathResult {
+  const patternSegments = pattern.split("/");
+  const pathSegments = path.split("/");
+  const routeParams: Record<string, string> = {};
+  const maxLen = Math.max(patternSegments.length, pathSegments.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const patSeg = patternSegments[i];
+    if (patSeg === undefined) return { isMatched: false, routeParams: {} };
+    const res = matchSegment(patSeg, pathSegments[i]);
+    if (!res.isMatched) return { isMatched: false, routeParams: {} };
+    if (res.name && res.val) routeParams[res.name] = res.val;
+  }
+
+  return { isMatched: true, routeParams };
+}
+
+interface FindRouteResult {
+  readonly matchedRow: DynamicRoute | null;
+  readonly routeParams: Record<string, string>;
+}
+
+function findMatchedRoute(routePath: string): FindRouteResult {
+  const db = getDb();
+  const rows = db.prepare("SELECT * FROM dynamic_routes").all() as DynamicRoute[];
+  for (const row of rows) {
+    const { isMatched, routeParams } = matchPath(row.path, routePath);
+    if (isMatched) {
+      return { matchedRow: row, routeParams };
+    }
+  }
+  return { matchedRow: null, routeParams: {} };
+}
+
+export async function handleDynamicFeed(c: import("hono").Context): Promise<Response> {
+  const routePath = "/" + c.req.param("*");
+  const type = (c.req.query("type") ?? "rss") as "rss" | "json";
+  const { matchedRow, routeParams } = findMatchedRoute(routePath);
+  if (!matchedRow) return c.json({ error: "路由不存在" }, 404);
+
+  const route = deserializeRoute(matchedRow);
   if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
 
-  const cache = await getCacheService();
   const queryParams = Object.fromEntries(new URL(c.req.url).searchParams);
   const cacheKey = buildCacheKey(`route:${routePath}`, queryParams);
-
-  const cached = await cache.get(cacheKey);
-  if (cached) return new Response(cached, { headers: contentTypeHeader(type) });
+  const cachedResponse = await getCachedFeed({ cacheKey, type });
+  if (cachedResponse) return cachedResponse;
 
   const result = await runScript({
     scriptFolder: route.script.folder,
-    context: { params: queryParams, routeParams: {} },
+    context: { params: queryParams, routeParams },
     timeoutMs: route.script.timeout ?? 30000,
   });
 
-  const statusUpdate = result.success ? "success" : "failure";
-  db.prepare("UPDATE dynamic_routes SET lastRunAt = datetime('now'), lastRunStatus = ?, lastRunError = ?, updatedAt = datetime('now') WHERE id = ?")
-    .run(statusUpdate, result.error ?? null, row.id);
+  updateRouteStatus({
+    routeId: matchedRow.id,
+    isSuccess: result.success,
+    error: result.error ?? null,
+  });
 
   if (!result.success || !result.data) {
     return c.json({ error: result.error ?? "执行失败" }, 500);
   }
 
-  const selfUrl = c.req.url;
-  const output = type === "json"
-    ? JSON.stringify(buildJsonFeed(result.data, selfUrl))
-    : buildRssXml(result.data, selfUrl);
-
+  const output = formatFeed({ data: result.data, type, selfUrl: c.req.url });
+  const cache = await getCacheService();
   await cache.set(cacheKey, output, route.refreshInterval * 60);
 
   return new Response(output, { headers: contentTypeHeader(type) });

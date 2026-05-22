@@ -49,7 +49,7 @@ export default function RouteParamEditor({ params, onChange }: Props) {
           <p className="text-xs text-tx-tertiary">未配置任何参数，此路由将不接收自定义参数。</p>
         </div>
       ) : (
-        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+        <div className="space-y-2.5 overflow-y-auto pr-1">
           {params.map((param, idx) => (
             <div
               key={idx}
