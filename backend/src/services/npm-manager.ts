@@ -54,6 +54,10 @@ export class NpmManager {
     if (!fs.existsSync(NPM_ENV_DIR)) {
       fs.mkdirSync(NPM_ENV_DIR, { recursive: true });
     }
+    const npmrcPath = path.join(NPM_ENV_DIR, ".npmrc");
+    if (!fs.existsSync(npmrcPath)) {
+      fs.writeFileSync(npmrcPath, "ignore-workspace=true\n");
+    }
     const pkgPath = path.join(NPM_ENV_DIR, "package.json");
     if (!fs.existsSync(pkgPath)) {
       fs.writeFileSync(pkgPath, JSON.stringify({
@@ -107,7 +111,7 @@ export class NpmManager {
     db.prepare("DELETE FROM npm_packages WHERE name = ?").run(name);
 
     try {
-      await execAsync(`pnpm remove ${name}`, { cwd: NPM_ENV_DIR });
+      await execAsync(`pnpm remove ${name} --ignore-workspace`, { cwd: NPM_ENV_DIR });
     } catch (error) {
       console.error(`Failed to remove npm package ${name}:`, error);
     }
@@ -152,7 +156,7 @@ export class NpmManager {
         const installTarget = `${pkg.name}@${pkg.version}`;
         console.log(`Installing npm package: ${installTarget}`);
         
-        await execAsync(`pnpm add ${installTarget}`, { cwd: NPM_ENV_DIR });
+        await execAsync(`pnpm add ${installTarget} --ignore-workspace`, { cwd: NPM_ENV_DIR });
 
         db.prepare("UPDATE npm_packages SET status = 'installed', error = NULL, updatedAt = datetime('now') WHERE id = ?").run(pkg.id);
       } catch (error) {

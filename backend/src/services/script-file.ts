@@ -115,8 +115,14 @@ export async function installDependencies(folder: string): Promise<void> {
   }
 
   try {
+    // 写入临时 .npmrc 避免 pnpm 寻找上级工作空间
+    const npmrcPath = path.join(targetDir, ".npmrc");
+    if (!fs.existsSync(npmrcPath)) {
+      fs.writeFileSync(npmrcPath, "ignore-workspace=true\n");
+    }
+
     // 使用 pnpm 安装
-    execSync("pnpm install", { cwd: targetDir, stdio: "inherit" });
+    execSync("pnpm install --ignore-workspace", { cwd: targetDir, stdio: "inherit" });
   } catch (error) {
     throw new Error(`依赖安装失败: ${error instanceof Error ? error.message : String(error)}`);
   }
