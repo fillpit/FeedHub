@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Palette, Shield, Settings, Loader2, Trash2, Upload, Type, Check, ChevronDown, Globe } from "lucide-react";
+import React, { useState } from "react";
+import { Palette, Shield, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import ThemeToggle from "@/components/ThemeToggle";
 import SecuritySettings from "@/components/SecuritySettings";
-import { useSiteSettings, BUILTIN_FONTS, getBuiltinFontName } from "@/hooks/useSiteSettings";
-import { api } from "@/lib/api";
-import { CustomFont } from "@/types";
+import AppearancePanel from "@/components/AppearancePanel";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { cn } from "@/lib/utils";
 import { Dialog } from "./ui/dialog";
 import { AnimatePresence, motion } from "framer-motion";
@@ -15,255 +13,6 @@ type TabId = "appearance" | "security";
 interface SettingsModalProps {
   onClose: () => void;
   defaultTab?: TabId;
-}
-
-function AppearancePanel() {
-  const { t, i18n } = useTranslation();
-  const { siteConfig, updateEditorFont } = useSiteSettings();
-
-  const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
-  const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState("");
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [isSwitchingFont, setIsSwitchingFont] = useState(false);
-  const fontFileRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const loadFonts = useCallback(async () => {
-    try {
-      const fonts = await api.getFonts();
-      setCustomFonts(fonts);
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => { loadFonts(); }, [loadFonts]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setFontDropdownOpen(false);
-      }
-    };
-    if (fontDropdownOpen) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [fontDropdownOpen]);
-
-  const currentFontName = (() => {
-    const builtin = BUILTIN_FONTS.find(f => f.id === siteConfig.editorFontFamily);
-    if (builtin) return getBuiltinFontName(builtin);
-    const custom = customFonts.find(f => f.id === siteConfig.editorFontFamily);
-    return custom ? custom.name : t('settings.interDefault');
-  })();
-
-  const handleSelectFont = async (fontId: string) => {
-    setIsSwitchingFont(true);
-    setFontDropdownOpen(false);
-    try {
-      await updateEditorFont(fontId);
-    } catch { /* ignore */ }
-    setIsSwitchingFont(false);
-  };
-
-  const handleUploadFonts = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setIsUploading(true);
-    setUploadMessage("");
-    setUploadSuccess(false);
-    try {
-      const result = await api.uploadFonts(files);
-      const msgs: string[] = [];
-      if (result.uploaded.length > 0) msgs.push(t('settings.fontUploadSuccess', { count: result.uploaded.length }));
-      if (result.errors.length > 0) msgs.push(result.errors.join("; "));
-      setUploadMessage(msgs.join(" · "));
-      setUploadSuccess(result.uploaded.length > 0);
-      await loadFonts();
-      setTimeout(() => { setUploadMessage(""); setUploadSuccess(false); }, 4000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setUploadMessage(message || t('settings.fontUploadFailed'));
-      setUploadSuccess(false);
-    } finally {
-      setIsUploading(false);
-      if (fontFileRef.current) fontFileRef.current.value = "";
-    }
-  };
-
-  const handleDeleteFont = async (fontId: string) => {
-    try {
-      await api.deleteFont(fontId);
-      if (siteConfig.editorFontFamily === fontId) {
-        await updateEditorFont("");
-      }
-      await loadFonts();
-    } catch { /* ignore */ }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-1">{t('settings.appearanceTheme')}</h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">{t('settings.appearanceThemeDesc')}</p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30">
-          <div>
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.themeMode')}</span>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.themeModeDesc')}</p>
-          </div>
-          <ThemeToggle />
-        </div>
-
-        <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.editorFont')}</span>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.editorFontDesc')}</p>
-            </div>
-            {isSwitchingFont && <Loader2 size={14} className="animate-spin text-accent-primary" />}
-          </div>
-
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setFontDropdownOpen(!fontDropdownOpen)}
-              className="w-full flex items-center justify-between px-3 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-100 hover:border-accent-primary/50 transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <Type size={14} className="text-zinc-400" />
-                {currentFontName}
-              </span>
-              <ChevronDown size={14} className={cn("text-zinc-400 transition-transform", fontDropdownOpen && "rotate-180")} />
-            </button>
-
-            <AnimatePresence>
-              {fontDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute z-50 top-full left-0 mt-1 w-full max-h-64 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl"
-                >
-                  <div className="px-2 pt-2 pb-1">
-                    <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-2">{t('settings.builtinFonts')}</span>
-                  </div>
-                  {BUILTIN_FONTS.map(font => (
-                    <button
-                      key={font.id}
-                      onClick={() => handleSelectFont(font.id)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-                    >
-                      <span style={{ fontFamily: font.family }}>{getBuiltinFontName(font)}</span>
-                      {siteConfig.editorFontFamily === font.id && <Check size={14} className="text-accent-primary" />}
-                    </button>
-                  ))}
-
-                  {customFonts.length > 0 && (
-                    <>
-                      <div className="h-px bg-zinc-100 dark:bg-zinc-800 mx-2 my-1" />
-                      <div className="px-2 pt-1 pb-1">
-                        <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-2">{t('settings.importedFonts')}</span>
-                      </div>
-                      {customFonts.map(font => (
-                        <div
-                          key={font.id}
-                          className="flex items-center justify-between px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors group"
-                        >
-                          <button
-                            onClick={() => handleSelectFont(font.id)}
-                            className="flex-1 text-left text-sm text-zinc-700 dark:text-zinc-300"
-                          >
-                            {font.name}
-                            <span className="ml-2 text-[10px] text-zinc-400">.{font.format}</span>
-                          </button>
-                          <div className="flex items-center gap-1.5">
-                            {siteConfig.editorFontFamily === font.id && <Check size={14} className="text-accent-primary" />}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteFont(font.id); }}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-400 hover:text-red-500 transition-all"
-                              title={t('settings.deleteFont')}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => fontFileRef.current?.click()}
-              disabled={isUploading}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-xs text-zinc-600 dark:text-zinc-400 hover:border-accent-primary/50 hover:text-accent-primary transition-colors disabled:opacity-50"
-            >
-              {isUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
-              {t('settings.importFont')}
-            </button>
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">{t('settings.importFontHint')}</span>
-            <input
-              type="file"
-              ref={fontFileRef}
-              onChange={handleUploadFonts}
-              accept=".otf,.otc,.ttc,.ttf,.woff,.woff2"
-              multiple
-              className="hidden"
-            />
-          </div>
-
-          {uploadMessage && (
-            <p className={cn("text-xs", uploadSuccess ? "text-emerald-500" : "text-amber-500")}>{uploadMessage}</p>
-          )}
-
-          <div
-            className="px-3 py-3 rounded-lg border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"
-            style={{ fontFamily: "var(--editor-font-family)" }}
-          >
-            <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-              {t('settings.fontPreviewEn')}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mt-1">
-              {t('settings.fontPreviewZh')}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30">
-          <div className="flex items-center gap-2">
-            <Globe size={16} className="text-zinc-500 dark:text-zinc-400" />
-            <div>
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('language.label')}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-            {([
-              { code: "zh-CN", label: t('language.zh') },
-              { code: "en", label: t('language.en') },
-            ] as const).map(lang => (
-              <button
-                key={lang.code}
-                onClick={() => i18n.changeLanguage(lang.code)}
-                className={cn(
-                  "relative px-3 py-1 rounded-md text-xs font-medium transition-colors",
-                  i18n.language === lang.code
-                    ? "bg-white dark:bg-zinc-700 text-accent-primary shadow-sm"
-                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                )}
-              >
-                {lang.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function SettingsModal({ onClose, defaultTab = "appearance" }: SettingsModalProps) {
@@ -285,7 +34,7 @@ export default function SettingsModal({ onClose, defaultTab = "appearance" }: Se
       bodyClassName="flex flex-col md:flex-row h-full"
     >
       {/* 移动端：顶部标签栏 */}
-      <div className="md:hidden flex items-center border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 shrink-0 overflow-x-auto no-scrollbar p-2">
+      <div className="md:hidden flex items-center border-b border-app-border bg-app-sidebar shrink-0 overflow-x-auto no-scrollbar p-2">
         {SETTING_TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -296,8 +45,8 @@ export default function SettingsModal({ onClose, defaultTab = "appearance" }: Se
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0",
                 isActive
-                  ? "bg-zinc-200/70 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400"
-                  : "text-zinc-500 dark:text-zinc-400 active:bg-zinc-200/40 dark:active:bg-zinc-800/50"
+                  ? "bg-app-active text-accent-primary"
+                  : "text-tx-secondary active:bg-app-hover"
               )}
             >
               <Icon className="w-4 h-4" />
@@ -308,10 +57,10 @@ export default function SettingsModal({ onClose, defaultTab = "appearance" }: Se
       </div>
 
       {/* 桌面端：左侧导航栏 */}
-      <div className="hidden md:flex w-56 flex-shrink-0 bg-zinc-50 dark:bg-zinc-900/50 border-r border-zinc-200 dark:border-zinc-800 p-4 flex-col">
+      <div className="hidden md:flex w-56 flex-shrink-0 bg-app-sidebar border-r border-app-border p-4 flex-col">
         <div className="flex items-center gap-2 mb-6 px-2">
-          <Settings className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-          <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{t('settings.title')}</span>
+          <Settings className="w-4 h-4 text-tx-secondary" />
+          <span className="font-bold text-sm text-tx-primary">{t('settings.title')}</span>
         </div>
 
         <nav className="flex-1 space-y-0.5">
@@ -324,8 +73,8 @@ export default function SettingsModal({ onClose, defaultTab = "appearance" }: Se
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-zinc-200/70 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200"
+                    ? "bg-app-active text-accent-primary"
+                    : "text-tx-secondary hover:bg-app-hover hover:text-tx-primary"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -335,8 +84,8 @@ export default function SettingsModal({ onClose, defaultTab = "appearance" }: Se
           })}
         </nav>
 
-        <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800 px-2">
-          <p className="text-xs text-zinc-400 dark:text-zinc-600">{siteConfig.title} v1.0.0</p>
+        <div className="mt-auto pt-4 border-t border-app-border px-2">
+          <p className="text-xs text-tx-tertiary">{siteConfig.title} v1.0.0</p>
         </div>
       </div>
 

@@ -115,8 +115,8 @@ export default function SecuritySettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-1">{t('securitySettings.title')}</h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">{t('securitySettings.description')}</p>
+        <h3 className="text-lg font-bold text-tx-primary mb-1">{t('securitySettings.title')}</h3>
+        <p className="text-sm text-tx-secondary mb-6">{t('securitySettings.description')}</p>
       </div>
 
       <motion.form
@@ -126,15 +126,15 @@ export default function SecuritySettings() {
         transition={shake ? { duration: 0.5 } : {}}
       >
         {/* 头像配置 */}
-        <div className="flex items-center gap-6 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all hover:bg-zinc-100/50 dark:hover:bg-zinc-800/60">
+        <div className="flex items-center gap-6 p-4 rounded-2xl bg-app-surface/50 border border-app-border shadow-sm transition-all hover:bg-app-hover">
            <div 
-             className="relative w-20 h-20 rounded-3xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center overflow-hidden group cursor-pointer hover:border-accent-primary transition-all bg-white dark:bg-zinc-900 shadow-inner"
+             className="relative w-20 h-20 rounded-3xl border-2 border-dashed border-app-border flex items-center justify-center overflow-hidden group cursor-pointer hover:border-accent-primary transition-all bg-app-bg shadow-inner"
              onClick={() => fileInputRef.current?.click()}
            >
              {previewAvatar ? (
                <img src={previewAvatar} alt="Avatar" className="w-full h-full object-cover" />
              ) : (
-               <User size={32} className="text-zinc-300 dark:text-zinc-600" />
+               <User size={32} className="text-tx-tertiary" />
              )}
              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                <Camera size={20} className="text-white" />
@@ -148,51 +148,51 @@ export default function SecuritySettings() {
              className="hidden" 
            />
            <div className="flex-1">
-             <div className="text-sm font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">{t('securitySettings.avatar')}</div>
-             <p className="text-[11px] text-zinc-500 dark:text-zinc-500 leading-relaxed mt-1 font-medium">{t('securitySettings.avatarDesc')}</p>
+             <div className="text-sm font-bold text-tx-primary tracking-tight">{t('securitySettings.avatar')}</div>
+             <p className="text-[11px] text-tx-secondary leading-relaxed mt-1 font-medium">{t('securitySettings.avatarDesc')}</p>
            </div>
         </div>
 
         <div className="space-y-4">
           {/* 用户名 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider ml-1">{t('securitySettings.newUsername')}</label>
+            <label className="text-xs font-bold text-tx-secondary uppercase tracking-wider ml-1">{t('securitySettings.newUsername')}</label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-zinc-400 group-focus-within:text-accent-primary transition-colors" />
+                <User className="h-4 w-4 text-tx-tertiary group-focus-within:text-accent-primary transition-colors" />
               </div>
               <input
                 type="text"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm"
+                className="block w-full pl-10 pr-3 py-2.5 border border-app-border rounded-xl bg-app-bg text-tx-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm"
                 placeholder={t('securitySettings.newUsernamePlaceholder')}
                 autoComplete="username"
               />
             </div>
           </div>
 
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent my-6" />
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-app-border to-transparent my-6" />
 
           {/* 新密码 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider ml-1">{t('securitySettings.newPassword')}</label>
+            <label className="text-xs font-bold text-tx-secondary uppercase tracking-wider ml-1">{t('securitySettings.newPassword')}</label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Key className="h-4 w-4 text-zinc-400 group-focus-within:text-accent-primary transition-colors" />
+                <Key className="h-4 w-4 text-tx-tertiary group-focus-within:text-accent-primary transition-colors" />
               </div>
               <input
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="block w-full pl-10 pr-10 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm"
+                className="block w-full pl-10 pr-10 py-2.5 border border-app-border rounded-xl bg-app-bg text-tx-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm"
                 placeholder={t('securitySettings.newPasswordPlaceholder')}
                 autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-tx-tertiary hover:text-tx-primary transition-colors"
               >
                 {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -205,18 +205,18 @@ export default function SecuritySettings() {
               animate={{ opacity: 1, height: "auto" }}
               className="space-y-1.5 overflow-hidden"
             >
-              <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider ml-1">{t('securitySettings.confirmPassword')}</label>
+              <label className="text-xs font-bold text-tx-secondary uppercase tracking-wider ml-1">{t('securitySettings.confirmPassword')}</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <Key className="h-4 w-4 text-zinc-400 group-focus-within:text-accent-primary transition-colors" />
+                  <Key className="h-4 w-4 text-tx-tertiary group-focus-within:text-accent-primary transition-colors" />
                 </div>
                 <input
                   type={showNewPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className={cn(
-                    "block w-full pl-10 pr-3 py-2.5 border rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm",
-                    confirmPassword && newPassword !== confirmPassword ? "border-red-500/50" : "border-zinc-200 dark:border-zinc-700"
+                    "block w-full pl-10 pr-3 py-2.5 border rounded-xl bg-app-bg text-tx-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm",
+                    confirmPassword && newPassword !== confirmPassword ? "border-accent-danger/50" : "border-app-border"
                   )}
                   placeholder={t('securitySettings.confirmPasswordPlaceholder')}
                 />
@@ -224,31 +224,31 @@ export default function SecuritySettings() {
             </motion.div>
           )}
 
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent my-6" />
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-app-border to-transparent my-6" />
 
           {/* 当前密码验证 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider ml-1">
+            <label className="text-xs font-bold text-tx-secondary uppercase tracking-wider ml-1">
               {t('securitySettings.currentPassword')} {(newUsername !== currentUser?.username || newPassword) && <span className="text-red-500">*</span>}
             </label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Shield className="h-4 w-4 text-zinc-400 group-focus-within:text-accent-primary transition-colors" />
+                <Shield className="h-4 w-4 text-tx-tertiary group-focus-within:text-accent-primary transition-colors" />
               </div>
               <input
                 type={showCurrentPassword ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className={cn(
-                  "block w-full pl-10 pr-10 py-2.5 border rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm",
-                  error && !currentPassword ? "border-red-500/50 shadow-red-500/10" : "border-zinc-200 dark:border-zinc-700"
+                  "block w-full pl-10 pr-10 py-2.5 border rounded-xl bg-app-bg text-tx-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-all text-sm shadow-sm",
+                  error && !currentPassword ? "border-accent-danger/50 shadow-accent-danger/10" : "border-app-border"
                 )}
                 placeholder={t('securitySettings.currentPasswordPlaceholder')}
               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-tx-tertiary hover:text-tx-primary transition-colors"
               >
                 {showCurrentPassword ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -260,7 +260,7 @@ export default function SecuritySettings() {
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-[11px] font-bold text-red-600 dark:text-red-400 shadow-sm"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-accent-danger/10 border border-accent-danger/20 text-[11px] font-bold text-accent-danger shadow-sm"
           >
             {error}
           </motion.div>

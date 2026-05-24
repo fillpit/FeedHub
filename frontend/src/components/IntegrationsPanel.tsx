@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { Rss, Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff } from "lucide-react";
+import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { IntegrationCard, CopyButton } from "./IntegrationCard";
 import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
@@ -32,24 +31,6 @@ const CloakBrowserInstructions: React.FC = () => (
     </div>
   </div>
 );
-
-/**
- * GReader instruction node
- */
-const GReaderInstructions: React.FC = () => {
-  return (
-    <div className="space-y-2">
-      <div className="font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-500 text-xs">
-        <HelpCircle className="w-3.5 h-3.5" />
-        接入指南：
-      </div>
-      <ul className="list-disc list-inside space-y-1 text-[11px] text-tx-secondary leading-relaxed">
-        <li>直接使用你的 <strong>本站账号与登录密码</strong> 在阅读器中进行鉴权登录。</li>
-        <li>对于部分知名阅读器，选择 <strong>"Google Reader"</strong> 类型的服务商，然后填入上面的物理网关。</li>
-      </ul>
-    </div>
-  );
-};
 
 /**
  * Chrome Remote Debugging instruction node with improved readability and color balance
@@ -130,8 +111,6 @@ const BrowserlessInstructions: React.FC = () => (
  * Main Integration Configuration Panel Component
  */
 export default function IntegrationsPanel() {
-  const { t } = useTranslation();
-  const [serverUrl, setServerUrl] = useState("");
   const [activeStates, setActiveStates] = useState<Record<string, boolean>>({
     redis: false,
     greader: true,
