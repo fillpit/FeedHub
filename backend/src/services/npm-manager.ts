@@ -73,6 +73,19 @@ export class NpmManager {
     this.installPackages();
   }
 
+  public async retryPackage(name: string): Promise<void> {
+    const db = getDb();
+    const existing = db.prepare("SELECT * FROM npm_packages WHERE name = ?").get(name) as NpmPackage | undefined;
+    if (!existing) {
+      throw new Error(`找不到软件包: ${name}`);
+    }
+
+    db.prepare("UPDATE npm_packages SET status = 'pending', error = NULL, updatedAt = datetime('now') WHERE name = ?")
+      .run(name);
+
+    this.installPackages();
+  }
+
   public async removePackage(name: string): Promise<void> {
     const db = getDb();
     db.prepare("DELETE FROM npm_packages WHERE name = ?").run(name);

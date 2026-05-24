@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Package, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle2, Clock, Loader2, Search } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Package, Plus, RefreshCw, Loader2, Search } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { npmPackageApi, NpmPackage } from "@/lib/feed-api";
 import { cn } from "@/lib/utils";
 
 import NpmPackageSearchDialog from "./NpmPackageSearchDialog";
+import NpmPackageCard from "./NpmPackageCard";
 
 export default function NpmPackagePanel() {
   const [packages, setPackages] = useState<NpmPackage[]>([]);
@@ -65,7 +66,9 @@ export default function NpmPackagePanel() {
     }
   };
 
-  const handleDelete = async (name: string) => {
+  const [retryingPkgs, setRetryingPkgs] = useState<Record<string, boolean>>({});
+
+  const handleDelete = useCallback(async (name: string) => {
     if (!confirm(`确定要卸载包 ${name} 吗？`)) return;
     try {
       await npmPackageApi.delete(name);
@@ -73,7 +76,19 @@ export default function NpmPackagePanel() {
     } catch (e) {
       alert(e instanceof Error ? e.message : "删除失败");
     }
-  };
+  }, [loadPackages]);
+
+  const handleRetry = useCallback(async (name: string) => {
+    setRetryingPkgs((prev) => ({ ...prev, [name]: true }));
+    try {
+      await npmPackageApi.retry(name);
+      await loadPackages();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "重试失败");
+    } finally {
+      setRetryingPkgs((prev) => ({ ...prev, [name]: false }));
+    }
+  }, [loadPackages]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-app-bg overflow-hidden relative">
@@ -156,59 +171,13 @@ export default function NpmPackagePanel() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <AnimatePresence>
                 {packages.map((pkg) => (
-                  <motion.div
+                  <NpmPackageCard
                     key={pkg.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-app-surface border border-app-border rounded-2xl p-4 hover:shadow-md transition-all group"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                          <Package size={16} className="text-tx-secondary" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-tx-primary">{pkg.name}</div>
-                          <div className="text-[10px] text-tx-tertiary">v{pkg.version}</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(pkg.name)}
-                        className="p-1.5 rounded-lg text-tx-tertiary hover:text-accent-danger hover:bg-accent-danger/10 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-app-border/50">
-                      <div className={cn(
-                        "flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full",
-                        pkg.status === 'installed' ? "text-emerald-500 bg-emerald-500/10" :
-                        pkg.status === 'installing' ? "text-blue-500 bg-blue-500/10" :
-                        pkg.status === 'error' ? "text-rose-500 bg-rose-500/10" :
-                        "text-zinc-500 bg-zinc-500/10"
-                      )}>
-                        {pkg.status === 'installed' && <CheckCircle2 size={10} />}
-                        {pkg.status === 'installing' && <Loader2 size={10} className="animate-spin" />}
-                        {pkg.status === 'error' && <AlertCircle size={10} />}
-                        {pkg.status === 'pending' && <Clock size={10} />}
-                        {pkg.status === 'installed' ? "已安装" :
-                         pkg.status === 'installing' ? "正在安装..." :
-                         pkg.status === 'error' ? "安装失败" : "等待中"}
-                      </div>
-                      <div className="text-[10px] text-tx-tertiary">
-                        {new Date(pkg.updatedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    
-                    {pkg.error && (
-                      <div className="mt-3 p-2 rounded-lg bg-rose-500/5 text-[10px] text-rose-500 break-all border border-rose-500/10 max-h-20 overflow-y-auto">
-                        {pkg.error}
-                      </div>
-                    )}
-                  </motion.div>
+                    pkg={pkg}
+                    isRetrying={!!retryingPkgs[pkg.name]}
+                    onDelete={handleDelete}
+                    onRetry={handleRetry}
+                  />
                 ))}
               </AnimatePresence>
             </div>

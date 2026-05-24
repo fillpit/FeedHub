@@ -30,6 +30,16 @@ router.delete("/:name", async (c) => {
   }
 });
 
+router.post("/:name/retry", async (c) => {
+  const name = c.req.param("name");
+  try {
+    await npmManager.retryPackage(name);
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "重试安装包失败" }, 500);
+  }
+});
+
 router.post("/refresh", async (c) => {
   try {
     npmManager.installPackages(); // Fire and forget

@@ -135,6 +135,7 @@ export const npmPackageApi = {
   list: () => req<NpmPackage[]>("/npm-packages"),
   add: (name: string, version?: string) => req<{ success: boolean }>("/npm-packages", { method: "POST", body: json({ name, version }) }),
   delete: (name: string) => req<{ success: boolean }>(`/npm-packages/${name}`, { method: "DELETE" }),
+  retry: (name: string) => req<{ success: boolean }>(`/npm-packages/${encodeURIComponent(name)}/retry`, { method: "POST" }),
   refresh: () => req<{ success: boolean }>("/npm-packages/refresh", { method: "POST" }),
   search: (q: string) => req<Array<{ name: string; version: string; description: string }>>(`/npm-packages/search?q=${encodeURIComponent(q)}`),
   getVersions: (name: string) => req<string[]>(`/npm-packages/versions/${encodeURIComponent(name)}`),
