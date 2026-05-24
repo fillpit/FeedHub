@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getDb } from "../db/schema";
+import { sendNotification } from "../services/notification";
 import type { WebsiteRssConfig, WebsiteRssCreate, WebsiteRssUpdate } from "../types/feed";
 import { scrapeWebsite, buildAuthHeaders } from "../services/html-scraper";
 import { buildRssXml, buildJsonFeed } from "../services/rss-builder";
@@ -192,10 +193,26 @@ interface FetchStatusUpdate {
   readonly content?: string;
 }
 
+async function handleWebsiteFailureNotification(id: number, error: string): Promise<void> {
+  try {
+    const db = getDb();
+    const notifySetting = db.prepare("SELECT value FROM system_settings WHERE key = 'feed_notify_website_failure'").get() as { value: string } | undefined;
+    if (notifySetting?.value !== "true") return;
+
+    const config = db.prepare("SELECT title, url, lastFetchStatus FROM website_rss_configs WHERE id = ?").get(id) as { title: string; url: string; lastFetchStatus: string | null } | undefined;
+    if (!config || config.lastFetchStatus === "failure") return;
+
+    await sendNotification("网页监控抓取失败", `配置: ${config.title}\nURL: ${config.url}\n原因: ${error}`);
+  } catch (err: unknown) {
+    console.error("Failed to handle website failure notification:", err);
+  }
+}
+
 function updateFetchStatus(params: FetchStatusUpdate): void {
   const db = getDb();
   const now = new Date().toISOString();
   if (params.status === "failure") {
+    handleWebsiteFailureNotification(params.id, params.error ?? "未知错误");
     db.prepare("UPDATE website_rss_configs SET lastFetchStatus = ?, lastFetchError = ?, lastFetchTime = ?, updatedAt = ? WHERE id = ?")
       .run("failure", params.error ?? null, now, now, params.id);
   } else {

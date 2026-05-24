@@ -163,3 +163,73 @@
     "4.17.19"
   ]
   ```
+
+---
+
+## 通知推送配置模块 [NEW]
+
+### 8. 获取通知推送设置
+
+获取当前的推送渠道（Bark、飞书）以及事件订阅状态。
+
+- **请求方法**：`GET`
+- **请求路径**：`/api/feed-settings`
+- **请求参数**：无
+- **成功响应** (200 OK)：
+  ```json
+  {
+    "feed_user_agent": "Mozilla/5.0...",
+    "feed_cache_ttl": "3600",
+    "feed_proxy_enabled": "false",
+    "feed_bark_enabled": "false",
+    "feed_bark_url": "",
+    "feed_feishu_enabled": "false",
+    "feed_feishu_webhook": "",
+    "feed_notify_website_failure": "false",
+    "feed_notify_dynamic_failure": "false",
+    "feed_notify_npm_failure": "false"
+  }
+  ```
+
+---
+
+### 9. 修改通知推送设置
+
+更新当前的推送配置。
+
+- **请求方法**：`PUT`
+- **请求路径**：`/api/feed-settings`
+- **请求体**：
+  ```json
+  {
+    "feed_bark_enabled": "true",
+    "feed_bark_url": "https://api.day.app/yourkey",
+    "feed_notify_website_failure": "true"
+  }
+  ```
+- **成功响应** (200 OK)：
+  返回更新后的全部配置对象。
+
+---
+
+### 10. 测试消息通道推送
+
+向选定通道发送连通性测试消息。
+
+- **请求方法**：`POST`
+- **请求路径**：`/api/feed-settings/test-push`
+- **请求体**：
+  ```json
+  {
+    "type": "bark",
+    "payload": {
+      "feed_bark_url": "https://api.day.app/yourkey"
+    }
+  }
+  ```
+- **成功响应** (200 OK)：
+  ```json
+  {
+    "success": true
+  }
+  ```

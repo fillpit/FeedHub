@@ -12,6 +12,9 @@ const DEFAULTS: Record<string, string> = {
   feed_bark_url: "",
   feed_feishu_enabled: "false",
   feed_feishu_webhook: "",
+  feed_notify_website_failure: "false",
+  feed_notify_dynamic_failure: "false",
+  feed_notify_npm_failure: "false",
 };
 
 // 获取设置

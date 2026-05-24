@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { getDb } from "../db/schema";
+import { sendNotification } from "./notification";
 
 const execAsync = promisify(exec);
 
@@ -17,6 +18,21 @@ export interface NpmPackage {
   error?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+async function handleNpmFailureNotification(packageName: string, error: string): Promise<void> {
+  try {
+    const db = getDb();
+    const notifySetting = db.prepare("SELECT value FROM system_settings WHERE key = 'feed_notify_npm_failure'").get() as { value: string } | undefined;
+    if (notifySetting?.value !== "true") return;
+
+    await sendNotification(
+      "NPM 软件包安装失败",
+      `包名: ${packageName}\n原因: ${error}`
+    );
+  } catch (err: unknown) {
+    console.error("Failed to send NPM installation failure notification:", err);
+  }
 }
 
 export class NpmManager {
@@ -97,6 +113,31 @@ export class NpmManager {
     }
   }
 
+  private formatExecError(error: unknown): string {
+    let message = error instanceof Error ? error.message : String(error);
+    if (error && typeof error === "object") {
+      const errObj = error as { stderr?: unknown; stdout?: unknown; code?: unknown };
+      const stderr = typeof errObj.stderr === "string" ? errObj.stderr.trim() : "";
+      const stdout = typeof errObj.stdout === "string" ? errObj.stdout.trim() : "";
+      
+      let richDetails = "";
+      if (stderr) {
+        richDetails += `\n[Stderr]:\n${stderr}`;
+      }
+      if (stdout) {
+        richDetails += `\n[Stdout]:\n${stdout}`;
+      }
+      if (errObj.code !== undefined) {
+        richDetails += `\n[Exit Code]: ${String(errObj.code)}`;
+      }
+      
+      if (richDetails) {
+        message = `${message}\n--- Rich Error Details ---${richDetails}`;
+      }
+    }
+    return message;
+  }
+
   public async installPackages(): Promise<void> {
     if (this.isInitializing) return;
     this.isInitializing = true;
@@ -115,8 +156,9 @@ export class NpmManager {
 
         db.prepare("UPDATE npm_packages SET status = 'installed', error = NULL, updatedAt = datetime('now') WHERE id = ?").run(pkg.id);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = this.formatExecError(error);
         console.error(`Failed to install npm package ${pkg.name}:`, message);
+        handleNpmFailureNotification(pkg.name, message);
         db.prepare("UPDATE npm_packages SET status = 'error', error = ?, updatedAt = datetime('now') WHERE id = ?").run(message, pkg.id);
       }
     }

@@ -1,14 +1,15 @@
 import React, { useState } from "react";
-import { Palette, Shield, Settings } from "lucide-react";
+import { Palette, Shield, Settings, Bell } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SecuritySettings from "@/components/SecuritySettings";
 import AppearancePanel from "@/components/AppearancePanel";
+import NotificationSettingsPanel from "@/components/NotificationSettingsPanel";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { cn } from "@/lib/utils";
 import { Dialog } from "./ui/dialog";
 import { AnimatePresence, motion } from "framer-motion";
 
-type TabId = "appearance" | "security";
+type TabId = "appearance" | "notification" | "security";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -22,6 +23,7 @@ export default function SettingsModal({ onClose, defaultTab = "appearance" }: Se
 
   const SETTING_TABS = [
     { id: "appearance" as const, label: t('settings.appearance'), icon: Palette },
+    { id: "notification" as const, label: t('settings.notification'), icon: Bell },
     { id: "security" as const, label: t('settings.security'), icon: Shield },
   ];
 
@@ -100,6 +102,7 @@ export default function SettingsModal({ onClose, defaultTab = "appearance" }: Se
             transition={{ duration: 0.15 }}
           >
             {activeTab === "appearance" && <AppearancePanel />}
+            {activeTab === "notification" && <NotificationSettingsPanel />}
             {activeTab === "security" && <SecuritySettings />}
           </motion.div>
         </AnimatePresence>

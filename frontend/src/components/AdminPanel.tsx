@@ -72,7 +72,7 @@ export default function AdminPanel() {
                 <Shield size={18} />
               </div>
               <div>
-                <h1 className="font-bold text-tx-primary leading-none">设置</h1>
+                <h1 className="font-bold text-tx-primary leading-none">控制面板</h1>
                 <p className="text-[10px] text-tx-tertiary mt-1 uppercase tracking-widest font-semibold">Admin Panel</p>
               </div>
             </div>

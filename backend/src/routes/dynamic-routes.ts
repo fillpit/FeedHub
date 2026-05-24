@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getDb } from "../db/schema";
+import { sendNotification } from "../services/notification";
 import type { DynamicRoute, DynamicRouteCreate, DynamicRouteUpdate, FeedOutput } from "../types/feed";
 import { runScript } from "../services/script-runner";
 import { buildRssXml, buildJsonFeed } from "../services/rss-builder";
@@ -375,9 +376,27 @@ interface UpdateRouteStatusParams {
   readonly error: string | null;
 }
 
+async function handleDynamicFailureNotification(id: number, error: string): Promise<void> {
+  try {
+    const db = getDb();
+    const notifySetting = db.prepare("SELECT value FROM system_settings WHERE key = 'feed_notify_dynamic_failure'").get() as { value: string } | undefined;
+    if (notifySetting?.value !== "true") return;
+
+    const route = db.prepare("SELECT name, path, lastRunStatus FROM dynamic_routes WHERE id = ?").get(id) as { name: string; path: string; lastRunStatus: string | null } | undefined;
+    if (!route || route.lastRunStatus === "failure") return;
+
+    await sendNotification("动态路由抓取失败", `路由: ${route.name}\n路径: ${route.path}\n原因: ${error}`);
+  } catch (err: unknown) {
+    console.error("Failed to handle dynamic failure notification:", err);
+  }
+}
+
 function updateRouteStatus(params: UpdateRouteStatusParams): void {
   const db = getDb();
   const statusUpdate = params.isSuccess ? "success" : "failure";
+  if (!params.isSuccess) {
+    handleDynamicFailureNotification(params.routeId, params.error ?? "未知错误");
+  }
   db.prepare("UPDATE dynamic_routes SET lastRunAt = datetime('now'), lastRunStatus = ?, lastRunError = ?, updatedAt = datetime('now') WHERE id = ?")
     .run(statusUpdate, params.error, params.routeId);
 }

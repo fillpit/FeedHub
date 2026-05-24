@@ -611,7 +611,11 @@ export const api = {
     }>(`/pipelines/${id}/run`, { method: "POST", body: JSON.stringify({ noteIds }) }),
   getPipelineRuns: () => request<unknown[]>("/pipelines/runs"),
   getPipelineStepTypes: () => request<{ type: string; name: string; icon: string; description: string }[]>("/pipelines/step-types"),
-
+  
+  // Feed Settings & Notifications
+  getFeedSettings: () => request<Record<string, string>>("/feed-settings"),
+  updateFeedSettings: (data: Record<string, string>) => request<Record<string, string>>("/feed-settings", { method: "PUT", body: JSON.stringify(data) }),
+  testPushNotification: (type: "bark" | "feishu", payload: Record<string, string>) => request<{ success: boolean; error?: string }>("/feed-settings/test-push", { method: "POST", body: JSON.stringify({ type, payload }) }),
 };
 
 // 测试服务器连接（不需要 token）
