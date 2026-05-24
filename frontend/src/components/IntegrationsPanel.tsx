@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Rss, Chrome, Globe, HelpCircle, Terminal, Cpu, Database } from "lucide-react";
+import { Rss, Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import { IntegrationCard, CopyButton } from "./IntegrationCard";
 import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
@@ -11,6 +11,27 @@ import { CloakBrowserConfig } from "./CloakBrowserConfig";
 const CHROME_CMD = "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222";
 const CLOAK_DOCKER_CMD = "docker run -d -p 9122:9122 --name cloak-browser --restart always cloakbrowser/browser:latest --remote-debugging-port=9122 --remote-debugging-address=0.0.0.0";
 const DOCKER_CMD = "docker run -d -p 3000:3000 --restart always -e \"MAX_CONCURRENT_SESSIONS=10\" -e \"TOKEN=your_secure_token\" browserless/chrome";
+
+/**
+ * CloakBrowser instruction node
+ */
+const CloakBrowserInstructions: React.FC = () => (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-bold text-tx-primary flex items-center gap-1.5">
+        <Cpu className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />
+        独立 Docker 容器快速启动指令
+      </span>
+      <CopyButton text={CLOAK_DOCKER_CMD} tooltip="复制运行指令" />
+    </div>
+    <p className="text-[11px] text-tx-secondary leading-relaxed">
+      你可以通过下面的指令快速在服务器或本地以远程调试模式启动一个 CloakBrowser 实例：
+    </p>
+    <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
+      {CLOAK_DOCKER_CMD}
+    </div>
+  </div>
+);
 
 /**
  * GReader instruction node
