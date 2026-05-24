@@ -193,6 +193,15 @@ export default function WebsiteRssPanel() {
   );
 }
 
+const formatLastFetchTime = (timeStr?: string): string => {
+  if (!timeStr) return "暂无";
+  const safeTimeStr = timeStr.includes(" ") && !timeStr.includes("T")
+    ? timeStr.replace(" ", "T") + "Z"
+    : timeStr;
+  const date = new Date(safeTimeStr);
+  return isNaN(date.getTime()) ? "暂无" : date.toLocaleString();
+};
+
 function WebsiteCard({
   config, isCopied, isRefreshing, isExportMode, isSelected,
   onToggleSelect, onEdit, onDelete, onCopyUrl, onRefresh
@@ -224,7 +233,7 @@ function WebsiteCard({
         <div className="flex items-center gap-3 mt-2">
           <span className="text-[11px] text-tx-tertiary font-mono">key: {config.key}</span>
           <span className="text-[11px] text-tx-tertiary">每 {config.fetchInterval}min 刷新</span>
-          <span className="text-[11px] text-tx-tertiary">最近执行时间: {config.lastFetchTime ? new Date(config.lastFetchTime).toLocaleString() : "暂无"}</span>
+          <span className="text-[11px] text-tx-tertiary">最近执行时间: {formatLastFetchTime(config.lastFetchTime)}</span>
           <span className="text-[11px] text-tx-tertiary">最近执行状态: {config.lastFetchStatus ? (config.lastFetchStatus === "success" ? "成功" : "失败") : "暂无"}</span>
         </div>
       </div>

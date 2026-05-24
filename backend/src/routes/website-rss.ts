@@ -145,19 +145,16 @@ router.post("/:id/refresh", async (c) => {
 
   const authHeaders = await resolveAuthHeaders(row);
   const { items, error } = await scrapeWebsite({ url: row.url, selector: row.selector, authHeaders });
-  const db = getDb();
 
+  const numId = Number(id);
   if (error) {
-    db.prepare("UPDATE website_rss_configs SET lastFetchStatus = ?, lastFetchError = ?, lastFetchTime = datetime('now'), updatedAt = datetime('now') WHERE id = ?")
-      .run("failure", error, id);
+    updateFetchStatus({ id: numId, status: "failure", error });
     return c.json({ success: false, error }, 500);
   }
 
   const feedData = { title: row.title, description: row.rssDescription, link: row.url, items };
   const feedJson = JSON.stringify(feedData);
-
-  db.prepare("UPDATE website_rss_configs SET lastContent = ?, lastFetchStatus = ?, lastFetchError = NULL, lastFetchTime = datetime('now'), updatedAt = datetime('now') WHERE id = ?")
-    .run(feedJson, "success", id);
+  updateFetchStatus({ id: numId, status: "success", content: feedJson });
 
   const cache = await getCacheService();
   await cache.deletePattern(`website:${row.key}:*`);
@@ -188,6 +185,25 @@ async function resolveAuthHeaders(config: WebsiteRssConfig): Promise<Record<stri
   return buildAuthHeaders(credential, cred.authType);
 }
 
+interface FetchStatusUpdate {
+  readonly id: number;
+  readonly status: "success" | "failure";
+  readonly error?: string;
+  readonly content?: string;
+}
+
+function updateFetchStatus(params: FetchStatusUpdate): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  if (params.status === "failure") {
+    db.prepare("UPDATE website_rss_configs SET lastFetchStatus = ?, lastFetchError = ?, lastFetchTime = ?, updatedAt = ? WHERE id = ?")
+      .run("failure", params.error ?? null, now, now, params.id);
+  } else {
+    db.prepare("UPDATE website_rss_configs SET lastContent = ?, lastFetchStatus = ?, lastFetchError = NULL, lastFetchTime = ?, updatedAt = ? WHERE id = ?")
+      .run(params.content ?? null, "success", now, now, params.id);
+  }
+}
+
 // ─── 公开 Feed 输出 ───────────────────────────────────────────────────────────
 
 export async function handleWebsiteFeed(c: import("hono").Context): Promise<Response> {
@@ -207,9 +223,15 @@ export async function handleWebsiteFeed(c: import("hono").Context): Promise<Resp
   const authHeaders = await resolveAuthHeaders(config);
   const { items, error } = await scrapeWebsite({ url: config.url, selector: config.selector, authHeaders });
 
-  if (error) return c.json({ error }, 500);
+  if (error) {
+    updateFetchStatus({ id: config.id, status: "failure", error });
+    return c.json({ error }, 500);
+  }
 
   const feedData = { title: config.title, description: config.rssDescription, link: config.url, items };
+  const feedJson = JSON.stringify(feedData);
+  updateFetchStatus({ id: config.id, status: "success", content: feedJson });
+
   const output = type === "json"
     ? JSON.stringify(buildJsonFeed(feedData, c.req.url))
     : buildRssXml(feedData, c.req.url);

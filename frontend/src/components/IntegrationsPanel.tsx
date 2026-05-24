@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Rss, Chrome, Globe, HelpCircle, Terminal, Cpu, Database } from "lucide-react";
 import { api } from "@/lib/api";
 import { IntegrationCard, CopyButton } from "./IntegrationCard";
 import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
@@ -12,28 +13,22 @@ const CLOAK_DOCKER_CMD = "docker run -d -p 9122:9122 --name cloak-browser --rest
 const DOCKER_CMD = "docker run -d -p 3000:3000 --restart always -e \"MAX_CONCURRENT_SESSIONS=10\" -e \"TOKEN=your_secure_token\" browserless/chrome";
 
 /**
- * CloakBrowser instructions node
+ * GReader instruction node
  */
-const CloakBrowserInstructions: React.FC = () => (
-  <div className="space-y-3">
-    <div className="flex items-center justify-between">
-      <span className="text-xs font-bold text-tx-primary flex items-center gap-1.5">
-        <Cpu className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />
-        Docker 独立部署命令
-      </span>
-      <CopyButton text={CLOAK_DOCKER_CMD} tooltip="复制 Docker 部署指令" />
+const GReaderInstructions: React.FC = () => {
+  return (
+    <div className="space-y-2">
+      <div className="font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-500 text-xs">
+        <HelpCircle className="w-3.5 h-3.5" />
+        接入指南：
+      </div>
+      <ul className="list-disc list-inside space-y-1 text-[11px] text-tx-secondary leading-relaxed">
+        <li>直接使用你的 <strong>本站账号与登录密码</strong> 在阅读器中进行鉴权登录。</li>
+        <li>对于部分知名阅读器，选择 <strong>"Google Reader"</strong> 类型的服务商，然后填入上面的物理网关。</li>
+      </ul>
     </div>
-    <p className="text-[11px] text-tx-secondary leading-relaxed">
-      你可以通过 Docker 在独立服务器或私有化群晖上极速拉取并持久部署 CloakBrowser 容器服务（默认开启 9122 端口）：
-    </p>
-    <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
-      {CLOAK_DOCKER_CMD}
-    </div>
-    <p className="text-[10px] text-tx-tertiary leading-relaxed">
-      💡 <strong>抓取顺序：</strong> 系统执行内容提取任务时，<strong>CloakBrowser 防关联指纹浏览器拥有最高级优先权</strong>，完美保障抓取的隐蔽性与稳定性。
-    </p>
-  </div>
-);
+  );
+};
 
 /**
  * Chrome Remote Debugging instruction node with improved readability and color balance
@@ -114,6 +109,8 @@ const BrowserlessInstructions: React.FC = () => (
  * Main Integration Configuration Panel Component
  */
 export default function IntegrationsPanel() {
+  const { t } = useTranslation();
+  const [serverUrl, setServerUrl] = useState("");
   const [activeStates, setActiveStates] = useState<Record<string, boolean>>({
     redis: false,
     greader: true,
