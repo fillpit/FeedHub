@@ -1,6 +1,6 @@
 {
   "name": "node-template-backend",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc && rm -rf dist/generated && (test -d src/generated && cp -r src/generated dist/generated || true)",
