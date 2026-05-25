@@ -12,7 +12,7 @@ interface DialogProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl" | "6xl" | "full";
-  position?: "center" | "right";
+  position?: "center" | "right" | "top";
   className?: string;
   bodyClassName?: string;
 }
@@ -61,6 +61,7 @@ export function Dialog({
   }, [isOpen]);
 
   const isCenter = position === "center";
+  const isTop = position === "top";
 
   return (
     <AnimatePresence>
@@ -79,17 +80,19 @@ export function Dialog({
           <div 
             className={cn(
               "fixed inset-0 z-[70] flex p-4 pointer-events-none",
-              isCenter ? "items-center justify-center" : "items-stretch justify-end p-0"
+              isCenter && "items-center justify-center",
+              isTop && "items-start justify-center pt-[15vh]",
+              position === "right" && "items-stretch justify-end p-0"
             )}
           >
             <motion.div
-              initial={isCenter ? { opacity: 0, scale: 0.95, y: 15 } : { x: "100%" }}
-              animate={isCenter ? { opacity: 1, scale: 1, y: 0 } : { x: 0 }}
-              exit={isCenter ? { opacity: 0, scale: 0.95, y: 15 } : { x: "100%" }}
-              transition={isCenter ? { type: "spring", bounce: 0.15, duration: 0.4 } : { type: "spring", bounce: 0, duration: 0.3 }}
+              initial={isCenter || isTop ? { opacity: 0, scale: 0.95, y: 15 } : { x: "100%" }}
+              animate={isCenter || isTop ? { opacity: 1, scale: 1, y: 0 } : { x: 0 }}
+              exit={isCenter || isTop ? { opacity: 0, scale: 0.95, y: 15 } : { x: "100%" }}
+              transition={isCenter || isTop ? { type: "spring", bounce: 0.15, duration: 0.4 } : { type: "spring", bounce: 0, duration: 0.3 }}
               className={cn(
                 "w-full bg-app-elevated border-app-border shadow-2xl flex flex-col overflow-hidden pointer-events-auto",
-                isCenter ? "rounded-2xl border" : "h-full border-l",
+                isCenter || isTop ? "rounded-2xl border" : "h-full border-l",
                 sizeClasses[size],
                 className
               )}

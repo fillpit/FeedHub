@@ -28,6 +28,7 @@ export default function ConfirmModal({
       isOpen={isOpen}
       onClose={onClose}
       size="sm"
+      position="top"
       className="z-[99999]"
       footer={
         <div className="flex gap-3 w-full">
