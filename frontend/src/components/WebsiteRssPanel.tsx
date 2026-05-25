@@ -6,6 +6,7 @@ import { WebsiteRssConfig, WebsiteRssCreate } from "@/types/feed";
 import { websiteRssApi, getWebsiteFeedUrl } from "@/lib/feed-api";
 import { cn, copyToClipboard } from "@/lib/utils";
 import WebsiteRssForm from "./WebsiteRssForm";
+import ConfirmModal from "./ConfirmModal";
 
 function downloadExportBlob(exportData: unknown, fileName: string) {
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
@@ -28,6 +29,7 @@ export default function WebsiteRssPanel() {
   const [importSuccess, setImportSuccess] = useState(false);
   const [isExportMode, setIsExportMode] = useState(false);
   const [selectedExportIds, setSelectedExportIds] = useState<number[]>([]);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,12 +42,20 @@ export default function WebsiteRssPanel() {
 
   useEffect(() => { loadConfigs(); }, [loadConfigs]);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("确认删除此监控配置？")) return;
+  const handleDelete = (id: number) => {
+    setDeletingId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deletingId === null) return;
     try {
-      await websiteRssApi.delete(id);
-      setConfigs((prev) => prev.filter((c) => c.id !== id));
-    } catch (e) { alert(e instanceof Error ? e.message : "删除失败"); }
+      await websiteRssApi.delete(deletingId);
+      setConfigs((prev) => prev.filter((c) => c.id !== deletingId));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "删除失败");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleRefresh = async (id: number) => {
@@ -189,6 +199,16 @@ export default function WebsiteRssPanel() {
       <AnimatePresence>
         {formOpen && <WebsiteRssForm config={editingConfig} onClose={() => setFormOpen(false)} onSave={() => { setFormOpen(false); loadConfigs(); }} />}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={deletingId !== null}
+        title="删除监控配置"
+        message="确定要删除此网页监控配置吗？删除后将无法恢复。"
+        confirmText="确认删除"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeletingId(null)}
+      />
     </div>
   );
 }
@@ -221,7 +241,7 @@ function WebsiteCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 min-w-0">
           {config.favicon && <img src={config.favicon} className="w-4 h-4 rounded shrink-0" alt="" />}
-          <span className="text-sm font-semibold text-tx-primary truncate flex-1 min-w-0" title={config.title}>{config.title}</span>
+          <span className="text-sm font-semibold text-tx-primary truncate min-w-0" title={config.title}>{config.title}</span>
           {config.lastFetchStatus && (
             <span className={cn("inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border shrink-0", config.lastFetchStatus === "success" ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
               <span className={cn("w-1.5 h-1.5 rounded-full", config.lastFetchStatus === "success" ? "bg-green-500" : "bg-red-500")} />

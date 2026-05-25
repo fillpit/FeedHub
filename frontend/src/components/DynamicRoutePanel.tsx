@@ -9,6 +9,7 @@ import DynamicRouteForm from "./DynamicRouteForm";
 import DynamicRouteScriptDialog from "./DynamicRouteScriptDialog";
 import { RouteCard, EmptyState } from "./DynamicRouteHelpers";
 import { downloadExportBlob, fetchRouteFiles, importSingleRoute } from "./DynamicRouteUtils";
+import ConfirmModal from "./ConfirmModal";
 
 export default function DynamicRoutePanel() {
   const [routes, setRoutes] = useState<DynamicRoute[]>([]);
@@ -31,6 +32,9 @@ export default function DynamicRoutePanel() {
   const projectUploadRef = useRef<HTMLInputElement>(null);
   const [uploadingRouteId, setUploadingRouteId] = useState<number | null>(null);
 
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [installingConfirmId, setInstallingConfirmId] = useState<number | null>(null);
+
   const loadRoutes = useCallback(async () => {
     setIsLoading(true); setError(null);
     try { setRoutes(await dynamicRouteApi.list()); }
@@ -40,12 +44,20 @@ export default function DynamicRoutePanel() {
 
   useEffect(() => { loadRoutes(); }, [loadRoutes]);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("确认删除此路由？")) return;
+  const handleDelete = (id: number) => {
+    setDeletingId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deletingId === null) return;
     try {
-      await dynamicRouteApi.delete(id);
-      setRoutes((prev) => prev.filter((r) => r.id !== id));
-    } catch (e) { alert(e instanceof Error ? e.message : "删除失败"); }
+      await dynamicRouteApi.delete(deletingId);
+      setRoutes((prev) => prev.filter((r) => r.id !== deletingId));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "删除失败");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleCopyUrl = (route: DynamicRoute) => {
@@ -101,8 +113,14 @@ export default function DynamicRoutePanel() {
     }
   };
 
-  const handleInstallDeps = async (routeId: number) => {
-    if (!confirm("确定要在该目录下执行 pnpm install 吗？这可能需要一些时间。")) return;
+  const handleInstallDeps = (routeId: number) => {
+    setInstallingConfirmId(routeId);
+  };
+
+  const handleConfirmInstallDeps = async () => {
+    if (installingConfirmId === null) return;
+    const routeId = installingConfirmId;
+    setInstallingConfirmId(null);
     setIsInstalling(routeId);
     try {
       await dynamicRouteApi.installDeps(routeId);
@@ -245,6 +263,26 @@ export default function DynamicRoutePanel() {
       <AnimatePresence>
         {scriptDialogOpen && scriptRoute && <DynamicRouteScriptDialog route={scriptRoute} onClose={() => { setScriptDialogOpen(false); loadRoutes(); }} onSave={loadRoutes} />}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={deletingId !== null}
+        title="删除路由配置"
+        message="确定要删除此动态路由吗？删除后其关联脚本及配置将无法恢复。"
+        confirmText="确认删除"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeletingId(null)}
+      />
+
+      <ConfirmModal
+        isOpen={installingConfirmId !== null}
+        title="执行依赖安装"
+        message="确定要在该目录下执行 pnpm install 吗？这可能需要一些时间。"
+        confirmText="确认安装"
+        confirmVariant="warning"
+        onConfirm={handleConfirmInstallDeps}
+        onClose={() => setInstallingConfirmId(null)}
+      />
     </div>
   );
 }
