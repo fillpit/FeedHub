@@ -62,7 +62,40 @@ async function executeInVm(
   mainFile: string,
   timeoutMs: number,
 ): Promise<unknown> {
-  const customRequire = createRequire(mainFile);
+  const scriptRequire = createRequire(mainFile);
+  const npmEnvDir = process.env.NPM_ENV_DIR
+    || path.join(process.env.ELECTRON_USER_DATA || process.cwd(), "data", "npm_env");
+  const npmEnvRequire = createRequire(path.join(npmEnvDir, "index.js"));
+
+  const customRequire = new Proxy(scriptRequire, {
+    apply(target, thisArg, argArray) {
+      const id = argArray[0];
+      try {
+        return target(id);
+      } catch (error: unknown) {
+        const isModuleNotFoundError =
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "MODULE_NOT_FOUND";
+
+        if (
+          isModuleNotFoundError &&
+          typeof id === "string" &&
+          !id.startsWith(".") &&
+          !path.isAbsolute(id)
+        ) {
+          try {
+            return npmEnvRequire(id);
+          } catch {
+            throw error;
+          }
+        }
+        throw error;
+      }
+    },
+  });
+
 
   const _log = (level: string, ...args: unknown[]) => {
     const message = args.map(arg => {
