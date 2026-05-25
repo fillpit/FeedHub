@@ -23,7 +23,7 @@ export interface SiteSettings {
 }
 
 const DEFAULTS: SiteSettings = {
-  site_title: "nowen-note",
+  site_title: "FeedHub",
   site_favicon: "",
   editor_font_family: "",
   registration_policy: "closed",

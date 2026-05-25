@@ -11,7 +11,7 @@ export interface SiteConfig {
 }
 
 const DEFAULT_CONFIG: SiteConfig = {
-  title: "nowen-note",
+  title: "node-template",
   favicon: "",
   editorFontFamily: "",
   registrationPolicy: "closed",
@@ -45,7 +45,7 @@ const SiteSettingsContext = createContext<SiteSettingsContextValue>({
 });
 
 function applyToDOM(title: string, faviconUrl: string) {
-  document.title = title || "nowen-note";
+  document.title = title || "node-template";
 
   let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
   if (!link) {
@@ -58,10 +58,10 @@ function applyToDOM(title: string, faviconUrl: string) {
     link.href = faviconUrl;
     link.type = faviconUrl.startsWith("data:image/svg") ? "image/svg+xml"
       : faviconUrl.startsWith("data:image/png") ? "image/png"
-      : faviconUrl.startsWith("data:image/x-icon") ? "image/x-icon"
-      : "image/png";
+        : faviconUrl.startsWith("data:image/x-icon") ? "image/x-icon"
+          : "image/png";
   } else {
-    link.href = "/vite.svg";
+    link.href = "/logo.svg";
     link.type = "image/svg+xml";
   }
 }
@@ -106,7 +106,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     api.getSiteSettingsPublic().then(async (data) => {
       const config: SiteConfig = {
-        title: data.site_title || "nowen-note",
+        title: data.site_title || "node-template",
         favicon: data.site_favicon || "",
         editorFontFamily: data.editor_font_family || "",
         registrationPolicy: data.registration_policy || "closed",
@@ -141,7 +141,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
       site_favicon: favicon,
     });
     const config: SiteConfig = {
-      title: data.site_title || "nowen-note",
+      title: data.site_title || "node-template",
       favicon: data.site_favicon || "",
       editorFontFamily: data.editor_font_family || siteConfig.editorFontFamily,
       registrationPolicy: siteConfig.registrationPolicy,

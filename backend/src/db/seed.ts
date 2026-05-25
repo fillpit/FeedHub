@@ -12,7 +12,7 @@ export function seedDatabase() {
 
     db.prepare(`
       INSERT INTO users (id, username, email, passwordHash) VALUES (?, ?, ?, ?)
-    `).run(userId, "admin", "admin@nowen-note.local", passwordHash);
+    `).run(userId, "admin", "admin@node.local", passwordHash);
     console.log("✅ Admin user seeded successfully");
   }
 
@@ -20,7 +20,7 @@ export function seedDatabase() {
   const settingsCount = db.prepare("SELECT COUNT(*) as count FROM system_settings").get() as { count: number };
   if (settingsCount.count === 0) {
     const defaultSettings = [
-      { key: "site_title", value: "nowen-note" },
+      { key: "site_title", value: "FeedHub" },
       { key: "registration_policy", value: "closed" },
       { key: "ai_provider", value: "openai" },
       { key: "ai_api_url", value: "https://api.openai.com/v1" },

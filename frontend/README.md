@@ -1,4 +1,4 @@
-# nowen-note
+# node-template
 
 自托管私有笔记应用，对标群晖 Note Station。
 
@@ -10,7 +10,7 @@ A self-hosted private note-taking app, inspired by Synology Note Station.
 
 ### 简介
 
-nowen-note 是一款自托管的私有化笔记应用，采用现代前后端分离架构，支持 Docker 一键部署。集成 Tiptap 富文本编辑器、AI 智能写作助手、思维导图、任务管理等功能，打造一体化知识管理平台。
+node-template 是一款自托管的私有化笔记应用，采用现代前后端分离架构，支持 Docker 一键部署。集成 Tiptap 富文本编辑器、AI 智能写作助手、思维导图、任务管理等功能，打造一体化知识管理平台。
 
 ### 技术栈
 
@@ -29,7 +29,7 @@ nowen-note 是一款自托管的私有化笔记应用，采用现代前后端分
 ### 项目结构
 
 ```
-nowen-note/
+node-template/
 ├── frontend/              # 前端 React 应用
 │   ├── src/
 │   │   ├── components/    # 组件
@@ -97,7 +97,7 @@ docker-compose up -d
 访问 `http://localhost:3001` 即可使用。
 
 服务端口：
-- `3001` — nowen-note 主应用
+- `3001` — node-template 主应用
 
 ### 核心功能
 
@@ -149,7 +149,7 @@ docker-compose up -d
 
 | 服务 | 镜像 | 端口 | 说明 |
 |------|------|------|------|
-| nowen-note | 自构建 | 3001 | 主应用（前后端一体 + SQLite） |
+| node-template | 自构建 | 3001 | 主应用（前后端一体 + SQLite） |
 
 ---
 
@@ -157,7 +157,7 @@ docker-compose up -d
 
 ### Introduction
 
-nowen-note is a self-hosted private note-taking application with a modern frontend-backend separated architecture. It supports one-click Docker deployment, featuring a Tiptap rich-text editor, AI-powered writing assistant, mind mapping, task management, and more — an all-in-one knowledge management platform.
+node-template is a self-hosted private note-taking application with a modern frontend-backend separated architecture. It supports one-click Docker deployment, featuring a Tiptap rich-text editor, AI-powered writing assistant, mind mapping, task management, and more — an all-in-one knowledge management platform.
 
 ### Tech Stack
 
@@ -197,7 +197,7 @@ docker-compose up -d
 Visit `http://localhost:3001` to use the app.
 
 Service Ports:
-- `3001` — nowen-note main app
+- `3001` — node-template main app
 
 ### Key Features
 
@@ -249,4 +249,4 @@ Service Ports:
 
 | Service | Image | Port | Description |
 |---------|-------|------|-------------|
-| nowen-note | Self-built | 3001 | Main app (frontend + backend + SQLite) |
+| node-template | Self-built | 3001 | Main app (frontend + backend + SQLite) |

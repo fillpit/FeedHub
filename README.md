@@ -26,8 +26,8 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/cropflre/nowen-note.git
-cd nowen-note
+git clone https://github.com/cropflre/node-template.git
+cd node-template
 
 # 2. 安装所有依赖
 npm run install:all
@@ -41,7 +41,7 @@ npm run dev:frontend
 
 浏览器访问 `http://localhost:5173` 即可使用。
 
-数据库文件位于 `backend/data/nowen-note.db`，备份此文件即可迁移数据。
+数据库文件位于 `backend/data/node-template.db`，备份此文件即可迁移数据。
 
 ---
 
@@ -53,8 +53,8 @@ npm run dev:frontend
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/cropflre/nowen-note.git
-cd nowen-note
+git clone https://github.com/cropflre/node-template.git
+cd node-template
 
 # 2. 一键构建并启动
 docker-compose up -d
@@ -63,7 +63,7 @@ docker-compose up -d
 #### 通用注意事项
 
 - **数据持久化**：务必将容器内的 `/app/data` 目录映射到宿主机，否则容器删除后数据丢失
-- **数据备份**：支持两种方式 — 直接备份 `nowen-note.db` 文件，或通过 API `/api/backups` 在线创建/下载备份
+- **数据备份**：支持两种方式 — 直接备份 `node-template.db` 文件，或通过 API `/api/backups` 在线创建/下载备份
 - **自动备份**：服务启动后自动开启每 24 小时数据库备份，保留最近 10 个自动备份
 - **端口冲突**：如 3001 端口被占用，可修改主机端口映射（如 `8080:3001`）
 - **安全建议**：首次登录后请立即修改默认密码；如需外网访问，建议搭配反向代理（Nginx / Caddy）并启用 HTTPS

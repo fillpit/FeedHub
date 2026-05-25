@@ -66,32 +66,32 @@ async function main() {
 
   // 1. 执行替换
   console.log('\n📝 正在更新项目配置...');
-  
+
   const replacements = [
-    { from: /nowen-note/g, to: response.siteTitle },
+    { from: /node-template/g, to: response.siteTitle },
     { from: /node-template/g, to: response.projectName },
-    { from: /admin@nowen-note\.local/g, to: response.adminEmail },
+    { from: /admin@node-template\.local/g, to: response.adminEmail },
     { from: /3001/g, to: response.port.toString() },
     { from: /Antigravity/g, to: response.author },
     { from: /nowen-sidebar-width/g, to: `${response.projectName}-sidebar-width` },
-    { from: /nowen-notelist-width/g, to: `${response.projectName}-notelist-width` },
+    { from: /node-templatelist-width/g, to: `${response.projectName}-notelist-width` },
   ];
 
   const filesToProcess = getFiles(rootDir);
   let updatedCount = 0;
-  
+
   for (const file of filesToProcess) {
     try {
       let content = fs.readFileSync(file, 'utf8');
       let changed = false;
-      
+
       for (const r of replacements) {
         if (r.from.test(content)) {
           content = content.replace(r.from, r.to);
           changed = true;
         }
       }
-      
+
       if (changed) {
         fs.writeFileSync(file, content, 'utf8');
         console.log(`  ✅ 已更新: ${path.relative(rootDir, file)}`);
@@ -152,14 +152,14 @@ function getFiles(dir, allFiles = []) {
       // 关键排除：脚本自身、Lock文件、二进制资源、日志等
       const ext = path.extname(file).toLowerCase();
       const binaryExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.woff', '.woff2', '.ttf', '.eot', '.zip', '.gz'];
-      
+
       if (
-        file === 'init.mjs' || 
-        file === 'pnpm-lock.yaml' || 
+        file === 'init.mjs' ||
+        file === 'pnpm-lock.yaml' ||
         file === '.DS_Store' ||
         binaryExtensions.includes(ext)
       ) continue;
-      
+
       allFiles.push(name);
     }
   }

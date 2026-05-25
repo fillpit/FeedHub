@@ -4,7 +4,7 @@ import { v4 as uuid } from "uuid";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "nowen-note-secret-key-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET || "feed-hub-secret-key-change-in-production";
 const JWT_EXPIRES_IN = "30d"; // 30天免登录
 
 const auth = new Hono();

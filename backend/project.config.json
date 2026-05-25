@@ -1,8 +1,8 @@
 {
-  "projectName": "node-template",
+  "projectName": "feed-hub",
   "admin": {
     "username": "admin",
-    "email": "admin@nowen-note.local",
+    "email": "admin@feed-hub.local",
     "password": "admin123"
   },
   "server": {

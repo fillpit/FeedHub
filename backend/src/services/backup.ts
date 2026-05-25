@@ -13,6 +13,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { getDb } from "../db/schema.js";
+import { isSqliteFile, restoreSqlite, restoreFullJson } from "./backup-restore.js";
 
 // ===== 类型 =====
 
@@ -223,58 +224,17 @@ export class BackupManager {
     }
   }
 
-  /** 从全量备份恢复 */
+  /** 从备份恢复 */
   async restoreFromBackup(filename: string): Promise<{ success: boolean; error?: string; stats?: Record<string, number> }> {
     const filePath = this.getBackupPath(filename);
     if (!filePath) return { success: false, error: "备份文件不存在" };
 
     try {
-      const content = fs.readFileSync(filePath, "utf-8");
-      const backup = JSON.parse(content);
-
-      if (!backup.data || !backup.version) {
-        return { success: false, error: "不是有效的全量备份文件" };
-      }
-
+      const buffer = fs.readFileSync(filePath);
       const db = getDb();
-      const stats: Record<string, number> = {};
-
-      // 使用事务恢复
-      const restore = db.transaction(() => {
-        for (const [table, rows] of Object.entries(backup.data)) {
-          if (!Array.isArray(rows) || rows.length === 0) continue;
-
-          // 安全：只允许已知的表名
-          const allowedTables = [
-            "users", "custom_fonts", "system_settings",
-            "dynamic_routes", "website_rss_configs", "auth_credentials",
-          ];
-          if (!allowedTables.includes(table)) continue;
-
-          try {
-            // 清空目标表
-            db.prepare(`DELETE FROM ${table}`).run();
-
-            // 插入数据
-            const columns = Object.keys(rows[0] as Record<string, unknown>);
-            const placeholders = columns.map(() => "?").join(", ");
-            const insert = db.prepare(
-              `INSERT OR REPLACE INTO ${table} (${columns.join(", ")}) VALUES (${placeholders})`
-            );
-
-            for (const row of rows) {
-              insert.run(...columns.map(c => (row as Record<string, unknown>)[c]));
-            }
-
-            stats[table] = rows.length;
-          } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            console.warn(`[Backup] 恢复表 ${table} 失败:`, message);
-          }
-        }
-      });
-
-      restore();
+      const stats = isSqliteFile(buffer)
+        ? await restoreSqlite(filePath, db)
+        : restoreFullJson(buffer.toString("utf-8"), db);
 
       return { success: true, stats };
     } catch (err) {

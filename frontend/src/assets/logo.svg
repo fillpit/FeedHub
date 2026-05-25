@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 定义渐变 -->
+  <defs>
+    <linearGradient id="hubGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a90e2"/>
+      <stop offset="100%" stop-color="#5c6bc0"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="2" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 中心枢纽 - 三层同心圆设计 -->
+  <circle cx="100" cy="100" r="80" fill="url(#hubGradient)" filter="url(#dropShadow)"/>
+  <circle cx="100" cy="100" r="50" fill="white"/>
+  <circle cx="100" cy="100" r="20" fill="#4a90e2"/>
+</svg>

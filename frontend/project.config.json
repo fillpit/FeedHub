@@ -2,7 +2,7 @@
   "projectName": "node-template",
   "admin": {
     "username": "admin",
-    "email": "admin@nowen-note.local",
+    "email": "[EMAIL_ADDRESS]",
     "password": "admin123"
   },
   "server": {

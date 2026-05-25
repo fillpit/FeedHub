@@ -46,7 +46,7 @@ function startBackend() {
   return new Promise((resolve, reject) => {
     const backendEntry = getBackendEntry();
     const userDataPath = getUserDataPath();
-    const dbPath = path.join(userDataPath, "nowen-note.db");
+    const dbPath = path.join(userDataPath, "data.db");
 
     // 后端 cwd 设为 userData，这样 process.cwd()/data/ 路径正常工作
     const backendCwd = app.isPackaged

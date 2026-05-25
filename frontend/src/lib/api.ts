@@ -52,7 +52,7 @@ export const api = {
   // Public (no auth required)
   getSiteSettingsPublic: async (): Promise<{ site_title: string; site_favicon: string; editor_font_family: string; registration_policy: "open" | "invite" | "closed" }> => {
     const res = await fetch(`${getBaseUrl()}/settings`);
-    if (!res.ok) return { site_title: "nowen-note", site_favicon: "", editor_font_family: "", registration_policy: "closed" };
+    if (!res.ok) return { site_title: "node-template", site_favicon: "", editor_font_family: "", registration_policy: "closed" };
     return res.json();
   },
 
@@ -102,7 +102,7 @@ export const api = {
   toggleTask: (id: string) => request<Task>(`/tasks/${id}/toggle`, { method: "PATCH" }),
   deleteTask: (id: string) => request(`/tasks/${id}`, { method: "DELETE" }),
   getTaskStats: () => request<TaskStats>("/tasks/stats/summary"),
-  
+
   // Users
   getUsers: () => request<User[]>("/users"),
   createUser: (data: { username: string; password?: string; email?: string }) =>
@@ -154,10 +154,10 @@ export const api = {
     }),
 
   // Site Settings
-  getSiteSettings: () => request<{ 
-    site_title: string; 
-    site_favicon: string; 
-    editor_font_family: string; 
+  getSiteSettings: () => request<{
+    site_title: string;
+    site_favicon: string;
+    editor_font_family: string;
     registration_policy: "open" | "invite" | "closed";
     redis_enabled?: string;
     redis_url?: string;
@@ -169,10 +169,10 @@ export const api = {
     cloak_enabled?: string;
     cloak_url?: string;
   }>("/settings"),
-  updateSiteSettings: (data: { 
-    site_title?: string; 
-    site_favicon?: string; 
-    editor_font_family?: string; 
+  updateSiteSettings: (data: {
+    site_title?: string;
+    site_favicon?: string;
+    editor_font_family?: string;
     registration_policy?: string;
     redis_enabled?: string;
     redis_url?: string;
@@ -184,10 +184,10 @@ export const api = {
     cloak_enabled?: string;
     cloak_url?: string;
   }) =>
-    request<{ 
-      site_title: string; 
-      site_favicon: string; 
-      editor_font_family: string; 
+    request<{
+      site_title: string;
+      site_favicon: string;
+      editor_font_family: string;
       registration_policy: string;
       redis_enabled?: string;
       redis_url?: string;
@@ -611,7 +611,7 @@ export const api = {
     }>(`/pipelines/${id}/run`, { method: "POST", body: JSON.stringify({ noteIds }) }),
   getPipelineRuns: () => request<unknown[]>("/pipelines/runs"),
   getPipelineStepTypes: () => request<{ type: string; name: string; icon: string; description: string }[]>("/pipelines/step-types"),
-  
+
   // Feed Settings & Notifications
   getFeedSettings: () => request<Record<string, string>>("/feed-settings"),
   updateFeedSettings: (data: Record<string, string>) => request<Record<string, string>>("/feed-settings", { method: "PUT", body: JSON.stringify(data) }),

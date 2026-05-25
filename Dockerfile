@@ -57,7 +57,7 @@ COPY --from=build /app/frontend/dist ./frontend/dist
 RUN mkdir -p /app/data
 
 ENV NODE_ENV=production
-ENV DB_PATH=/app/data/nowen-note.db
+ENV DB_PATH=/app/data/node-template.db
 ENV FRONTEND_DIST=/app/frontend/dist
 ENV PORT=3001
 

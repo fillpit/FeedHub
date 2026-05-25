@@ -50,12 +50,12 @@ app.get("/api/website/sub/:key", (c) => handleWebsiteFeed(c));
 // 站点设置（GET 无需 JWT，允许未登录时加载品牌信息；已登录用户返回完整配置）
 app.get("/api/settings", (c) => {
   const db = getDb();
-  
+
   // 检查是否有合法的登录 Token
   const authHeader = c.req.header("Authorization");
   const queryToken = c.req.query("token");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : queryToken;
-  
+
   let isAuthenticated = false;
   if (token) {
     try {
@@ -67,7 +67,7 @@ app.get("/api/settings", (c) => {
   }
 
   const result: Record<string, string> = {
-    site_title: "nowen-note",
+    site_title: "feed-hub",
     site_favicon: "",
     editor_font_family: "",
     registration_policy: "closed"
@@ -86,7 +86,7 @@ app.get("/api/settings", (c) => {
       result[row.key] = row.value;
     }
   }
-  
+
   return c.json(result);
 });
 
@@ -242,6 +242,6 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-console.log(`🚀 nowen-note API running on http://localhost:${port}`);
+console.log(`🚀 feedhub API running on http://localhost:${port}`);
 console.log(`📖 OpenAPI 文档: http://localhost:${port}/api/openapi.json`);
 serve({ fetch: app.fetch, port });

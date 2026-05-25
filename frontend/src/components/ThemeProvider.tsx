@@ -8,7 +8,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange={false}
-      storageKey="nowen-note-theme"
+      storageKey="node-template-theme"
     >
       {children}
     </NextThemesProvider>

@@ -61,18 +61,18 @@ function getSavedSidebarWidth(): number {
       const w = Number(saved);
       if (w >= MIN_SIDEBAR_WIDTH && w <= MAX_SIDEBAR_WIDTH) return w;
     }
-  } catch {}
+  } catch { }
   return DEFAULT_SIDEBAR_WIDTH;
 }
 
 function getSavedNoteListWidth(): number {
   try {
-    const saved = localStorage.getItem("nowen-notelist-width");
+    const saved = localStorage.getItem("node-templatelist-width");
     if (saved) {
       const w = Number(saved);
       if (w >= MIN_NOTELIST_WIDTH && w <= MAX_NOTELIST_WIDTH) return w;
     }
-  } catch {}
+  } catch { }
   return DEFAULT_NOTELIST_WIDTH;
 }
 
@@ -81,7 +81,7 @@ function getSavedViewMode(): ViewMode {
     const saved = localStorage.getItem("nowen-view-mode") as ViewMode;
     const validModes: ViewMode[] = ["dashboard", "notebook", "favorites", "trash", "all", "search", "tasks", "tag", "mindmaps", "diary", "codex", "admin", "feed-routes", "feed-websites", "feed-credentials", "feed-npm"];
     if (saved && validModes.includes(saved)) return saved;
-  } catch {}
+  } catch { }
   return "dashboard";
 }
 
@@ -122,7 +122,7 @@ function reducer(state: AppState, action: Action): AppState {
     case "SET_SELECTED_TAG":
       return { ...state, selectedTagId: action.payload };
     case "SET_VIEW_MODE":
-      try { localStorage.setItem("nowen-view-mode", action.payload); } catch {}
+      try { localStorage.setItem("nowen-view-mode", action.payload); } catch { }
       return { ...state, viewMode: action.payload };
     case "SET_SEARCH_QUERY":
       return { ...state, searchQuery: action.payload };
@@ -130,12 +130,12 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
     case "SET_SIDEBAR_WIDTH": {
       const w = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, action.payload));
-      try { localStorage.setItem("nowen-sidebar-width", String(w)); } catch {}
+      try { localStorage.setItem("nowen-sidebar-width", String(w)); } catch { }
       return { ...state, sidebarWidth: w };
     }
     case "SET_NOTELIST_WIDTH": {
       const w = Math.max(MIN_NOTELIST_WIDTH, Math.min(MAX_NOTELIST_WIDTH, action.payload));
-      try { localStorage.setItem("nowen-notelist-width", String(w)); } catch {}
+      try { localStorage.setItem("node-templatelist-width", String(w)); } catch { }
       return { ...state, noteListWidth: w };
     }
     case "SET_LOADING":
