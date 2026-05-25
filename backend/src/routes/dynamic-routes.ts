@@ -466,8 +466,11 @@ interface MatchPathResult {
 }
 
 function matchPath(pattern: string, path: string): MatchPathResult {
-  const patternSegments = pattern.split("/");
-  const pathSegments = path.split("/");
+  const normPattern = pattern.endsWith("/") && pattern.length > 1 ? pattern.slice(0, -1) : pattern;
+  const normPath = path.endsWith("/") && path.length > 1 ? path.slice(0, -1) : path;
+
+  const patternSegments = normPattern.split("/");
+  const pathSegments = normPath.split("/");
   const routeParams: Record<string, string> = {};
   const maxLen = Math.max(patternSegments.length, pathSegments.length);
 
@@ -499,6 +502,57 @@ function findMatchedRoute(routePath: string): FindRouteResult {
   return { matchedRow: null, routeParams: {} };
 }
 
+function hasPlaceholderParam(routeParams: Record<string, string>): boolean {
+  return Object.values(routeParams).some(
+    (val) => typeof val === "string" && val.startsWith(":")
+  );
+}
+
+async function fetchCachedFeedOrNull(
+  routeId: number,
+  routePath: string,
+  type: "rss" | "json",
+  queryParams: Record<string, string>
+): Promise<Response | null> {
+  const cacheKey = buildCacheKey(`dynamic:${routeId}:${routePath}`, queryParams);
+  return getCachedFeed({ cacheKey, type });
+}
+
+interface RunRouteScriptParams {
+  readonly route: DynamicRoute;
+  readonly queryParams: Record<string, string>;
+  readonly routeParams: Record<string, string>;
+}
+
+async function resolveRouteAuthInfo(authCredentialId?: number): Promise<Record<string, string> | undefined> {
+  if (!authCredentialId) return undefined;
+  const db = getDb();
+  const cred = db.prepare("SELECT credential FROM auth_credentials WHERE id = ?").get(authCredentialId) as { credential: string } | undefined;
+  if (!cred) return undefined;
+  return typeof cred.credential === "string" ? JSON.parse(cred.credential) : cred.credential;
+}
+
+async function runRouteScript(params: RunRouteScriptParams): Promise<import("../types/feed").ScriptResult> {
+  const authInfo = (await resolveRouteAuthInfo(params.route.authCredentialId)) || {};
+  if (!authInfo.token && process.env.GITHUB_TOKEN) {
+    authInfo.token = process.env.GITHUB_TOKEN;
+  }
+
+  const result = await runScript({
+    scriptFolder: params.route.script.folder,
+    context: { params: params.queryParams, routeParams: params.routeParams, authInfo },
+    timeoutMs: params.route.script.timeout ?? 30000,
+  });
+
+  updateRouteStatus({
+    routeId: params.route.id,
+    isSuccess: result.success,
+    error: result.error ?? null,
+  });
+
+  return result;
+}
+
 export async function handleDynamicFeed(c: import("hono").Context): Promise<Response> {
   const prefix = "/api/dynamic/sub";
   const routePath = c.req.path.slice(prefix.length);
@@ -506,32 +560,25 @@ export async function handleDynamicFeed(c: import("hono").Context): Promise<Resp
   const { matchedRow, routeParams } = findMatchedRoute(routePath);
   if (!matchedRow) return c.json({ error: "路由不存在" }, 404);
 
+  if (hasPlaceholderParam(routeParams)) {
+    return c.json({ error: "请将路由路径中的参数占位符（如 :user, :repo）替换为实际的值后再进行访问。" }, 400);
+  }
+
   const route = deserializeRoute(matchedRow);
   if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
 
   const queryParams = Object.fromEntries(new URL(c.req.url).searchParams);
-  const cacheKey = buildCacheKey(`dynamic:${route.id}:${routePath}`, queryParams);
-  const cachedResponse = await getCachedFeed({ cacheKey, type });
+  const cachedResponse = await fetchCachedFeedOrNull(route.id, routePath, type, queryParams);
   if (cachedResponse) return cachedResponse;
 
-  const result = await runScript({
-    scriptFolder: route.script.folder,
-    context: { params: queryParams, routeParams },
-    timeoutMs: route.script.timeout ?? 30000,
-  });
-
-  updateRouteStatus({
-    routeId: matchedRow.id,
-    isSuccess: result.success,
-    error: result.error ?? null,
-  });
-
+  const result = await runRouteScript({ route, queryParams, routeParams });
   if (!result.success || !result.data) {
     return c.json({ error: result.error ?? "执行失败" }, 500);
   }
 
   const output = formatFeed({ data: result.data, type, selfUrl: c.req.url });
   const cache = await getCacheService();
+  const cacheKey = buildCacheKey(`dynamic:${route.id}:${routePath}`, queryParams);
   await cache.set(cacheKey, output, route.refreshInterval * 60);
 
   return new Response(output, { headers: contentTypeHeader(type) });

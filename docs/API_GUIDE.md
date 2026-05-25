@@ -233,3 +233,35 @@
     "success": true
   }
   ```
+
+---
+
+## 动态路由输出模块 [NEW]
+
+### 11. 获取动态订阅 Feed
+
+根据动态路由路径和参数获取 RSS 或 JSON 格式的订阅源。
+
+- **请求方法**：`GET`
+- **请求路径**：`/api/dynamic/sub/*`
+- **路径参数**：包含由动态路由定义的各种路径级参数（例如，对于 `/issue/:user/:repo`，其请求路径可能为 `/api/dynamic/sub/issue/microsoft/vscode`）
+- **查询参数**：
+  - `type` (string, 选填)：返回的格式类型，支持 `"rss"` (默认值) 或 `"json"`
+- **注意事项**：
+  - 系统会对路径进行标准化，支持忽略末尾的斜杠 `/`（例如 `/api/dynamic/sub/issue/microsoft/vscode/` 也能正常匹配）。
+  - 若路径参数中依然包含未替换的冒号开头的占位符参数（如 `:user` 或 `:repo`），接口将拦截并返回 `400 Bad Request` 错误。
+- **参数未替换异常响应** (400 Bad Request)：
+  ```json
+  {
+    "error": "请将路由路径中的参数占位符（如 :user, :repo）替换为实际的值后再进行访问。"
+  }
+  ```
+- **路径未找到响应** (404 Not Found)：
+  ```json
+  {
+    "error": "路由不存在"
+  }
+  ```
+- **成功响应** (200 OK)：
+  - 当 `type=rss` 时，返回 XML 格式内容，`Content-Type: application/rss+xml; charset=utf-8`
+  - 当 `type=json` 时，返回 JSON 格式内容，`Content-Type: application/feed+json; charset=utf-8`
