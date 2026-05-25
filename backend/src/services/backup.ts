@@ -13,7 +13,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { getDb } from "../db/schema.js";
-import { isSqliteFile, restoreSqlite, restoreFullJson } from "./backup-restore.js";
+import { isSqliteFile, restoreSqlite, restoreFullJson, backupPhysicalScripts } from "./backup-restore.js";
 
 // ===== 类型 =====
 
@@ -95,6 +95,8 @@ export class BackupManager {
         exportData["audit_logs"] = db.prepare("SELECT * FROM audit_logs").all();
       } catch { /* 表可能不存在 */ }
 
+      const scriptsData = backupPhysicalScripts(exportData["dynamic_routes"] || []);
+
       const fullBackup = {
         version: "1.0.0",
         type: "full",
@@ -103,6 +105,7 @@ export class BackupManager {
         noteCount,
         notebookCount,
         data: exportData,
+        scripts: scriptsData,
       };
 
       fs.writeFileSync(backupPath, JSON.stringify(fullBackup), "utf-8");

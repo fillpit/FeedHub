@@ -1,4 +1,7 @@
 import type Database from "better-sqlite3";
+import fs from "fs";
+import path from "path";
+import { SCRIPTS_BASE_DIR } from "./script-runner.js";
 
 export const ALLOWED_TABLES = [
   "users",
@@ -37,11 +40,60 @@ export async function restoreSqlite(
   return stats;
 }
 
+interface RouteWithScript {
+  script: string | { folder?: string };
+}
+
+export function backupPhysicalScripts(dynamicRoutes: unknown[]): Record<string, Record<string, string>> {
+  const scriptsData: Record<string, Record<string, string>> = {};
+  for (const route of dynamicRoutes as RouteWithScript[]) {
+    try {
+      const scriptMeta = typeof route.script === "string"
+        ? (JSON.parse(route.script) as { folder?: string })
+        : route.script;
+      if (scriptMeta && scriptMeta.folder) {
+        const folderName = scriptMeta.folder;
+        const folderPath = path.join(SCRIPTS_BASE_DIR, folderName);
+        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+          const files = fs.readdirSync(folderPath);
+          const routeFiles: Record<string, string> = {};
+          for (const file of files) {
+            const filePath = path.join(folderPath, file);
+            if (fs.statSync(filePath).isFile()) {
+              routeFiles[file] = fs.readFileSync(filePath, "utf-8");
+            }
+          }
+          scriptsData[folderName] = routeFiles;
+        }
+      }
+    } catch (err) {
+      console.warn("[Backup] 备份路由脚本失败:", err);
+    }
+  }
+  return scriptsData;
+}
+
+export function restorePhysicalScripts(scripts: Record<string, Record<string, string>>): void {
+  for (const [folderName, files] of Object.entries(scripts)) {
+    const folderPath = path.join(SCRIPTS_BASE_DIR, folderName);
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true });
+    }
+    for (const [fileName, fileContent] of Object.entries(files)) {
+      fs.writeFileSync(path.join(folderPath, fileName), fileContent, "utf-8");
+    }
+  }
+}
+
 export function restoreFullJson(
   content: string,
   db: Database.Database
 ): Record<string, number> {
-  const backup = JSON.parse(content) as { version?: string; data?: Record<string, unknown[]> };
+  const backup = JSON.parse(content) as {
+    version?: string;
+    data?: Record<string, unknown[]>;
+    scripts?: Record<string, Record<string, string>>;
+  };
   if (!backup.data || !backup.version) {
     throw new Error("不是有效的全量备份文件");
   }
@@ -68,5 +120,8 @@ export function restoreFullJson(
     }
   });
   restoreTx();
+  if (backup.scripts) {
+    restorePhysicalScripts(backup.scripts);
+  }
   return stats;
 }
