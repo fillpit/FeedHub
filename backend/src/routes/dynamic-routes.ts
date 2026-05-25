@@ -96,6 +96,7 @@ router.put("/:id", async (c) => {
   updates.push("updatedAt = datetime('now')");
   params.push(id);
   db.prepare(`UPDATE dynamic_routes SET ${updates.join(", ")} WHERE id = ?`).run(...params);
+  await clearRouteCache(id);
 
   const updated = db.prepare("SELECT * FROM dynamic_routes WHERE id = ?").get(id) as DynamicRoute;
   return c.json(deserializeRoute(updated));
@@ -136,6 +137,7 @@ router.put("/:id/files/content", async (c) => {
   if (!route) return c.json({ error: "路由不存在" }, 404);
   const { path: filePath, content } = await c.req.json<{ path: string; content: string }>();
   writeScriptFile(route.script.folder, filePath, content);
+  await clearRouteCache(route.id);
   return c.json({ success: true });
 });
 
@@ -145,6 +147,7 @@ router.delete("/:id/files", async (c) => {
   const { path: filePath } = await c.req.json<{ path: string }>();
   if (filePath === "main.js" || filePath === "index.js") return c.json({ error: "不能删除入口文件" }, 400);
   deleteScriptFile(route.script.folder, filePath);
+  await clearRouteCache(route.id);
   return c.json({ success: true });
 });
 
@@ -190,6 +193,7 @@ router.post("/:id/github-sync", async (c) => {
 
   try {
     await syncFromGithub(route.script.folder, githubConfig);
+    await clearRouteCache(route.id);
     return c.json({ success: true });
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
@@ -208,6 +212,7 @@ router.post("/:id/upload", async (c) => {
   const buffer = Buffer.from(await file.arrayBuffer());
   try {
     extractZipFromBuffer(route.script.folder, buffer);
+    await clearRouteCache(route.id);
     return c.json({ success: true });
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
@@ -221,6 +226,7 @@ router.post("/:id/install-deps", async (c) => {
 
   try {
     await installDependencies(route.script.folder);
+    await clearRouteCache(route.id);
     return c.json({ success: true });
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
@@ -241,6 +247,7 @@ router.post("/:id/npm-install", async (c) => {
   const scriptDir = path.join(SCRIPTS_BASE_DIR, route.script.folder);
   try {
     const { stdout, stderr } = await execAsync("npm install", { cwd: scriptDir, timeout: 60000 });
+    await clearRouteCache(route.id);
     return c.json({ success: true, logs: stdout + "\n" + stderr });
   } catch (err: unknown) {
     const error = err as Record<string, unknown>;
@@ -322,6 +329,7 @@ ${match.content.slice(0, 8000)} // 截断以防止过长
     const code = codeMatch ? codeMatch[1].trim() : content.trim();
 
     writeScriptFile(route.script.folder, "main.js", code);
+    await clearRouteCache(route.id);
     return c.json({ success: true, code, message: "已通过 AI 生成代码并覆盖 main.js" });
   } catch (err: unknown) {
     return c.json({ error: err instanceof Error ? err.message : "AI 转换失败" }, 500);
@@ -399,6 +407,15 @@ function updateRouteStatus(params: UpdateRouteStatusParams): void {
   }
   db.prepare("UPDATE dynamic_routes SET lastRunAt = datetime('now'), lastRunStatus = ?, lastRunError = ?, updatedAt = datetime('now') WHERE id = ?")
     .run(statusUpdate, params.error, params.routeId);
+}
+
+async function clearRouteCache(routeId: number | string): Promise<void> {
+  try {
+    const cache = await getCacheService();
+    await cache.deletePattern(`dynamic:${routeId}:*`);
+  } catch (err) {
+    console.error(`Failed to clear cache for route ${routeId}:`, err);
+  }
 }
 
 interface FormatFeedParams {
@@ -493,7 +510,7 @@ export async function handleDynamicFeed(c: import("hono").Context): Promise<Resp
   if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
 
   const queryParams = Object.fromEntries(new URL(c.req.url).searchParams);
-  const cacheKey = buildCacheKey(`route:${routePath}`, queryParams);
+  const cacheKey = buildCacheKey(`dynamic:${route.id}:${routePath}`, queryParams);
   const cachedResponse = await getCachedFeed({ cacheKey, type });
   if (cachedResponse) return cachedResponse;
 
