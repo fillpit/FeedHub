@@ -143,17 +143,26 @@ const DEFAULT_MAIN_JS = `/**
  *   params       - 查询参数 { [paramName]: value }
  *   routeParams  - 路径参数 { [paramName]: value }
  *   authInfo     - 授权信息 { cookie/token/username... }
- *   fetch        - 内置 fetch
+ *   http         - 增强型网络请求与 Cheerio 解析工具 (http.get/post/html)
+ *   fetch        - 内置原生 fetch
  *   console      - console.log/warn/error
  *
- * 返回 FeedItem 数组：
- * [{ title, link, content?, author?, pubDate?, guid? }]
+ * 示例 (以 http.get 请求 API 为例)：
+ *   const res = await http.get("https://api.example.com/posts", { query: { limit: 10 } });
+ *   return res.data.map(item => ({ title: item.title, link: item.url }));
+ * 
+ * 示例 (以 http.html 抓取网页并使用 CSS 选择器解析为例)：
+ *   const $ = await http.html("https://example.com/news");
+ *   return $(".post-item").map((i, el) => ({
+ *     title: $(el).find(".title").text().trim(),
+ *     link: $(el).find("a").attr("href")
+ *   })).get();
  */
 return [
   {
     title: "示例条目",
     link: "https://example.com",
-    content: "这是一个示例内容",
+    content: "这是一个示例内容，请使用内置的 http 工具发起请求！",
     pubDate: new Date().toISOString(),
   },
 ];

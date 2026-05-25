@@ -15,28 +15,20 @@ export default function RouteScriptHelp() {
     });
   };
 
-  const codeExample1 = `// 示例 1: 使用 fetch 抓取并返回完整 RSS
+  const codeExample1 = `// 示例 1: 使用 http.get 获取 JSON API 并组装 RSS 订阅源
 console.log("正在获取文章列表...");
 
-const requestParams = {
-  category: params.category || "tech",
-  limit: params.limit || 10
-};
-
-// 过滤空参数并构造 query
-const query = new URLSearchParams();
-Object.entries(requestParams).forEach(([key, value]) => {
-  if (value !== '' && value !== null && value !== undefined) {
-    query.append(key, value);
+const response = await http.get("https://api.example.com/posts", {
+  query: {
+    category: params.category || "tech",
+    limit: params.limit || 10
   }
 });
 
-const response = await fetch(\`https://api.example.com/posts?\${query.toString()}\`);
-const posts = await response.json();
-
+// http 工具已自动将返回数据解析为 JSON 并存放在 response.data 中
+const posts = response.data;
 console.log(\`抓取完成，共获得 \${posts.length} 条数据\`);
 
-// 构造并返回完整的 RSS 订阅源数据格式
 return {
   title: params.feedTitle || "极速科技订阅",
   description: "自动聚合最新科技前沿资讯",
@@ -45,43 +37,32 @@ return {
     title: item.title,
     link: item.url,
     content: item.summary || "无摘要",
-    pubDate: hub.date.parse(item.publishTime) // 自动智能解析任意网页时间格式
+    pubDate: hub.date.parse(item.publishTime) // 自动智能解析任何时间格式
   }))
 };`;
 
-  const codeExample2 = `// 示例 2: 提交数据分析并组装完整 RSS 对象
-console.log("准备向第三方服务发送请求...");
+  const codeExample2 = `// 示例 2: 使用 http.html 便捷爬取 HTML 网页并使用 CSS 选择器解析
+console.log("正在发起网页抓取...");
 
-const response = await fetch("https://api.example.com/analyze", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    routeId: routeParams.id || "default",
-    query: params.keyword || "AI"
-  })
+// http.html 一键完成网络请求并将 HTML 结构加载为 Cheerio 对象（即 $）
+const $ = await http.html("https://example.com/blog");
+const items = [];
+
+// 使用熟悉的 CSS 选择器和 jQuery 语法提取数据
+$(".post-card").each((idx, el) => {
+  items.push({
+    title: $(el).find(".post-title").text().trim(),
+    link: $(el).find("a").attr("href"),
+    author: $(el).find(".author-name").text().trim(),
+    pubDate: hub.date.parse($(el).find(".date-str").text())
+  });
 });
 
-const result = await response.json();
-
-if (!result.success) {
-  console.error("数据分析失败:", result.errorMsg);
-  return { title: "分析错误源", items: [] };
-}
-
-console.log("分析成功，生成订阅列表");
-
 return {
-  title: "AI 行业深度分析报告",
-  description: "实时洞察人工智能前沿商业化趋势",
-  link: "https://example.com/ai-report",
-  items: result.data.items.map(i => ({
-    title: i.name,
-    link: i.targetUrl,
-    author: i.creator,
-    pubDate: hub.date.parse(i.dateStr)
-  }))
+  title: "精选博客网页订阅",
+  description: "实时解析并转换目标网站的 HTML 页面为 RSS",
+  link: "https://example.com/blog",
+  items: items
 };`;
 
   return (
@@ -156,6 +137,17 @@ return {
             </div>
             <p className="text-xs text-tx-secondary leading-relaxed">
               若在路由表单中选择了关联的**授权凭证**，其配置的所有核心解密后键值对（如 API Key、Cookie、Password）会自动绑定到此变量中。
+            </p>
+          </div>
+
+          {/* http */}
+          <div className="p-3 rounded-lg border border-app-border bg-app-bg/40 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-tx-primary font-mono">http</span>
+              <span className="text-[10px] text-tx-tertiary">Object</span>
+            </div>
+            <p className="text-xs text-tx-secondary leading-relaxed">
+              增强型便捷网络请求与 HTML 爬虫解析工具。支持 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">http.get/post/put/delete</code> 并在 2xx 时自动反序列化 JSON，非 2xx 自动抛出类 Axios 异常。特有 <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">http.html(url)</code> 可一键发起 GET 请求并直接返回加载好的 <strong>Cheerio 对象（即 $）</strong>，还挂载了原生 cheerio <code className="px-1 rounded bg-app-surface font-mono text-[11px] text-tx-primary">http.cheerio</code>，极大简化动态脚本抓取与网页清洗开发体验。
             </p>
           </div>
 
@@ -341,7 +333,7 @@ return {
         {/* Example 1 */}
         <div className="rounded-xl border border-app-border overflow-hidden bg-app-surface/20">
           <div className="px-4 py-2 border-b border-app-border bg-app-surface/40 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-tx-secondary">范本 1: 极速抓取与完整 RSS 源 (GET)</span>
+            <span className="text-[11px] font-semibold text-tx-secondary">范本 1: 使用 http.get 请求 API 并组装 RSS 订阅源</span>
             <Button
               variant="ghost"
               size="icon"
@@ -359,7 +351,7 @@ return {
         {/* Example 2 */}
         <div className="rounded-xl border border-app-border overflow-hidden bg-app-surface/20">
           <div className="px-4 py-2 border-b border-app-border bg-app-surface/40 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-tx-secondary">范本 2: 提交分析与完整 RSS 源 (POST)</span>
+            <span className="text-[11px] font-semibold text-tx-secondary">范本 2: 使用 http.html 一键爬取与解析 HTML 网页</span>
             <Button
               variant="ghost"
               size="icon"

@@ -4,6 +4,169 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import fs from "node:fs";
 import util from "node:util";
+import * as cheerio from "cheerio";
+
+class HttpError extends Error {
+  readonly status: number;
+  readonly statusText: string;
+  readonly data: unknown;
+  readonly headers: Record<string, string>;
+
+  constructor(status: number, statusText: string, data: unknown, headers: Record<string, string>) {
+    super(`HTTP Error ${status}: ${statusText}`);
+    this.status = status;
+    this.statusText = statusText;
+    this.data = data;
+    this.headers = headers;
+  }
+}
+
+function buildUrlWithQuery(urlStr: string, query: unknown): string {
+  if (!query || typeof query !== "object") {
+    return urlStr;
+  }
+  try {
+    const urlObj = new URL(urlStr);
+    for (const [key, val] of Object.entries(query)) {
+      if (val !== undefined && val !== null) {
+        const strVal = String(val).trim();
+        if (strVal !== "") {
+          urlObj.searchParams.append(key, strVal);
+        }
+      }
+    }
+    return urlObj.toString();
+  } catch {
+    const filteredQuery: Record<string, string> = {};
+    for (const [key, val] of Object.entries(query)) {
+      if (val !== undefined && val !== null) {
+        const strVal = String(val).trim();
+        if (strVal !== "") {
+          filteredQuery[key] = strVal;
+        }
+      }
+    }
+    const qStr = new URLSearchParams(filteredQuery).toString();
+    if (!qStr) return urlStr;
+    return urlStr.includes("?") ? `${urlStr}&${qStr}` : `${urlStr}?${qStr}`;
+  }
+}
+
+interface RequestPayload {
+  body: unknown;
+  headers: Record<string, string>;
+}
+
+function processPayload(data: unknown, customHeaders: Record<string, string>): RequestPayload {
+  const headers = { ...customHeaders };
+  if (data === undefined || data === null) {
+    return { body: undefined, headers };
+  }
+
+  if (typeof data === "object" && !(data instanceof Buffer)) {
+    const hasContentType = Object.keys(headers).some(k => k.toLowerCase() === "content-type");
+    if (!hasContentType) {
+      headers["Content-Type"] = "application/json";
+    }
+    return { body: JSON.stringify(data), headers };
+  }
+
+  return { body: data, headers };
+}
+
+async function safeGetText(res: Response): Promise<string> {
+  try {
+    return await res.text();
+  } catch {
+    return "";
+  }
+}
+
+async function parseResponseData(res: Response): Promise<unknown> {
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      return await res.json();
+    } catch {
+      return safeGetText(res);
+    }
+  }
+  return safeGetText(res);
+}
+
+interface HttpOptions {
+  query?: Record<string, unknown>;
+  params?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  [key: string]: unknown;
+}
+
+function createHttpHelper(
+  sandboxFetch: (url: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+) {
+  const makeRequest = async (
+    method: string,
+    urlStr: string,
+    data?: unknown,
+    options?: HttpOptions
+  ) => {
+    const finalUrl = buildUrlWithQuery(urlStr, options?.query || options?.params);
+    const { body, headers } = processPayload(data, options?.headers || {});
+
+    const res = await sandboxFetch(finalUrl, {
+      ...options,
+      method,
+      headers,
+      body,
+    } as RequestInit);
+
+    const responseData = await parseResponseData(res);
+
+    if (!res.ok) {
+      const headersMap = Object.fromEntries(res.headers.entries());
+      throw new HttpError(res.status, res.statusText, responseData, headersMap);
+    }
+
+    return {
+      status: res.status,
+      statusText: res.statusText,
+      headers: Object.fromEntries(res.headers.entries()),
+      data: responseData,
+      ok: res.ok,
+    };
+  };
+
+  return {
+    get: (url: string, options?: HttpOptions) => makeRequest("GET", url, undefined, options),
+    post: (url: string, data?: unknown, options?: HttpOptions) => makeRequest("POST", url, data, options),
+    put: (url: string, data?: unknown, options?: HttpOptions) => makeRequest("PUT", url, data, options),
+    delete: (url: string, options?: HttpOptions) => makeRequest("DELETE", url, undefined, options),
+    html: async (url: string, options?: HttpOptions) => {
+      const res = await makeRequest("GET", url, undefined, options);
+      return cheerio.load(res.data as string);
+    },
+    cheerio,
+  };
+}
+
+async function logResponseSnippet(res: Response, logs: Array<{ level: string; message: string }>): Promise<void> {
+  const cloneRes = res.clone();
+  try {
+    const text = await cloneRes.text();
+    try {
+      const json = JSON.parse(text);
+      const snippet = util.inspect(json, { depth: 2, compact: true, breakLength: 100 });
+      const trimmed = snippet.length > 800 ? snippet.slice(0, 800) + "..." : snippet;
+      logs.push({ level: "info", message: `[流程日志] 接口响应数据 (JSON 截取): ${trimmed}` });
+    } catch {
+      const trimmed = text.length > 500 ? text.slice(0, 500) + "..." : text;
+      logs.push({ level: "info", message: `[流程日志] 接口响应数据 (文本截取): ${trimmed}` });
+    }
+  } catch {
+    logs.push({ level: "warn", message: `[流程日志] 无法读取接口响应数据` });
+  }
+}
+
 
 const SCRIPTS_BASE_DIR = process.env.SCRIPTS_DIR
   || path.join(process.env.ELECTRON_USER_DATA || process.cwd(), "data", "scripts");
@@ -107,6 +270,22 @@ async function executeInVm(
     logs.push({ level, message });
   };
 
+  const sandboxFetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+    const urlStr = typeof url === "object" && "url" in url ? (url as Request).url : String(url);
+    const method = init?.method ?? "GET";
+    logs.push({ level: "info", message: `[流程日志] 请求目标接口 (${method}): ${urlStr}` });
+    if (init?.body || init?.headers) {
+      logs.push({
+        level: "info",
+        message: `[流程日志] 请求配置: ${util.inspect({ headers: init.headers, body: init.body }, { compact: true })}`,
+      });
+    }
+    const res = await globalThis.fetch(url, init);
+    logs.push({ level: "info", message: `[流程日志] 接口返回状态: ${res.status} ${res.statusText}` });
+    await logResponseSnippet(res, logs);
+    return res;
+  };
+
   const sandbox = {
     require: customRequire,
     console: {
@@ -126,38 +305,8 @@ async function executeInVm(
     params: context.params ?? {},
     routeParams: context.routeParams ?? {},
     authInfo: context.authInfo ?? {},
-    fetch: async (url: RequestInfo | URL, init?: RequestInit) => {
-      const urlStr = typeof url === "object" && "url" in url ? (url as Request).url : String(url);
-      const method = init?.method ?? "GET";
-      logs.push({ level: "info", message: `[流程日志] 请求目标接口 (${method}): ${urlStr}` });
-      if (init?.body || init?.headers) {
-        logs.push({
-          level: "info",
-          message: `[流程日志] 请求配置: ${util.inspect({ headers: init.headers, body: init.body }, { compact: true })}`,
-        });
-      }
-      const res = await globalThis.fetch(url, init);
-      logs.push({ level: "info", message: `[流程日志] 接口返回状态: ${res.status} ${res.statusText}` });
-
-      // 记录响应数据（克隆一份用于打印）
-      const cloneRes = res.clone();
-      try {
-        const text = await cloneRes.text();
-        try {
-          const json = JSON.parse(text);
-          const snippet = util.inspect(json, { depth: 2, compact: true, breakLength: 100 });
-          const trimmed = snippet.length > 800 ? snippet.slice(0, 800) + "..." : snippet;
-          logs.push({ level: "info", message: `[流程日志] 接口响应数据 (JSON 截取): ${trimmed}` });
-        } catch {
-          const trimmed = text.length > 500 ? text.slice(0, 500) + "..." : text;
-          logs.push({ level: "info", message: `[流程日志] 接口响应数据 (文本截取): ${trimmed}` });
-        }
-      } catch {
-        logs.push({ level: "warn", message: `[流程日志] 无法读取接口响应数据` });
-      }
-
-      return res;
-    },
+    fetch: sandboxFetch,
+    http: createHttpHelper(sandboxFetch),
     hub: {
       date: {
         parse: (raw: unknown) => {
