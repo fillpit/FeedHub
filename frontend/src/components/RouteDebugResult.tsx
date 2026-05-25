@@ -14,7 +14,7 @@ export function DebugResultPanel({ result, expandedItems, onToggleItem }: Result
     <>
       <DebugStatusHeader result={result} />
       {result.error && (
-        <div className="px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-mono">
+        <div className="px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-mono whitespace-pre-wrap break-all overflow-x-auto max-w-full">
           {result.error}
         </div>
       )}
