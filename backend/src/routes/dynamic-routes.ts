@@ -344,9 +344,19 @@ router.post("/:id/debug", async (c) => {
   if (!route.script.folder) return c.json({ error: "脚本未初始化" }, 400);
 
   const body = await c.req.json<{ params?: Record<string, string>; routeParams?: Record<string, string> }>().catch(() => ({ params: undefined, routeParams: undefined }));
+  const { authInfo, authHeaders } = await resolveRouteAuth(route.authCredentialId);
+  if (!authInfo.token && process.env.GITHUB_TOKEN) {
+    authInfo.token = process.env.GITHUB_TOKEN;
+  }
+
   const result = await runScript({
     scriptFolder: route.script.folder,
-    context: { params: body.params ?? {}, routeParams: body.routeParams ?? {} },
+    context: {
+      params: body.params ?? {},
+      routeParams: body.routeParams ?? {},
+      authInfo,
+      authHeaders,
+    },
     timeoutMs: route.script.timeout ?? 30000,
   });
 
@@ -524,23 +534,42 @@ interface RunRouteScriptParams {
   readonly routeParams: Record<string, string>;
 }
 
-async function resolveRouteAuthInfo(authCredentialId?: number): Promise<Record<string, string> | undefined> {
-  if (!authCredentialId) return undefined;
+interface ResolvedAuth {
+  authInfo: Record<string, string>;
+  authHeaders: Record<string, string>;
+}
+
+async function resolveRouteAuth(authCredentialId?: number): Promise<ResolvedAuth> {
+  const result: ResolvedAuth = { authInfo: {}, authHeaders: {} };
+  if (!authCredentialId) return result;
+
   const db = getDb();
-  const cred = db.prepare("SELECT credential FROM auth_credentials WHERE id = ?").get(authCredentialId) as { credential: string } | undefined;
-  if (!cred) return undefined;
-  return typeof cred.credential === "string" ? JSON.parse(cred.credential) : cred.credential;
+  const cred = db.prepare("SELECT authType, credential FROM auth_credentials WHERE id = ?").get(authCredentialId) as { authType: string; credential: string } | undefined;
+  if (!cred) return result;
+
+  const credential = typeof cred.credential === "string" ? JSON.parse(cred.credential) : cred.credential;
+  result.authInfo = credential;
+
+  const { buildAuthHeaders } = await import("../services/html-scraper");
+  result.authHeaders = buildAuthHeaders(credential, cred.authType);
+
+  return result;
 }
 
 async function runRouteScript(params: RunRouteScriptParams): Promise<import("../types/feed").ScriptResult> {
-  const authInfo = (await resolveRouteAuthInfo(params.route.authCredentialId)) || {};
+  const { authInfo, authHeaders } = await resolveRouteAuth(params.route.authCredentialId);
   if (!authInfo.token && process.env.GITHUB_TOKEN) {
     authInfo.token = process.env.GITHUB_TOKEN;
   }
 
   const result = await runScript({
     scriptFolder: params.route.script.folder,
-    context: { params: params.queryParams, routeParams: params.routeParams, authInfo },
+    context: {
+      params: params.queryParams,
+      routeParams: params.routeParams,
+      authInfo,
+      authHeaders,
+    },
     timeoutMs: params.route.script.timeout ?? 30000,
   });
 

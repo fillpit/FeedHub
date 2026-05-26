@@ -128,6 +128,7 @@ export interface ScriptContext {
   params: Record<string, string | number | boolean>;
   routeParams: Record<string, string>;
   authInfo?: AuthCredential["credential"];
+  authHeaders?: Record<string, string>;
 }
 
 export interface ScriptResult {

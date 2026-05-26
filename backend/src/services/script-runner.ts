@@ -274,13 +274,28 @@ async function executeInVm(
     const urlStr = typeof url === "object" && "url" in url ? (url as Request).url : String(url);
     const method = init?.method ?? "GET";
     logs.push({ level: "info", message: `[流程日志] 请求目标接口 (${method}): ${urlStr}` });
-    if (init?.body || init?.headers) {
+
+    let finalInit = { ...init };
+    if (context.authHeaders && Object.keys(context.authHeaders).length > 0) {
+      const mergedHeaders = new Headers(init?.headers);
+      for (const [key, val] of Object.entries(context.authHeaders)) {
+        if (!mergedHeaders.has(key)) {
+          mergedHeaders.set(key, val);
+          logs.push({ level: "info", message: `[流程日志] 自动附加授权凭证 Header: ${key}` });
+        } else {
+          logs.push({ level: "info", message: `[流程日志] 检测到脚本中已手动指定 Header: ${key}，跳过自动附加` });
+        }
+      }
+      finalInit.headers = Object.fromEntries(mergedHeaders.entries());
+    }
+
+    if (finalInit.body || finalInit.headers) {
       logs.push({
         level: "info",
-        message: `[流程日志] 请求配置: ${util.inspect({ headers: init.headers, body: init.body }, { compact: true })}`,
+        message: `[流程日志] 请求配置: ${util.inspect({ headers: finalInit.headers, body: finalInit.body }, { compact: true })}`,
       });
     }
-    const res = await globalThis.fetch(url, init);
+    const res = await globalThis.fetch(url, finalInit);
     logs.push({ level: "info", message: `[流程日志] 接口返回状态: ${res.status} ${res.statusText}` });
     await logResponseSnippet(res, logs);
     return res;
