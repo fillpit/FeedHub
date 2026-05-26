@@ -100,7 +100,7 @@ async function runXPathScraping(
   }
 }
 
-async function fetchHtml(url: string, headers: Record<string, string>): Promise<string> {
+export async function fetchHtml(url: string, headers: Record<string, string> = {}): Promise<string> {
   const db = getDb();
   
   // 1. 读取设置

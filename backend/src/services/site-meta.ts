@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { fetchHtml as fetchHtmlWithEngine } from "./html-scraper";
 
 const FETCH_TIMEOUT_MS = 10000;
 const DEFAULT_FAVICON_PATH = "/favicon.ico";
@@ -16,6 +17,12 @@ const fetchHtml = async (url: string): Promise<string> => {
     headers: { "User-Agent": USER_AGENT },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
+  
+  if (response.status === 403) {
+    console.warn(`[site-meta] HTTP client returned 403. Fallback to integrated scraper service for: ${url}`);
+    return await fetchHtmlWithEngine(url);
+  }
+
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
