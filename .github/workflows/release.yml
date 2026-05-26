@@ -1,0 +1,28 @@
+name: Auto Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送类似 v1.0.0 的 tag 时触发
+
+permissions:
+  contents: write # 授予创建和编辑 Release 的写权限
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史以确保能正确对比版本差异
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true # 关键：开启自动生成基于 release.yml 的更新日志
