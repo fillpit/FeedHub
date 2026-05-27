@@ -111,17 +111,5 @@ export default tseslint.config(
     rules: {
       // 继承通用规则，可在此添加后端专有
     },
-  },
-
-  // 5. Electron 专用配置 (JS 文件)
-  {
-    files: ['electron/**/*.js'],
-    extends: [js.configs.recommended],
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.browser, // Electron 有时需要两者
-      },
-    },
   }
 )

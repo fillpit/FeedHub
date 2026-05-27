@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Capacitor } from "@capacitor/core";
 import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
 import AdminPanel from "@/components/AdminPanel";
@@ -17,7 +16,6 @@ import { SiteSettingsProvider, useSiteSettings } from "@/hooks/useSiteSettings";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { User } from "@/types";
 import { getServerUrl, clearServerUrl } from "@/lib/api";
-import { useBackButton, hideSplashScreen, useStatusBarSync, useKeyboardLayout } from "@/hooks/useCapacitor";
 
 function SidebarResizeHandle() {
   const { state } = useApp();
@@ -128,22 +126,9 @@ function AppLayout({ user }: { user: User }) {
     }
   }, [user, actions]);
 
-  const handleBackToList = useCallback(() => {
-    actions.setMobileView("list");
-  }, [actions]);
   const handleCloseSidebar = useCallback(() => {
     actions.setMobileSidebar(false);
   }, [actions]);
-
-  useBackButton({
-    mobileView: state.mobileView,
-    mobileSidebarOpen: state.mobileSidebarOpen,
-    onBackToList: handleBackToList,
-    onCloseSidebar: handleCloseSidebar,
-  });
-
-  useStatusBarSync();
-  useKeyboardLayout();
 
   const handleSwipeOpen = useCallback(() => {
     actions.setMobileSidebar(true);
@@ -229,17 +214,7 @@ function AuthGate() {
   const [user, setUser] = useState<User | null>(null);
   const { t } = useTranslation();
 
-  useEffect(() => {
-    if (isAuthenticated !== null) {
-      hideSplashScreen();
-    }
-  }, [isAuthenticated]);
-
-  const isCapacitor = Capacitor.isNativePlatform() 
-    || (Capacitor.getPlatform() !== "web");
   const isClientMode = window.location.protocol === "file:"
-    || window.location.protocol === "capacitor:"
-    || isCapacitor
     || !!getServerUrl();
 
   const checkAuth = useCallback(() => {

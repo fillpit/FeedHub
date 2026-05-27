@@ -275,7 +275,7 @@ async function executeInVm(
     const method = init?.method ?? "GET";
     logs.push({ level: "info", message: `[流程日志] 请求目标接口 (${method}): ${urlStr}` });
 
-    let finalInit = { ...init };
+    const finalInit = { ...init };
     if (context.authHeaders && Object.keys(context.authHeaders).length > 0) {
       const mergedHeaders = new Headers(init?.headers);
       for (const [key, val] of Object.entries(context.authHeaders)) {

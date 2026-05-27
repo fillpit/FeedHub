@@ -4,13 +4,10 @@
   "description": "Feed Sub",
   "author": "Antigravity",
   "private": true,
-  "main": "electron/main.js",
   "scripts": {
     "dev": "pnpm --parallel -r dev",
     "init": "node scripts/init.mjs",
     "build": "pnpm -r build",
-    "electron:dev": "pnpm build && electron .",
-    "electron:build": "pnpm build && electron-builder --config electron/builder.config.js",
     "lint": "eslint . --cache --cache-location .cache/eslint/",
     "lint:fix": "eslint . --fix --cache --cache-location .cache/eslint/"
   },

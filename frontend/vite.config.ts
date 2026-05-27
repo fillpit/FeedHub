@@ -30,8 +30,6 @@ export default defineConfig({
             'lucide-react',
           ],
           'vendor-utils': [
-            'react-markdown',
-            'remark-gfm',
             'i18next',
             'react-i18next',
           ],
