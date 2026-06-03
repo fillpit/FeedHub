@@ -9,6 +9,11 @@ WORKDIR /app
 
 # Stage 2: Build frontend & backend
 FROM base AS build
+# 限制原生模块编译的并发线程数，以及限制 Node.js 编译时的内存上限，防止小内存设备 OOM
+ENV JOBS=1
+ENV MAKEFLAGS="-j1"
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
 # 安装 better-sqlite3 和 isolated-vm 编译原生模块所需的工具链
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
