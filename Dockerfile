@@ -1,72 +1,56 @@
-# Stage 1: Base image
-FROM node:24-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-ENV COREPACK_NPM_REGISTRY="https://registry.npmmirror.com"
-ENV NPM_CONFIG_REGISTRY="https://registry.npmmirror.com"
+# Stage 1: Build frontend
+FROM node:24-slim AS frontend-build
+RUN npm install -g pnpm@11.1.2
+WORKDIR /app/frontend
+COPY pnpm-workspace.yaml ../
+COPY frontend/package.json frontend/.npmrc ./
+ENV CI=true
+RUN echo "only-built-dependencies=esbuild" >> .npmrc && pnpm install
+COPY frontend/ .
 RUN corepack enable
-WORKDIR /app
+RUN pnpm run build
 
-# Stage 2: Build frontend & backend
-FROM base AS build
-# 限制原生模块编译的并发线程数，以及限制 Node.js 编译时的内存上限，防止小内存设备 OOM
-ENV JOBS=1
-ENV MAKEFLAGS="-j1"
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-
-# 安装 better-sqlite3 和 isolated-vm 编译原生模块所需的工具链
+# Stage 2: Build backend
+FROM node:24-slim AS backend-build
+RUN npm install -g pnpm@11.1.2
+WORKDIR /app/backend
+ENV CI=true
+# 安装原生模块编译工具链（better-sqlite3 需要）
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+COPY backend/package.json backend/pnpm-lock.yaml backend/.npmrc backend/pnpm-workspace.yaml ./
+RUN pnpm install --no-frozen-lockfile
+COPY backend/ .
+# 编译
+RUN pnpm run build
+# 重新安装生产依赖，清理开发依赖
+RUN pnpm install --prod --no-frozen-lockfile
 
-# 复制整个 monorepo 工作空间的声明文件及各子项目的 package.json
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY frontend/package.json ./frontend/
-COPY backend/package.json ./backend/
 
-# 安装全量依赖（包括编译和构建所需的 devDependencies）
-RUN pnpm install --frozen-lockfile
 
-# 复制前端和后端源文件
-COPY frontend ./frontend
-COPY backend ./backend
-
-# 使用 pnpm workspace 过滤器分别编译前端和后端
-RUN pnpm --filter node-template-frontend build
-RUN pnpm --filter node-template-backend build
-
-# 剪裁开发依赖，仅在全局和子项目中保留生产运行所需的 production 依赖
-RUN CI=true pnpm install --prod --ignore-scripts
-
-# Stage 3: Production runtime stage
+# Stage 3: Production
 FROM node:24-slim
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
 WORKDIR /app
 
-# 安装 SQLite 运行时依赖
-RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
+# 安装运行时的原生依赖与媒体下载工具（ffmpeg、python3、pip 以及最新的 yt-dlp 及其 EJS 解密依赖）
+RUN apt-get update && apt-get install -y python3 curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# 复制已经过 pnpm prune 剪裁的根 node_modules 目录以及工作空间包声明
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+# 复制后端产物和生产依赖
+COPY --from=backend-build /app/backend/dist ./backend/dist
+COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
+COPY --from=backend-build /app/backend/package.json ./backend/package.json
 
-# 复制后端编译产物、资产及依赖关系
-COPY --from=build /app/backend/dist ./backend/dist
-COPY --from=build /app/backend/node_modules ./backend/node_modules
-COPY --from=build /app/backend/package.json ./backend/package.json
-COPY backend/templates ./backend/templates
-
-# 复制前端编译产物
-COPY --from=build /app/frontend/dist ./frontend/dist
+# 复制前端产物
+COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 RUN mkdir -p /app/data
 
 ENV NODE_ENV=production
-ENV DB_PATH=/app/data/node-template.db
+ENV DB_PATH=/app/data/data.db
 ENV FRONTEND_DIST=/app/frontend/dist
 ENV PORT=3001
 
 EXPOSE 3001
 
-# 启动服务端
+# 运行从 /app 目录启动，这样相对路径能正确对应
 CMD ["node", "backend/dist/index.js"]
