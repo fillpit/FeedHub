@@ -12,7 +12,7 @@ interface SimpleWebSocket {
   readyState: number;
   onopen?: () => void;
   onerror?: (err: unknown) => void;
-  onclose?: () => void;
+  onclose?: (event?: any) => void;
   onmessage?: (event: { data: { toString(): string } }) => void;
 }
 
