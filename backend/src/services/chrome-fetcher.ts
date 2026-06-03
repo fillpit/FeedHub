@@ -27,6 +27,188 @@ export class ChromeFetcher {
   /**
    * 使用 Chrome 的远程调试接口抓取一个页面的 HTML 内容
    */
+  /**
+   * 通过 WebSocket 连接主浏览器，并利用 Target.createTarget 创建标签页（CloakBrowser/反向代理兼容方案）
+   */
+  private async createTargetViaWs(
+    url: string,
+    WS: new (url: string) => SimpleWebSocket
+  ): Promise<{ id: string; webSocketDebuggerUrl: string }> {
+    let browserWsUrl: string | null = null;
+    try {
+      const res = await globalThis.fetch(`${this.debugUrl}/json/version`);
+      if (res.ok) {
+        const data = (await res.json()) as { webSocketDebuggerUrl?: string };
+        browserWsUrl = data.webSocketDebuggerUrl || null;
+      }
+    } catch {
+      // 忽略错误，尝试从 /json 获取
+    }
+
+    if (!browserWsUrl) {
+      try {
+        const res = await globalThis.fetch(`${this.debugUrl}/json`);
+        if (res.ok) {
+          const list = (await res.json()) as { type: string; webSocketDebuggerUrl?: string }[];
+          const browserTarget = list.find((t) => t.type === "browser");
+          if (browserTarget) {
+            browserWsUrl = browserTarget.webSocketDebuggerUrl || null;
+          }
+        }
+      } catch {
+        // 忽略
+      }
+    }
+
+    if (!browserWsUrl) {
+      throw new Error("无法获取主浏览器 DevTools WebSocket 地址");
+    }
+
+    return new Promise<{ id: string; webSocketDebuggerUrl: string }>((resolve, reject) => {
+      let tempWs: SimpleWebSocket | null = null;
+      try {
+        tempWs = new WS(browserWsUrl!);
+      } catch (err) {
+        reject(err);
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        if (tempWs) {
+          try { tempWs.close(); } catch {}
+        }
+        reject(new Error("连接主浏览器 WebSocket 超时"));
+      }, 10000);
+
+      tempWs.onopen = () => {
+        const payload = JSON.stringify({
+          id: 999,
+          method: "Target.createTarget",
+          params: { url },
+        });
+        tempWs?.send(payload);
+      };
+
+      tempWs.onerror = (err) => {
+        clearTimeout(timeout);
+        reject(err instanceof Error ? err : new Error("主浏览器 WebSocket 出错"));
+      };
+
+      tempWs.onclose = () => {
+        clearTimeout(timeout);
+        reject(new Error("主浏览器 WebSocket 连接已关闭"));
+      };
+
+      tempWs.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data.toString()) as {
+            id?: number;
+            error?: { message?: string };
+            result?: { targetId: string };
+          };
+
+          if (data.id === 999) {
+            clearTimeout(timeout);
+            if (tempWs) {
+              tempWs.onclose = undefined;
+              tempWs.onerror = undefined;
+              try { tempWs.close(); } catch {}
+            }
+
+            if (data.error) {
+              reject(new Error(`CDP Target.createTarget 失败: ${data.error.message}`));
+              return;
+            }
+
+            const targetId = data.result?.targetId;
+            if (!targetId) {
+              reject(new Error("CDP 创建页面未返回 targetId"));
+              return;
+            }
+
+            // 寻找专属 webSocketDebuggerUrl
+            let pageWsUrl: string | null = null;
+            try {
+              const listRes = await globalThis.fetch(`${this.debugUrl}/json`);
+              if (listRes.ok) {
+                const list = (await listRes.json()) as { id: string; webSocketDebuggerUrl?: string }[];
+                const pageTarget = list.find((t) => t.id === targetId);
+                if (pageTarget) {
+                  pageWsUrl = pageTarget.webSocketDebuggerUrl || null;
+                }
+              }
+            } catch {
+              // 忽略
+            }
+
+            if (!pageWsUrl) {
+              const host = this.debugUrl.replace(/^https?:\/\//, "");
+              const isSecure = this.debugUrl.startsWith("https");
+              pageWsUrl = `${isSecure ? "wss" : "ws"}://${host}/devtools/page/${targetId}`;
+            }
+
+            resolve({
+              id: targetId,
+              webSocketDebuggerUrl: pageWsUrl,
+            });
+          }
+        } catch (err) {
+          clearTimeout(timeout);
+          if (tempWs) {
+            try { tempWs.close(); } catch {}
+          }
+          reject(err);
+        }
+      };
+    });
+  }
+
+  /**
+   * 采用多重兼容策略（PUT/GET，Query参数以及WebSocket回退）统一创建新标签页
+   */
+  private async createTarget(
+    url: string,
+    WS: new (url: string) => SimpleWebSocket
+  ): Promise<{ id: string; webSocketDebuggerUrl: string }> {
+    const errors: string[] = [];
+
+    // 1. 尝试使用 HTTP 方法创建标签页
+    const httpMethods = [
+      { url: `${this.debugUrl}/json/new?url=${encodeURIComponent(url)}`, method: "PUT" },
+      { url: `${this.debugUrl}/json/new?url=${encodeURIComponent(url)}`, method: "GET" },
+      { url: `${this.debugUrl}/json/new?${encodeURIComponent(url)}`, method: "PUT" },
+      { url: `${this.debugUrl}/json/new?${encodeURIComponent(url)}`, method: "GET" },
+    ];
+
+    for (const item of httpMethods) {
+      try {
+        const res = await globalThis.fetch(item.url, { method: item.method });
+        if (res.ok) {
+          const target = (await res.json()) as { id: string; webSocketDebuggerUrl: string };
+          if (target && target.id) {
+            return target;
+          }
+        } else {
+          errors.push(`${item.method} ${item.url} 失败: HTTP ${res.status}`);
+        }
+      } catch (err: unknown) {
+        errors.push(`${item.method} ${item.url} 出错: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    // 2. HTTP 方式全部失败，尝试使用 WebSocket 方式（CloakBrowser 代理环境下的终极解决方案）
+    try {
+      return await this.createTargetViaWs(url, WS);
+    } catch (wsErr: unknown) {
+      errors.push(`WebSocket 方式创建 Target 失败: ${wsErr instanceof Error ? wsErr.message : String(wsErr)}`);
+    }
+
+    throw new Error(`创建新标签页失败。错误汇总: [${errors.join(" | ")}]`);
+  }
+
+  /**
+   * 使用 Chrome 的远程调试接口抓取一个页面的 HTML 内容
+   */
   async fetch(url: string): Promise<string> {
     const globalObj = globalThis as unknown as { WebSocket?: new (url: string) => SimpleWebSocket };
     const WS = globalObj.WebSocket;
@@ -38,12 +220,8 @@ export class ChromeFetcher {
     let ws: SimpleWebSocket | null = null;
 
     try {
-      // 1. 调用 Chrome API 创建一个新的空白标签页
-      const createRes = await globalThis.fetch(`${this.debugUrl}/json/new?about:blank`, { method: "PUT" });
-      if (!createRes.ok) {
-        throw new Error(`无法创建新标签页: HTTP ${createRes.status} ${createRes.statusText}`);
-      }
-      const target = await createRes.json() as { id: string; webSocketDebuggerUrl: string };
+      // 1. 统一创建新标签页接口（兼容多种 HTTP 方法与 WebSocket 备用创建方案）
+      const target = await this.createTarget("about:blank", WS);
       targetId = target.id;
       const wsUrl = target.webSocketDebuggerUrl;
 
@@ -186,10 +364,12 @@ export class ChromeFetcher {
    */
   private async openTestPage(): Promise<void> {
     try {
-      const openRes = await globalThis.fetch(`${this.debugUrl}/json/new?${TEST_PAGE_URL}`, { method: "PUT" });
-      if (!openRes.ok) {
-        throw new Error(`HTTP 状态码: ${openRes.status}`);
+      const globalObj = globalThis as unknown as { WebSocket?: new (url: string) => SimpleWebSocket };
+      const WS = globalObj.WebSocket;
+      if (!WS) {
+        throw new Error("当前 Node.js 环境不支持原生的 WebSocket，请升级至 Node.js v22 或更高版本。");
       }
+      await this.createTarget(TEST_PAGE_URL, WS);
     } catch (err: unknown) {
       throw new Error(`控制浏览器打开测试网页失败: ${err instanceof Error ? err.message : "未知错误"}`);
     }

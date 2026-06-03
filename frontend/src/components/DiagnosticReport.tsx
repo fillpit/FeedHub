@@ -40,6 +40,11 @@ export default function DiagnosticReport({ debugData, parsedCount, executionTime
 
       {/* 3. Terminal Style Logs */}
       <DiagnosticLogsLogs logs={debugData.logs} />
+
+      {/* 4. Fetched HTML Source Preview */}
+      {debugData.htmlSource && (
+        <HtmlSourcePreview html={debugData.htmlSource} />
+      )}
     </div>
   );
 }
@@ -255,6 +260,54 @@ function DiagnosticLogsLogs({ logs }: { logs: string[] }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ─── 子组件: 网页原始 HTML 预览 ──────────────────────────────────────────────
+
+function HtmlSourcePreview({ html }: { html: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(html);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-2 border border-app-border rounded-xl bg-app-surface/20 overflow-hidden">
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-app-hover/30 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Code size={14} className="text-accent-primary" />
+          <h4 className="text-xs font-bold text-tx-primary uppercase tracking-wider">抓取网页原始 HTML 源码 ({html.length} 字符)</h4>
+        </div>
+        <div className="flex items-center gap-3">
+          {isOpen && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopy();
+              }}
+              className="text-[10px] px-2 py-0.5 rounded border border-app-border bg-app-bg text-tx-secondary hover:text-tx-primary hover:bg-app-hover transition-colors"
+            >
+              {copied ? "已复制" : "复制全部"}
+            </button>
+          )}
+          {isOpen ? <ChevronUp size={14} className="text-tx-tertiary" /> : <ChevronDown size={14} className="text-tx-tertiary" />}
+        </div>
+      </div>
+      {isOpen && (
+        <div className="p-4 border-t border-app-border/60 bg-app-bg">
+          <pre className="text-[11px] font-mono text-tx-secondary overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto p-3 bg-app-surface rounded-lg border border-app-border">
+            {html}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

@@ -147,6 +147,7 @@ export interface ScrapeDebugInfo {
   selectorType: "css" | "xpath";
   items: ScrapeItemDebug[];
   logs: string[];
+  htmlSource?: string;
 }
 
 export interface ScrapeResult {

@@ -43,7 +43,7 @@ export async function scrapeWebsite({ url, selector, authHeaders = {}, debug = f
 
   let html: string;
   try {
-    html = await fetchHtml(url, authHeaders);
+    html = await fetchHtml(url, authHeaders, logs);
     addLog(logs, `获取 HTML 成功, 长度: ${html.length} 字符`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -100,7 +100,11 @@ async function runXPathScraping(
   }
 }
 
-export async function fetchHtml(url: string, headers: Record<string, string> = {}): Promise<string> {
+export async function fetchHtml(
+  url: string,
+  headers: Record<string, string> = {},
+  logs?: string[]
+): Promise<string> {
   const db = getDb();
   
   // 1. 读取设置
@@ -121,15 +125,30 @@ export async function fetchHtml(url: string, headers: Record<string, string> = {
 
   const errors: string[] = [];
 
+  const log = (msg: string) => {
+    console.log(`[html-scraper] ${msg}`);
+    if (logs) {
+      addLog(logs, msg);
+    }
+  };
+  const logError = (msg: string) => {
+    console.error(`[html-scraper] ${msg}`);
+    if (logs) {
+      addLog(logs, `错误: ${msg}`);
+    }
+  };
+
   // 2. 尝试 CloakBrowser（最高优先级）
   if (cloakEnabled && cloakUrl) {
     try {
-      console.log(`[html-scraper] 尝试使用 CloakBrowser 抓取: ${url}`);
+      log(`尝试使用 CloakBrowser 抓取: ${url}`);
       const fetcher = new ChromeFetcher(cloakUrl);
-      return await fetcher.fetch(url);
+      const res = await fetcher.fetch(url);
+      log(`CloakBrowser 抓取成功`);
+      return res;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "未知错误";
-      console.error(`[html-scraper] CloakBrowser 抓取失败: ${message}`);
+      logError(`CloakBrowser 抓取失败: ${message}`);
       errors.push(`CloakBrowser 失败: ${message}`);
     }
   }
@@ -137,12 +156,14 @@ export async function fetchHtml(url: string, headers: Record<string, string> = {
   // 3. 尝试 CDP
   if (cdpEnabled && cdpUrl) {
     try {
-      console.log(`[html-scraper] 尝试使用 Chrome CDP 抓取: ${url}`);
+      log(`尝试使用 Chrome CDP 抓取: ${url}`);
       const fetcher = new ChromeFetcher(cdpUrl);
-      return await fetcher.fetch(url);
+      const res = await fetcher.fetch(url);
+      log(`Chrome CDP 抓取成功`);
+      return res;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "未知错误";
-      console.error(`[html-scraper] Chrome CDP 抓取失败: ${message}`);
+      logError(`Chrome CDP 抓取失败: ${message}`);
       errors.push(`CDP 失败: ${message}`);
     }
   }
@@ -150,28 +171,32 @@ export async function fetchHtml(url: string, headers: Record<string, string> = {
   // 4. 尝试 Browserless
   if (browserlessEnabled && browserlessUrl) {
     try {
-      console.log(`[html-scraper] 尝试使用 Browserless 抓取: ${url}`);
+      log(`尝试使用 Browserless 抓取: ${url}`);
       const fetcher = new BrowserlessFetcher(browserlessUrl, browserlessToken);
-      return await fetcher.fetch(url);
+      const res = await fetcher.fetch(url);
+      log(`Browserless 抓取成功`);
+      return res;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "未知错误";
-      console.error(`[html-scraper] Browserless 抓取失败: ${message}`);
+      logError(`Browserless 抓取失败: ${message}`);
       errors.push(`Browserless 失败: ${message}`);
     }
   }
 
   // 5. 降级到标准 HTTP 请求
   try {
-    console.log(`[html-scraper] 使用标准 HTTP 抓取: ${url}`);
+    log(`使用标准 HTTP 抓取: ${url}`);
     const response = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; FeedHub/1.0)", ...headers },
       signal: AbortSignal.timeout(30000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    return await response.text();
+    const text = await response.text();
+    log(`标准 HTTP 抓取成功`);
+    return text;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "未知错误";
-    console.error(`[html-scraper] 标准 HTTP 抓取失败: ${message}`);
+    logError(`标准 HTTP 抓取失败: ${message}`);
     errors.push(`标准 HTTP 失败: ${message}`);
     throw new Error(`所有抓取方式均失败: ${errors.join(" | ")}`);
   }
@@ -219,6 +244,9 @@ function parseWithCheerio(
     selectorType: "css",
     items: debugItems,
     logs,
+    htmlSource: html.length > 200000
+      ? html.slice(0, 200000) + `\n\n... [数据过大已截断，原始 HTML 长度为 ${html.length} 字符]`
+      : html,
   };
 
   processCheerioNodes($, containerNodes, selector, items, debugItems, debug, logs);
@@ -408,6 +436,9 @@ function parseWithXPath(
     selectorType: "xpath",
     items: debugItems,
     logs,
+    htmlSource: html.length > 200000
+      ? html.slice(0, 200000) + `\n\n... [数据过大已截断，原始 HTML 长度为 ${html.length} 字符]`
+      : html,
   };
 
   if (Array.isArray(containerNodes)) {
