@@ -108,7 +108,7 @@ export async function fetchHtml(
   const db = getDb();
   
   // 1. 读取设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key IN ('cloak_enabled', 'cloak_url', 'cdp_enabled', 'cdp_url', 'browserless_enabled', 'browserless_url', 'browserless_token')").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key IN ('cloak_enabled', 'cloak_url', 'cdp_enabled', 'cdp_url', 'browserless_enabled', 'browserless_url', 'browserless_token', 'lightpanda_enabled', 'lightpanda_url')").all() as { key: string; value: string }[];
   
   const settings: Record<string, string> = {};
   for (const row of rows) {
@@ -117,6 +117,8 @@ export async function fetchHtml(
 
   const cloakEnabled = settings.cloak_enabled === "1";
   const cloakUrl = settings.cloak_url || "http://localhost:9122";
+  const lightpandaEnabled = settings.lightpanda_enabled === "1";
+  const lightpandaUrl = settings.lightpanda_url || "http://localhost:9222";
   const cdpEnabled = settings.cdp_enabled === "1";
   const cdpUrl = settings.cdp_url || "http://localhost:9222";
   const browserlessEnabled = settings.browserless_enabled === "1";
@@ -153,7 +155,22 @@ export async function fetchHtml(
     }
   }
 
-  // 3. 尝试 CDP
+  // 3. 尝试 Lightpanda（优先级低于 CloakBrowser，但高于 Chrome CDP）
+  if (lightpandaEnabled && lightpandaUrl) {
+    try {
+      log(`尝试使用 Lightpanda 抓取: ${url}`);
+      const fetcher = new ChromeFetcher(lightpandaUrl);
+      const res = await fetcher.fetch(url);
+      log(`Lightpanda 抓取成功`);
+      return res;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "未知错误";
+      logError(`Lightpanda 抓取失败: ${message}`);
+      errors.push(`Lightpanda 失败: ${message}`);
+    }
+  }
+
+  // 4. 尝试 CDP
   if (cdpEnabled && cdpUrl) {
     try {
       log(`尝试使用 Chrome CDP 抓取: ${url}`);
@@ -168,7 +185,7 @@ export async function fetchHtml(
     }
   }
 
-  // 4. 尝试 Browserless
+  // 5. 尝试 Browserless
   if (browserlessEnabled && browserlessUrl) {
     try {
       log(`尝试使用 Browserless 抓取: ${url}`);
@@ -183,7 +200,7 @@ export async function fetchHtml(
     }
   }
 
-  // 5. 降级到标准 HTTP 请求
+  // 6. 降级到标准 HTTP 请求
   try {
     log(`使用标准 HTTP 抓取: ${url}`);
     const response = await fetch(url, {

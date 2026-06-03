@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff } from "lucide-react";
+import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff, Zap } from "lucide-react";
 import { api } from "@/lib/api";
 import { IntegrationCard, CopyButton } from "./IntegrationCard";
 import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
 import { BrowserlessConfig } from "./BrowserlessConfig";
 import { RedisConfig } from "./RedisConfig";
 import { CloakBrowserConfig } from "./CloakBrowserConfig";
+import { LightpandaConfig } from "./LightpandaConfig";
 
 const CHROME_CMD = "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222";
 const CLOAK_DOCKER_CMD = "docker run -d -p 9122:9122 --name cloak-browser --restart always cloakbrowser/browser:latest --remote-debugging-port=9122 --remote-debugging-address=0.0.0.0";
+const LIGHTPANDA_DOCKER_CMD = "docker run -d --name lightpanda -p 9222:9222 lightpanda/browser:latest";
 const DOCKER_CMD = "docker run -d -p 3000:3000 --restart always -e \"MAX_CONCURRENT_SESSIONS=10\" -e \"TOKEN=your_secure_token\" browserless/chrome";
 
 /**
@@ -28,6 +30,27 @@ const CloakBrowserInstructions: React.FC = () => (
     </p>
     <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
       {CLOAK_DOCKER_CMD}
+    </div>
+  </div>
+);
+
+/**
+ * Lightpanda instruction node
+ */
+const LightpandaInstructions: React.FC = () => (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-bold text-tx-primary flex items-center gap-1.5">
+        <Cpu className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+        独立 Docker 容器快速启动指令
+      </span>
+      <CopyButton text={LIGHTPANDA_DOCKER_CMD} tooltip="复制运行指令" />
+    </div>
+    <p className="text-[11px] text-tx-secondary leading-relaxed">
+      你可以通过下面的指令快速在服务器或本地以远程调试模式启动一个 Lightpanda 实例：
+    </p>
+    <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
+      {LIGHTPANDA_DOCKER_CMD}
     </div>
   </div>
 );
@@ -115,6 +138,7 @@ export default function IntegrationsPanel() {
     redis: false,
     greader: true,
     cloak: false,
+    lightpanda: false,
     chrome_debugging: false,
     browserless: false,
   });
@@ -126,6 +150,7 @@ export default function IntegrationsPanel() {
           redis: data.redis_enabled === "1",
           greader: true,
           cloak: data.cloak_enabled === "1",
+          lightpanda: data.lightpanda_enabled === "1",
           chrome_debugging: data.cdp_enabled === "1",
           browserless: data.browserless_enabled === "1",
         });
@@ -166,11 +191,21 @@ export default function IntegrationsPanel() {
         <IntegrationCard
           icon={<EyeOff className="w-4 h-4 text-orange-500" />}
           title="CloakBrowser 防关联浏览器 (Stealth CDP)"
-          description="集成 CloakBrowser 指纹浏览器，通过远程调试接口以极高优先级进行网络内容抓取，彻底防封抗反爬。"
+          description="集成 CloakBrowser 指纹浏览器，通过远程调试接口以极高优先级进行 network 内容抓取，彻底防封抗反爬。"
           badgeText={activeStates.cloak ? "已开启" : "未开启"}
           isActive={activeStates.cloak}
           content={<CloakBrowserConfig onStateChange={fetchActiveStatus} />}
           instructions={<CloakBrowserInstructions />}
+        />
+
+        <IntegrationCard
+          icon={<Zap className="w-4 h-4 text-amber-500" />}
+          title="Lightpanda 极速无头浏览器"
+          description="集成基于 WebAssembly/Rust 架构的 Lightpanda 极速无头浏览器。超低内存与 CPU 消耗，毫秒级快速启动，为高并发抓取提供极致性能。"
+          badgeText={activeStates.lightpanda ? "已开启" : "未开启"}
+          isActive={activeStates.lightpanda}
+          content={<LightpandaConfig onStateChange={fetchActiveStatus} />}
+          instructions={<LightpandaInstructions />}
         />
 
         <IntegrationCard

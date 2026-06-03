@@ -168,6 +168,8 @@ export const api = {
     browserless_token?: string;
     cloak_enabled?: string;
     cloak_url?: string;
+    lightpanda_enabled?: string;
+    lightpanda_url?: string;
   }>("/settings"),
   updateSiteSettings: (data: {
     site_title?: string;
@@ -183,6 +185,8 @@ export const api = {
     browserless_token?: string;
     cloak_enabled?: string;
     cloak_url?: string;
+    lightpanda_enabled?: string;
+    lightpanda_url?: string;
   }) =>
     request<{
       site_title: string;
@@ -195,6 +199,8 @@ export const api = {
       cdp_url?: string;
       cloak_enabled?: string;
       cloak_url?: string;
+      lightpanda_enabled?: string;
+      lightpanda_url?: string;
     }>("/settings", {
       method: "PUT",
       body: JSON.stringify(data),
@@ -211,6 +217,11 @@ export const api = {
     }),
   testCloakConnection: (data: { cloak_url: string }) =>
     request<{ success: boolean; message: string }>("/settings/cloak/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  testLightpandaConnection: (data: { lightpanda_url: string }) =>
+    request<{ success: boolean; message: string }>("/settings/lightpanda/test", {
       method: "POST",
       body: JSON.stringify(data),
     }),

@@ -20,6 +20,8 @@ export interface SiteSettings {
   browserless_token?: string;
   cloak_enabled?: string;
   cloak_url?: string;
+  lightpanda_enabled?: string;
+  lightpanda_url?: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -36,12 +38,14 @@ const DEFAULTS: SiteSettings = {
   browserless_token: "",
   cloak_enabled: "0",
   cloak_url: "http://localhost:9122",
+  lightpanda_enabled: "0",
+  lightpanda_url: "http://localhost:9222",
 };
 
 // 获取所有站点设置
 settings.get("/", (c) => {
   const db = getDb();
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%' OR key LIKE 'lightpanda_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -100,6 +104,12 @@ settings.put("/", async (c) => {
     if (body.cloak_url !== undefined) {
       upsert.run("cloak_url", body.cloak_url);
     }
+    if (body.lightpanda_enabled !== undefined) {
+      upsert.run("lightpanda_enabled", body.lightpanda_enabled);
+    }
+    if (body.lightpanda_url !== undefined) {
+      upsert.run("lightpanda_url", body.lightpanda_url);
+    }
   });
   tx();
 
@@ -107,7 +117,7 @@ settings.put("/", async (c) => {
   clearCacheServiceInstance();
 
   // 返回更新后的全部设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%' OR key LIKE 'lightpanda_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -160,6 +170,24 @@ settings.post("/cloak/test", async (c) => {
     }
 
     const result = await testCdpConnection(body.cloak_url);
+    return c.json(result);
+  } catch (err: unknown) {
+    return c.json({
+      success: false,
+      message: err instanceof Error ? err.message : "连接失败"
+    });
+  }
+});
+
+// 测试 Lightpanda 连接
+settings.post("/lightpanda/test", async (c) => {
+  try {
+    const body = await c.req.json() as { lightpanda_url: string };
+    if (!body.lightpanda_url) {
+      return c.json({ success: false, message: "Lightpanda 地址不能为空" }, 400);
+    }
+
+    const result = await testCdpConnection(body.lightpanda_url);
     return c.json(result);
   } catch (err: unknown) {
     return c.json({
