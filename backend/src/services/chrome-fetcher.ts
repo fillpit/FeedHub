@@ -12,7 +12,7 @@ interface SimpleWebSocket {
   readyState: number;
   onopen?: () => void;
   onerror?: (err: unknown) => void;
-  onclose?: (event?: any) => void;
+  onclose?: (event?: { code?: number; reason?: string }) => void;
   onmessage?: (event: { data: { toString(): string } }) => void;
 }
 
@@ -197,12 +197,13 @@ export class ChromeFetcher {
         }
       };
 
-      ws.onerror = (event: any) => {
-        const errMsg = event?.message || event?.error?.message || "网络异常或连接握手失败";
+      ws.onerror = (event: unknown) => {
+        const errorObj = event as { message?: string; error?: { message?: string } } | undefined;
+        const errMsg = errorObj?.message || errorObj?.error?.message || "网络异常或连接握手失败";
         cleanup(new Error(`WebSocket 控制标签页时出错 (URL: ${browserWsUrl}): ${errMsg}`));
       };
 
-      ws.onclose = (event: any) => {
+      ws.onclose = (event?: { code?: number; reason?: string }) => {
         cleanup(new Error(`WebSocket 连接被提前关闭 (URL: ${browserWsUrl}, Code: ${event?.code || "None"}, Reason: ${event?.reason || "None"})`));
       };
 

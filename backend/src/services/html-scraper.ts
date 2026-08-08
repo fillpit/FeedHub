@@ -4,6 +4,7 @@ import { FeedItem, WebsiteRssSelector, SelectorField, ScrapeResult, ScrapeDebugI
 import { getDb } from "../db/schema";
 import { ChromeFetcher } from "./chrome-fetcher";
 import { BrowserlessFetcher } from "./browserless-fetcher";
+import { resolveRelativeUrl } from "../utils/url";
 
 /**
  * 网页抓取服务 - 带诊断和调试支持
@@ -52,8 +53,8 @@ export async function scrapeWebsite({ url, selector, authHeaders = {}, debug = f
   }
 
   const result = selector.selectorType === "xpath"
-    ? await runXPathScraping(html, selector, startTime, debug, logs)
-    : await runCheerioScraping(html, selector, startTime, debug, logs);
+    ? await runXPathScraping(html, selector, url, startTime, debug, logs)
+    : await runCheerioScraping(html, selector, url, startTime, debug, logs);
 
   return result;
 }
@@ -61,13 +62,14 @@ export async function scrapeWebsite({ url, selector, authHeaders = {}, debug = f
 async function runCheerioScraping(
   html: string,
   selector: WebsiteRssSelector,
+  baseUrl: string,
   startTime: number,
   debug: boolean,
   logs: string[]
 ): Promise<ScrapeResult> {
   try {
     addLog(logs, "加载 cheerio 模块成功，开始解析 HTML...");
-    return parseWithCheerio(html, selector, startTime, debug, logs);
+    return parseWithCheerio(html, selector, baseUrl, startTime, debug, logs);
   } catch (error) {
     console.error("Scraping parse error:", error);
     const message = error instanceof Error ? error.message : String(error);
@@ -79,6 +81,7 @@ async function runCheerioScraping(
 async function runXPathScraping(
   html: string,
   selector: WebsiteRssSelector,
+  baseUrl: string,
   startTime: number,
   debug: boolean,
   logs: string[]
@@ -91,7 +94,7 @@ async function runXPathScraping(
   }
   try {
     addLog(logs, "加载 XPath 解析依赖包成功，开始解析 XML/HTML...");
-    return parseWithXPath(html, selector, xpathModule, xmldomModule, startTime, debug, logs);
+    return parseWithXPath(html, selector, baseUrl, xpathModule, xmldomModule, startTime, debug, logs);
   } catch (error) {
     console.error("Scraping parse XPath error:", error);
     const message = error instanceof Error ? error.message : String(error);
@@ -238,6 +241,7 @@ async function tryLoadXmldom(): Promise<XmlDomModule | null> {
 function parseWithCheerio(
   html: string,
   selector: WebsiteRssSelector,
+  baseUrl: string,
   startTime: number,
   debug: boolean,
   logs: string[]
@@ -266,7 +270,7 @@ function parseWithCheerio(
       : html,
   };
 
-  processCheerioNodes($, containerNodes, selector, items, debugItems, debug, logs);
+  processCheerioNodes($, containerNodes, selector, baseUrl, items, debugItems, debug, logs);
 
   return {
     items,
@@ -279,6 +283,7 @@ function processCheerioNodes(
   $: cheerio.CheerioAPI,
   containerNodes: cheerio.Cheerio<AnyNode>,
   selector: WebsiteRssSelector,
+  baseUrl: string,
   items: FeedItem[],
   debugItems: ScrapeItemDebug[],
   debug: boolean,
@@ -287,7 +292,7 @@ function processCheerioNodes(
   const maxDebugCount = 10;
   containerNodes.each((idx: number, el: AnyNode) => {
     const container = $(el);
-    const { item, itemDebug } = processSingleCheerioNode(container, selector, idx);
+    const { item, itemDebug } = processSingleCheerioNode(container, selector, baseUrl, idx);
 
     if (item) {
       items.push(item);
@@ -303,13 +308,18 @@ function processCheerioNodes(
 function processSingleCheerioNode(
   container: cheerio.Cheerio<AnyNode>,
   selector: WebsiteRssSelector,
+  baseUrl: string,
   index: number
 ): { item: FeedItem | null; itemDebug: ScrapeItemDebug } {
   const fieldsDebug: ScrapeFieldDebug[] = [];
   const { value: title, debug: titleDebug } = extractFieldDebug(container, selector.title, "title");
   fieldsDebug.push(titleDebug);
 
-  const { value: link, debug: linkDebug } = extractFieldDebug(container, selector.link, "link");
+  const { value: rawLink, debug: linkDebug } = extractFieldDebug(container, selector.link, "link");
+  const link = resolveRelativeUrl(rawLink, baseUrl);
+  if (link && link !== rawLink) {
+    linkDebug.finalValue = link;
+  }
   fieldsDebug.push(linkDebug);
 
   const { value: content, debug: contentDebug } = extractFieldDebug(container, selector.content, "content");
@@ -425,6 +435,7 @@ export function buildAuthHeaders(credential: Record<string, string>, authType: s
 function parseWithXPath(
   html: string,
   selector: WebsiteRssSelector,
+  baseUrl: string,
   xpathModule: XPathModule,
   xmldomModule: XmlDomModule,
   startTime: number,
@@ -459,7 +470,7 @@ function parseWithXPath(
   };
 
   if (Array.isArray(containerNodes)) {
-    processXPathNodes(containerNodes, selector, xpathModule, items, debugItems, debug, logs);
+    processXPathNodes(containerNodes, selector, baseUrl, xpathModule, items, debugItems, debug, logs);
   }
 
   return {
@@ -472,6 +483,7 @@ function parseWithXPath(
 function processXPathNodes(
   containerNodes: unknown[],
   selector: WebsiteRssSelector,
+  baseUrl: string,
   xpathModule: XPathModule,
   items: FeedItem[],
   debugItems: ScrapeItemDebug[],
@@ -480,7 +492,7 @@ function processXPathNodes(
 ): void {
   const maxDebugCount = 10;
   containerNodes.forEach((node, idx) => {
-    const { item, itemDebug } = processSingleXPathNode(node, selector, xpathModule, idx);
+    const { item, itemDebug } = processSingleXPathNode(node, selector, baseUrl, xpathModule, idx);
 
     if (item) {
       items.push(item);
@@ -496,6 +508,7 @@ function processXPathNodes(
 function processSingleXPathNode(
   containerNode: unknown,
   selector: WebsiteRssSelector,
+  baseUrl: string,
   xpathModule: XPathModule,
   index: number
 ): { item: FeedItem | null; itemDebug: ScrapeItemDebug } {
@@ -503,7 +516,11 @@ function processSingleXPathNode(
   const { value: title, debug: titleDebug } = extractFieldXPathDebug(containerNode, selector.title, "title", xpathModule);
   fieldsDebug.push(titleDebug);
 
-  const { value: link, debug: linkDebug } = extractFieldXPathDebug(containerNode, selector.link, "link", xpathModule);
+  const { value: rawLink, debug: linkDebug } = extractFieldXPathDebug(containerNode, selector.link, "link", xpathModule);
+  const link = resolveRelativeUrl(rawLink, baseUrl);
+  if (link && link !== rawLink) {
+    linkDebug.finalValue = link;
+  }
   fieldsDebug.push(linkDebug);
 
   const { value: content, debug: contentDebug } = extractFieldXPathDebug(containerNode, selector.content, "content", xpathModule);
