@@ -167,8 +167,11 @@ const AppContext = createContext<{
   dispatch: React.Dispatch<Action>;
 } | null>(null);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
+export function AppProvider({ children, initialUser }: { children: React.ReactNode; initialUser?: User | null }) {
+  const [state, dispatch] = useReducer(reducer, {
+    ...initialState,
+    user: initialUser ?? null,
+  });
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       {children}

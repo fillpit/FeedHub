@@ -330,40 +330,43 @@ function UserManagementView() {
         </div>
 
         <div className="bg-app-surface rounded-2xl border border-app-border overflow-hidden divide-y divide-app-border shadow-sm">
-          {users.map(user => (
-            <div key={user.id} className="p-4 flex items-center gap-4 hover:bg-app-hover/50 transition-colors group">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center text-tx-primary font-bold border",
-                user.username === 'admin' ? "bg-amber-100 border-amber-200 text-amber-700" : "bg-app-bg border-app-border"
-              )}>
-                {user.username[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-tx-primary">{user.username}</span>
-                  {user.username === 'admin' && (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[10px] font-bold flex items-center gap-1">
-                      <Shield size={10} /> 管理员
-                    </span>
-                  )}
-                  {user.email && (
-                    <span className="text-tx-tertiary flex items-center gap-1 text-[10px]">
-                      <Mail size={10} /> {user.email}
-                    </span>
-                  )}
+          {users.map(user => {
+            const isUserAdmin = user.role === 'admin' || user.username === 'admin';
+            return (
+              <div key={user.id} className="p-4 flex items-center gap-4 hover:bg-app-hover/50 transition-colors group">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center text-tx-primary font-bold border",
+                  isUserAdmin ? "bg-amber-100 border-amber-200 text-amber-700" : "bg-app-bg border-app-border"
+                )}>
+                  {user.username[0].toUpperCase()}
                 </div>
-                <p className="text-[10px] text-tx-tertiary mt-0.5 opacity-60">注册于 {new Date(user.createdAt).toLocaleDateString()}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-tx-primary">{user.username}</span>
+                    {isUserAdmin && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20 text-[10px] font-bold flex items-center gap-1">
+                        <Shield size={10} /> 管理员
+                      </span>
+                    )}
+                    {user.email && (
+                      <span className="text-tx-tertiary flex items-center gap-1 text-[10px]">
+                        <Mail size={10} /> {user.email}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-tx-tertiary mt-0.5 opacity-60">注册于 {new Date(user.createdAt).toLocaleDateString()}</p>
+                </div>
+                {user.username !== 'admin' && (
+                  <button
+                    onClick={() => handleDeleteUser(user.id, user.username)}
+                    className="p-2 rounded-lg hover:bg-rose-500/10 text-tx-tertiary hover:text-rose-500 transition-colors"
+                  >
+                    <AlertTriangle size={16} />
+                  </button>
+                )}
               </div>
-              {user.username !== 'admin' && (
-                <button
-                  onClick={() => handleDeleteUser(user.id, user.username)}
-                  className="p-2 rounded-lg hover:bg-rose-500/10 text-tx-tertiary hover:text-rose-500 transition-colors"
-                >
-                  <AlertTriangle size={16} />
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

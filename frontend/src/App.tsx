@@ -288,7 +288,7 @@ function AuthGate() {
   if (!user) return null;
 
   return (
-    <AppProvider>
+    <AppProvider initialUser={user}>
       <TooltipProvider>
         <AppLayout user={user} />
       </TooltipProvider>

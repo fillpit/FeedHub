@@ -20,8 +20,8 @@ auth.post("/login", async (c) => {
 
   const db = getDb();
   const user = db.prepare(
-    "SELECT id, username, email, avatarUrl, passwordHash, createdAt FROM users WHERE username = ?"
-  ).get(username) as { id: string; username: string; email: string | null; avatarUrl: string | null; passwordHash: string; createdAt: string } | undefined;
+    "SELECT id, username, email, avatarUrl, role, passwordHash, createdAt FROM users WHERE username = ?"
+  ).get(username) as { id: string; username: string; email: string | null; avatarUrl: string | null; role?: string; passwordHash: string; createdAt: string } | undefined;
 
   if (!user) {
     return c.json({ error: "用户名或密码错误" }, 401);
@@ -49,9 +49,11 @@ auth.post("/login", async (c) => {
     return c.json({ error: "用户名或密码错误" }, 401);
   }
 
+  const role = user.role || (user.username === "admin" ? "admin" : "user");
+
   // 生成 JWT
   const token = jwt.sign(
-    { userId: user.id, username: user.username },
+    { userId: user.id, username: user.username, role },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -63,6 +65,7 @@ auth.post("/login", async (c) => {
       username: user.username,
       email: user.email,
       avatarUrl: user.avatarUrl,
+      role,
       createdAt: user.createdAt,
     },
   });
@@ -93,11 +96,15 @@ auth.post("/register", async (c) => {
   const id = uuid();
   const passwordHash = await bcrypt.hash(password, 10);
 
-  db.prepare("INSERT INTO users (id, username, email, passwordHash) VALUES (?, ?, ?, ?)").run(id, username, email || null, passwordHash);
+  // 首个注册用户自动赋予管理员角色
+  const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
+  const role = userCount.count === 0 ? "admin" : "user";
+
+  db.prepare("INSERT INTO users (id, username, email, passwordHash, role) VALUES (?, ?, ?, ?, ?)").run(id, username, email || null, passwordHash, role);
 
   // 注册成功后自动登录，返回 token
   const token = jwt.sign(
-    { userId: id, username: username },
+    { userId: id, username: username, role },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -108,6 +115,8 @@ auth.post("/register", async (c) => {
       id,
       username,
       email,
+      avatarUrl: null,
+      role,
       createdAt: new Date().toISOString(),
     },
   }, 201);
@@ -212,12 +221,19 @@ auth.get("/verify", (c) => {
 
     const db = getDb();
     const user = db.prepare(
-      "SELECT id, username, email, avatarUrl, createdAt FROM users WHERE id = ?"
-    ).get(decoded.userId) as { id: string; username: string; email: string | null; avatarUrl: string | null; createdAt: string } | undefined;
+      "SELECT id, username, email, avatarUrl, role, createdAt FROM users WHERE id = ?"
+    ).get(decoded.userId) as { id: string; username: string; email: string | null; avatarUrl: string | null; role?: string; createdAt: string } | undefined;
 
     if (!user) return c.json({ error: "用户不存在" }, 401);
 
-    return c.json({ user });
+    const role = user.role || (user.username === "admin" ? "admin" : "user");
+
+    return c.json({
+      user: {
+        ...user,
+        role,
+      },
+    });
   } catch {
     return c.json({ error: "Token 无效或已过期" }, 401);
   }

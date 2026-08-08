@@ -147,8 +147,10 @@ app.route("/api/feed-settings", feedSettingsRouter);
 app.get("/api/me", (c) => {
   const db = getDb();
   const userId = c.req.header("X-User-Id");
-  const user = db.prepare("SELECT id, username, email, avatarUrl, createdAt FROM users WHERE id = ?").get(userId);
-  return c.json(user);
+  const user = db.prepare("SELECT id, username, email, avatarUrl, role, createdAt FROM users WHERE id = ?").get(userId) as { id: string; username: string; email: string | null; avatarUrl: string | null; role?: string; createdAt: string } | undefined;
+  if (!user) return c.json({ error: "用户不存在" }, 404);
+  const role = user.role || (user.username === "admin" ? "admin" : "user");
+  return c.json({ ...user, role });
 });
 
 // 更新当前用户信息

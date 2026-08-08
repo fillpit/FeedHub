@@ -11,9 +11,11 @@ export function seedDatabase() {
     const passwordHash = crypto.createHash("sha256").update("admin123").digest("hex");
 
     db.prepare(`
-      INSERT INTO users (id, username, email, passwordHash) VALUES (?, ?, ?, ?)
+      INSERT INTO users (id, username, email, passwordHash, role) VALUES (?, ?, ?, ?, 'admin')
     `).run(userId, "admin", "admin@node.local", passwordHash);
     console.log("✅ Admin user seeded successfully");
+  } else {
+    db.prepare("UPDATE users SET role = 'admin' WHERE username = 'admin'").run();
   }
 
   // 初始化默认系统设置

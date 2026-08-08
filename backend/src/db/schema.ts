@@ -29,6 +29,7 @@ function initSchema(db: Database.Database) {
       email TEXT UNIQUE,
       passwordHash TEXT NOT NULL,
       avatarUrl TEXT,
+      role TEXT NOT NULL DEFAULT 'user',
       createdAt TEXT NOT NULL DEFAULT (datetime('now')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -111,4 +112,15 @@ function initSchema(db: Database.Database) {
   `);
 
   // 数据库迁移：其他需要保留的表如果有新增字段可以在这里通过 try catch 处理
+  try {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+  } catch {
+    // 字段已存在，忽略错误
+  }
+
+  try {
+    db.exec("UPDATE users SET role = 'admin' WHERE username = 'admin'");
+  } catch {
+    // 忽略错误
+  }
 }

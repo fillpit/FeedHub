@@ -265,3 +265,78 @@
 - **成功响应** (200 OK)：
   - 当 `type=rss` 时，返回 XML 格式内容，`Content-Type: application/rss+xml; charset=utf-8`
   - 当 `type=json` 时，返回 JSON 格式内容，`Content-Type: application/feed+json; charset=utf-8`
+
+---
+
+## 用户与鉴权模块 [NEW]
+
+### 12. 用户登录
+- **请求方法**：`POST`
+- **请求路径**：`/api/auth/login`
+- **请求体**：
+  ```json
+  {
+    "username": "admin",
+    "password": "adminpassword"
+  }
+  ```
+- **成功响应** (200 OK)：
+  ```json
+  {
+    "token": "eyJhbGciOi...",
+    "user": {
+      "id": "uuid",
+      "username": "admin",
+      "email": "admin@example.com",
+      "avatarUrl": null,
+      "role": "admin",
+      "createdAt": "2026-08-08T12:00:00.000Z"
+    }
+  }
+  ```
+
+### 13. 用户注册
+- **请求方法**：`POST`
+- **请求路径**：`/api/auth/register`
+- **说明**：系统首个注册用户将自动赋予 `admin` 管理员角色，后续注册用户为 `user` 角色。
+- **请求体**：
+  ```json
+  {
+    "username": "newuser",
+    "password": "mypassword",
+    "email": "user@example.com"
+  }
+  ```
+- **成功响应** (201 Created)：
+  ```json
+  {
+    "token": "eyJhbGciOi...",
+    "user": {
+      "id": "uuid",
+      "username": "newuser",
+      "email": "user@example.com",
+      "avatarUrl": null,
+      "role": "user",
+      "createdAt": "2026-08-08T12:00:00.000Z"
+    }
+  }
+  ```
+
+### 14. 验证 Token (Verify)
+- **请求方法**：`GET`
+- **请求路径**：`/api/auth/verify`
+- **请求头**：`Authorization: Bearer <token>`
+- **成功响应** (200 OK)：
+  ```json
+  {
+    "user": {
+      "id": "uuid",
+      "username": "admin",
+      "email": "admin@example.com",
+      "avatarUrl": null,
+      "role": "admin",
+      "createdAt": "2026-08-08T12:00:00.000Z"
+    }
+  }
+  ```
+
