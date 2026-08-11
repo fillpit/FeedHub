@@ -4,6 +4,7 @@ import { FeedItem, WebsiteRssSelector, SelectorField, ScrapeResult, ScrapeDebugI
 import { getDb } from "../db/schema";
 import { ChromeFetcher } from "./chrome-fetcher";
 import { BrowserlessFetcher } from "./browserless-fetcher";
+import { KitesurfFetcher } from "./kitesurf-fetcher";
 import { resolveRelativeUrl } from "../utils/url";
 
 /**
@@ -111,7 +112,7 @@ export async function fetchHtml(
   const db = getDb();
   
   // 1. 读取设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key IN ('cloak_enabled', 'cloak_url', 'cdp_enabled', 'cdp_url', 'browserless_enabled', 'browserless_url', 'browserless_token', 'lightpanda_enabled', 'lightpanda_url')").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key IN ('cloak_enabled', 'cloak_url', 'kitesurf_enabled', 'kitesurf_url', 'kitesurf_token', 'cdp_enabled', 'cdp_url', 'browserless_enabled', 'browserless_url', 'browserless_token', 'lightpanda_enabled', 'lightpanda_url')").all() as { key: string; value: string }[];
   
   const settings: Record<string, string> = {};
   for (const row of rows) {
@@ -120,6 +121,9 @@ export async function fetchHtml(
 
   const cloakEnabled = settings.cloak_enabled === "1";
   const cloakUrl = settings.cloak_url || "http://localhost:9122";
+  const kitesurfEnabled = settings.kitesurf_enabled === "1";
+  const kitesurfUrl = settings.kitesurf_url || "";
+  const kitesurfToken = settings.kitesurf_token || "";
   const lightpandaEnabled = settings.lightpanda_enabled === "1";
   const lightpandaUrl = settings.lightpanda_url || "http://localhost:9222";
   const cdpEnabled = settings.cdp_enabled === "1";
@@ -143,7 +147,22 @@ export async function fetchHtml(
     }
   };
 
-  // 2. 尝试 CloakBrowser（最高优先级）
+  // 2. 尝试 Cloudflare Kitesurf（云端高性能无头浏览器，最高优先级）
+  if (kitesurfEnabled && kitesurfUrl && kitesurfToken) {
+    try {
+      log(`尝试使用 Cloudflare Kitesurf 抓取: ${url}`);
+      const fetcher = new KitesurfFetcher(kitesurfUrl, kitesurfToken);
+      const res = await fetcher.fetch(url);
+      log(`Cloudflare Kitesurf 抓取成功`);
+      return res;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "未知错误";
+      logError(`Cloudflare Kitesurf 抓取失败: ${message}`);
+      errors.push(`Kitesurf 失败: ${message}`);
+    }
+  }
+
+  // 3. 尝试 CloakBrowser（次高优先级）
   if (cloakEnabled && cloakUrl) {
     try {
       log(`尝试使用 CloakBrowser 抓取: ${url}`);
@@ -157,6 +176,7 @@ export async function fetchHtml(
       errors.push(`CloakBrowser 失败: ${message}`);
     }
   }
+
 
   // 3. 尝试 Lightpanda（优先级低于 CloakBrowser，但高于 Chrome CDP）
   if (lightpandaEnabled && lightpandaUrl) {

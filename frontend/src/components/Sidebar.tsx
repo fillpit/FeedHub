@@ -28,7 +28,6 @@ export default function Sidebar() {
     { icon: <Rss size={16} />, label: "动态路由", mode: "feed-routes", active: state.viewMode === "feed-routes" },
     { icon: <KeyRound size={16} />, label: "授权凭证", mode: "feed-credentials", active: state.viewMode === "feed-credentials" },
     { icon: <Package size={16} />, label: "NPM 包管理", mode: "feed-npm", active: state.viewMode === "feed-npm" },
-    ...(isAdmin ? [{ icon: <Shield size={16} />, label: t('sidebar.controlPanel', "控制面板"), mode: "admin" as ViewMode, active: state.viewMode === "admin" }] : []),
   ];
 
   if (state.sidebarCollapsed) {

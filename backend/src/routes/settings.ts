@@ -3,6 +3,7 @@ import { getDb } from "../db/schema";
 import { testRedisConnection, clearCacheServiceInstance } from "../services/cache";
 import { testCdpConnection } from "../services/cdp";
 import { BrowserlessFetcher } from "../services/browserless-fetcher";
+import { KitesurfFetcher } from "../services/kitesurf-fetcher";
 
 const settings = new Hono();
 
@@ -22,6 +23,9 @@ export interface SiteSettings {
   cloak_url?: string;
   lightpanda_enabled?: string;
   lightpanda_url?: string;
+  kitesurf_enabled?: string;
+  kitesurf_url?: string;
+  kitesurf_token?: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -40,12 +44,15 @@ const DEFAULTS: SiteSettings = {
   cloak_url: "http://localhost:9122",
   lightpanda_enabled: "0",
   lightpanda_url: "http://localhost:9222",
+  kitesurf_enabled: "0",
+  kitesurf_url: "",
+  kitesurf_token: "",
 };
 
 // 获取所有站点设置
 settings.get("/", (c) => {
   const db = getDb();
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%' OR key LIKE 'lightpanda_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%' OR key LIKE 'lightpanda_%' OR key LIKE 'kitesurf_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -110,6 +117,15 @@ settings.put("/", async (c) => {
     if (body.lightpanda_url !== undefined) {
       upsert.run("lightpanda_url", body.lightpanda_url);
     }
+    if (body.kitesurf_enabled !== undefined) {
+      upsert.run("kitesurf_enabled", body.kitesurf_enabled);
+    }
+    if (body.kitesurf_url !== undefined) {
+      upsert.run("kitesurf_url", body.kitesurf_url);
+    }
+    if (body.kitesurf_token !== undefined) {
+      upsert.run("kitesurf_token", body.kitesurf_token);
+    }
   });
   tx();
 
@@ -117,7 +133,7 @@ settings.put("/", async (c) => {
   clearCacheServiceInstance();
 
   // 返回更新后的全部设置
-  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%' OR key LIKE 'lightpanda_%'").all() as { key: string; value: string }[];
+  const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%' OR key LIKE 'lightpanda_%' OR key LIKE 'kitesurf_%'").all() as { key: string; value: string }[];
   const result: Record<string, string> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -219,4 +235,30 @@ settings.post("/browserless/test", async (c) => {
   }
 });
 
+// 测试 Kitesurf (Cloudflare Browser Rendering) 连接
+settings.post("/kitesurf/test", async (c) => {
+  try {
+    const body = await c.req.json() as { kitesurf_url: string; kitesurf_token?: string };
+    if (!body.kitesurf_url) {
+      return c.json({ success: false, message: "Kitesurf URL 地址不能为空" }, 400);
+    }
+    if (!body.kitesurf_token) {
+      return c.json({ success: false, message: "Kitesurf API Token 不能为空" }, 400);
+    }
+
+    const fetcher = new KitesurfFetcher(body.kitesurf_url, body.kitesurf_token);
+    const { version } = await fetcher.testConnection();
+    return c.json({
+      success: true,
+      message: `连接成功！Kitesurf 浏览器信息: ${version}`
+    });
+  } catch (err: unknown) {
+    return c.json({
+      success: false,
+      message: `无法连接至 Cloudflare Kitesurf 服务: ${err instanceof Error ? err.message : "连接失败"}`
+    });
+  }
+});
+
 export default settings;
+

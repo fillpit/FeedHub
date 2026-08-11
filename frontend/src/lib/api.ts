@@ -170,6 +170,9 @@ export const api = {
     cloak_url?: string;
     lightpanda_enabled?: string;
     lightpanda_url?: string;
+    kitesurf_enabled?: string;
+    kitesurf_url?: string;
+    kitesurf_token?: string;
   }>("/settings"),
   updateSiteSettings: (data: {
     site_title?: string;
@@ -187,6 +190,9 @@ export const api = {
     cloak_url?: string;
     lightpanda_enabled?: string;
     lightpanda_url?: string;
+    kitesurf_enabled?: string;
+    kitesurf_url?: string;
+    kitesurf_token?: string;
   }) =>
     request<{
       site_title: string;
@@ -201,6 +207,9 @@ export const api = {
       cloak_url?: string;
       lightpanda_enabled?: string;
       lightpanda_url?: string;
+      kitesurf_enabled?: string;
+      kitesurf_url?: string;
+      kitesurf_token?: string;
     }>("/settings", {
       method: "PUT",
       body: JSON.stringify(data),
@@ -227,6 +236,11 @@ export const api = {
     }),
   testBrowserlessConnection: (data: { browserless_url: string; browserless_token: string }) =>
     request<{ success: boolean; message: string }>("/settings/browserless/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  testKitesurfConnection: (data: { kitesurf_url: string; kitesurf_token: string }) =>
+    request<{ success: boolean; message: string }>("/settings/kitesurf/test", {
       method: "POST",
       body: JSON.stringify(data),
     }),

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff, Zap } from "lucide-react";
+import { Chrome, Globe, HelpCircle, Terminal, Cpu, Database, EyeOff, Zap, Cloud } from "lucide-react";
 import { api } from "@/lib/api";
 import { IntegrationCard, CopyButton } from "./IntegrationCard";
 import { ChromeDebuggingConfig } from "./ChromeDebuggingConfig";
@@ -7,11 +7,32 @@ import { BrowserlessConfig } from "./BrowserlessConfig";
 import { RedisConfig } from "./RedisConfig";
 import { CloakBrowserConfig } from "./CloakBrowserConfig";
 import { LightpandaConfig } from "./LightpandaConfig";
+import { KitesurfConfig } from "./KitesurfConfig";
 
 const CHROME_CMD = "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222";
 const CLOAK_DOCKER_CMD = "docker run -d -p 9122:9122 --name cloak-browser --restart always cloakbrowser/browser:latest --remote-debugging-port=9122 --remote-debugging-address=0.0.0.0";
 const LIGHTPANDA_DOCKER_CMD = "docker run -d --name lightpanda -p 9222:9222 lightpanda/browser:latest";
 const DOCKER_CMD = "docker run -d -p 3000:3000 --restart always -e \"MAX_CONCURRENT_SESSIONS=10\" -e \"TOKEN=your_secure_token\" browserless/chrome";
+
+/**
+ * Kitesurf instruction node
+ */
+const KitesurfInstructions: React.FC = () => (
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-bold text-tx-primary flex items-center gap-1.5">
+        <Cloud className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
+        Cloudflare Browser Run (Kitesurf)
+      </span>
+    </div>
+    <p className="text-[11px] text-tx-secondary leading-relaxed">
+      Cloudflare Kitesurf 是完全运行在 Workers 之上的无状态、高度可扩展且极具性价比的 Web 浏览器。请在下方配置您的 Cloudflare 账户 CDP 节点 URL 及 API Token 凭证。
+    </p>
+    <div className="p-3.5 bg-app-bg border border-app-border rounded-xl font-mono text-[11px] text-tx-primary break-all leading-normal relative select-all hover:border-accent-primary/20 transition-all shadow-inner">
+      wss://api.cloudflare.com/client/v4/accounts/&lt;ACCOUNT_ID&gt;/browser-rendering/devtools/browser
+    </div>
+  </div>
+);
 
 /**
  * CloakBrowser instruction node
@@ -138,6 +159,7 @@ export default function IntegrationsPanel() {
     redis: false,
     greader: true,
     cloak: false,
+    kitesurf: false,
     lightpanda: false,
     chrome_debugging: false,
     browserless: false,
@@ -150,6 +172,7 @@ export default function IntegrationsPanel() {
           redis: data.redis_enabled === "1",
           greader: true,
           cloak: data.cloak_enabled === "1",
+          kitesurf: data.kitesurf_enabled === "1",
           lightpanda: data.lightpanda_enabled === "1",
           chrome_debugging: data.cdp_enabled === "1",
           browserless: data.browserless_enabled === "1",
@@ -186,6 +209,16 @@ export default function IntegrationsPanel() {
               </p>
             </div>
           }
+        />
+
+        <IntegrationCard
+          icon={<Cloud className="w-4 h-4 text-sky-500" />}
+          title="Cloudflare Kitesurf (Browser Run 云端浏览器)"
+          description="集成 Cloudflare 无状态、高度可扩展且极低成本的 Web 浏览器。原生运行于 Cloudflare Workers，专为 Agentic Web 与全量网页抓取设计。"
+          badgeText={activeStates.kitesurf ? "已开启" : "未开启"}
+          isActive={activeStates.kitesurf}
+          content={<KitesurfConfig onStateChange={fetchActiveStatus} />}
+          instructions={<KitesurfInstructions />}
         />
 
         <IntegrationCard
@@ -231,3 +264,4 @@ export default function IntegrationsPanel() {
     </div>
   );
 }
+

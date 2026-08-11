@@ -75,7 +75,7 @@ app.get("/api/settings", (c) => {
 
   if (isAuthenticated) {
     // 已登录用户，返回完整配置
-    const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%'").all() as { key: string; value: string }[];
+    const rows = db.prepare("SELECT key, value FROM system_settings WHERE key LIKE 'site_%' OR key LIKE 'editor_%' OR key = 'registration_policy' OR key LIKE 'redis_%' OR key LIKE 'cdp_%' OR key LIKE 'browserless_%' OR key LIKE 'cloak_%' OR key LIKE 'lightpanda_%' OR key LIKE 'kitesurf_%'").all() as { key: string; value: string }[];
     for (const row of rows) {
       result[row.key] = row.value;
     }
