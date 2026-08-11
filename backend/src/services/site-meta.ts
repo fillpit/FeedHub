@@ -13,20 +13,7 @@ export interface SiteMetaResult {
 }
 
 const fetchHtml = async (url: string): Promise<string> => {
-  const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  
-  if (response.status === 403) {
-    console.warn(`[site-meta] HTTP client returned 403. Fallback to integrated scraper service for: ${url}`);
-    return await fetchHtmlWithEngine(url);
-  }
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  return response.text();
+  return await fetchHtmlWithEngine(url);
 };
 
 const extractTitle = ($: cheerio.CheerioAPI): string => {
@@ -63,11 +50,22 @@ const extractFavicon = ($: cheerio.CheerioAPI, baseUrlStr: string): string => {
 };
 
 export const fetchSiteMeta = async (url: string): Promise<SiteMetaResult> => {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error("无效的 URL 格式");
+  }
+
   const html = await fetchHtml(url);
   const $ = cheerio.load(html);
+  const extractedTitle = extractTitle($);
+  const extractedDesc = extractDescription($);
+  const extractedFavicon = extractFavicon($, url);
+
   return {
-    title: extractTitle($),
-    description: extractDescription($),
-    favicon: extractFavicon($, url),
+    title: extractedTitle || parsedUrl.hostname,
+    description: extractedDesc,
+    favicon: extractedFavicon,
   };
 };

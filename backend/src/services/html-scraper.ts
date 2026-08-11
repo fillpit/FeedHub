@@ -223,21 +223,22 @@ export async function fetchHtml(
     }
   }
 
-  // 6. 降级到标准 HTTP 请求
+  // 6. 使用 impit（Apify / Crawlee 官方浏览器指纹伪装 HTTP 客户端，作为 HTTP 终极兜底）
   try {
-    log(`使用标准 HTTP 抓取: ${url}`);
-    const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; FeedHub/1.0)", ...headers },
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    const text = await response.text();
-    log(`标准 HTTP 抓取成功`);
-    return text;
+    log(`使用 impit (Chrome 指纹模拟) 抓取: ${url}`);
+    const { Impit } = require("impit");
+    const client = new Impit({ browser: "chrome", timeout: 30000 });
+    const response = await client.fetch(url, { headers });
+    if (response.ok) {
+      const text = await response.text();
+      log(`impit 抓取成功`);
+      return text;
+    }
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "未知错误";
-    logError(`标准 HTTP 抓取失败: ${message}`);
-    errors.push(`标准 HTTP 失败: ${message}`);
+    logError(`impit 抓取失败: ${message}`);
+    errors.push(`impit 失败: ${message}`);
     throw new Error(`所有抓取方式均失败: ${errors.join(" | ")}`);
   }
 }
